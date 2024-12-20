@@ -26,7 +26,7 @@
           v-for="item in items"
           :key="item.id"
           class="table-row"
-          @click="goToItem(item.id)"
+          @click="focusOnItem(item)"
         >
           <div v-for="header in headers" :key="header.value" class="table-cell">
             {{ item[header.value] }}
@@ -65,83 +65,116 @@ const headers = computed(() =>
   }))
 );
 
-// Função de navegação
-const goToItem = (id) => {
-  router.push(`/content/${props.collection}/${id}`);
-};
-
 // Referência do mapa
 const mapContainer = ref(null);
 let map = null;
+let markers = []; // Armazena os marcadores para referência posterior
 
 // Inicializar o mapa e adicionar os marcadores
 onMounted(() => {
-  // Garantir que a altura do contêiner seja 100% antes de inicializar o mapa
   const mapElement = mapContainer.value;
   if (mapElement) {
     mapElement.style.height = "50vh"; // Garantir que o mapa tenha 50% da altura da tela
-
-    // Criando o mapa
     map = L.map(mapElement).setView(
-      [-20.329323252716748, -40.32739397081107],
-      13
+      [-19.629323252716748, -40.32739397081107], // Coordenadas iniciais (ajuste conforme necessário)
+      7
     );
 
-    // Adicionando o tile layer do OpenStreetMap
+    // Adicionando o tile layer (os "blocos" do mapa)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
-    // Adicionando marcadores para cada item
+    // Criando o ícone personalizado
+    const customIcon = L.divIcon({
+      className: "custom-icon",
+      html: '<div style="width: 30px; height: 30px; background-color: blue; border-radius: 50%; border: 2px solid white;"></div>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -15],
+    });
+
+    // L.marker([51.5, -0.09], { icon: customIcon })
+    //   .addTo(map)
+    //   .bindPopup("Testando marcador simples")
+    //   .openPopup();
+
+    // Iterando sobre os itens e adicionando marcadores no mapa
     props.items.forEach((item) => {
       const coordinates = item.mapa?.coordinates;
-      if (coordinates) {
-        L.marker([coordinates[1], coordinates[0]])
+      if (
+        coordinates &&
+        Array.isArray(coordinates) &&
+        coordinates.length === 2
+      ) {
+        const [longitude, latitude] = coordinates;
+        const marker = L.marker([latitude, longitude], {
+          icon: customIcon,
+        })
           .addTo(map)
           .bindPopup(`<b>${item.nome}</b>`);
+        markers.push({ id: item.id, marker });
+      } else {
+        console.warn(
+          `Coordenadas inválidas para o item ${item.id}:`,
+          coordinates
+        );
       }
     });
+
+    // Forçar o ajuste da visualização do mapa após os marcadores serem adicionados
+    map.invalidateSize();
   }
 });
+
+// Centralizar o mapa ao clicar no item
+const focusOnItem = (item) => {
+  const coordinates = item.mapa?.coordinates;
+  if (coordinates && map) {
+    const [longitude, latitude] = coordinates;
+    map.setView([latitude, longitude], 15);
+    const marker = markers.find((m) => m.id === item.id)?.marker;
+    if (marker) {
+      marker.openPopup();
+    }
+  }
+};
 </script>
 
 <style scoped>
-/* Estilo geral para o layout */
+/* Layout geral */
 .directus-table-layout {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 120px); /* Subtrai o cabeçalho */
 }
 
-/* Container principal para o mapa e a lista */
 .layout-container {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-/* Mapa ocupa metade da tela */
 .map-container {
   width: 100%;
 }
 
-/* Container para a tabela */
 .table-container {
   height: 50%;
   overflow-y: auto;
   padding: 16px;
 }
 
-/* Estilo do cabeçalho da tabela */
+/* Estilo do cabeçalho */
 .table-header {
   display: flex;
   background-color: var(--color-background);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 2px solid var(--background-normal-alt);
+  margin-bottom: 8px;
 }
 
-/* Estilo de cada item no cabeçalho */
 .table-header-item {
   flex: 1;
   padding: 10px;
@@ -151,32 +184,34 @@ onMounted(() => {
   color: var(--color-primary-dark);
 }
 
-/* Estilo para as linhas da tabela */
+/* Estilo das linhas da tabela */
 .table-row {
   display: flex;
-  border-bottom: 1px solid var(--color-border);
+  border: 1px solid var(--background-normal-alt);
+  border-radius: 8px; /* Bordas arredondadas */
+  margin-bottom: 8px; /* Espaçamento entre as linhas */
   cursor: pointer;
-  width: 100%; /* Garantir que a linha ocupe 100% da largura */
-  transition: background-color 0.3s; /* Suaviza a transição de fundo */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra leve */
+  transition: background-color 0.3s, box-shadow 0.3s; /* Suavização */
 }
 
-/* Cor de fundo ao passar o mouse na linha */
 .table-row:hover {
-  background-color: var(--color-background-alt);
+  background-color: var(--theme--primary-background);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* Realce na sombra */
 }
 
-/* Estilo de cada célula da tabela */
+/* Estilo de cada célula */
 .table-cell {
   flex: 1;
-  padding: 8px;
+  padding: 10px;
   text-align: left;
 }
 
-/* Centralizando o loader */
-.loader {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
+.custom-icon .circle-icon {
+  width: 30px; /* Largura do círculo */
+  height: 30px; /* Altura do círculo */
+  background-color: blue; /* Cor de fundo azul */
+  border-radius: 50%; /* Faz o fundo ser um círculo */
+  border: 2px solid white; /* Adiciona uma borda branca (opcional) */
 }
 </style>
