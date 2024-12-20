@@ -5,7 +5,7 @@
     </div>
 
     <div v-else class="layout-container">
-      <!-- Mapa -->
+      <!-- geolocation -->
       <div class="map-container" ref="mapContainer" id="map"></div>
 
       <!-- Tabela -->
@@ -97,7 +97,7 @@ const createCustomIcon = () => {
   });
 };
 
-// Inicializar o mapa
+// Inicializar o geolocation
 const initializeMap = () => {
   if (!mapContainer.value || map.value) return;
 
@@ -111,7 +111,7 @@ const initializeMap = () => {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map.value);
 
-  // Forçar o mapa a atualizar seu tamanho
+  // Forçar o geolocation a atualizar seu tamanho
   setTimeout(() => {
     map.value?.invalidateSize();
   }, 100);
@@ -129,7 +129,7 @@ const updateMarkers = () => {
 
   // Adicionar novos marcadores
   props.items.forEach((item) => {
-    const coordinates = item.mapa?.coordinates;
+    const coordinates = item.geolocation?.coordinates;
 
     if (
       !coordinates ||
@@ -181,7 +181,7 @@ const isValidCoordinate = (lat, lng) => {
 
 // Focar no item
 const focusOnItem = (item) => {
-  const coordinates = item.mapa?.coordinates;
+  const coordinates = item.geolocation?.coordinates;
   if (!coordinates || !map.value) return;
 
   const [longitude, latitude] = coordinates;
@@ -199,7 +199,7 @@ const focusOnItem = (item) => {
     noMoveStart: true, // Previne eventos de movimento indesejados
   });
 
-  // Garantir que o mapa está centralizado após a animação
+  // Garantir que o geolocation está centralizado após a animação
   setTimeout(() => {
     map.value?.setView([latitude, longitude], 15, {
       animate: false,
@@ -222,7 +222,7 @@ onMounted(() => {
   }
   updateMarkers();
 
-  // Adicionar evento de redimensionamento do mapa
+  // Adicionar evento de redimensionamento do geolocation
   const resizeHandler = () => {
     map.value?.invalidateSize();
   };
@@ -231,7 +231,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  // Remover marcadores e mapa
+  // Remover marcadores e geolocation
   markers.value.forEach((marker) => marker.remove());
   if (map.value) {
     map.value.remove();
@@ -248,7 +248,7 @@ const resetMap = () => {
     const initialLatLng = [-19.629323252716748, -40.32739397081107];
     const initialZoom = 7;
 
-    // Centralizar o mapa na posição inicial
+    // Centralizar o geolocation na posição inicial
     map.value.setView(initialLatLng, initialZoom, {
       animate: true,
       duration: 0.5, // Duração da animação
