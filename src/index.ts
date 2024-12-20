@@ -9,9 +9,9 @@ import { LayoutOptions, LayoutQuery } from "./types";
 import { computed, toRefs } from "vue";
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
-  id: "custom_table_layout",
-  name: "Tabela Personalizada",
-  icon: "table_chart",
+  id: "mapgrid",
+  name: "MapGrid",
+  icon: "map",
   component: Layout, // Usaremos o layout.vue para customizar a tabela
   slots: {
     options: undefined,

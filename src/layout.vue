@@ -1,17 +1,19 @@
 <template>
   <div class="directus-table-layout">
-    <!-- Carregando o Loader -->
     <div v-if="loading" class="loading-container">
       <loader />
     </div>
 
-    <!-- Dividindo a tela em mapa e lista -->
     <div v-else class="layout-container">
-      <!-- Mapa de Coordenadas -->
-      <div class="map-container" ref="mapContainer"></div>
+      <!-- Mapa -->
+      <div class="map-container" ref="mapContainer" id="map"></div>
 
-      <!-- Exibindo os dados (Lista) -->
+      <!-- Tabela -->
       <div class="table-container">
+        <!-- Botão para voltar à visualização inicial -->
+        <button v-if="map" class="reset-map-btn" @click="resetMap">
+          Reset view
+        </button>
         <div class="table-header">
           <div
             v-for="header in headers"
@@ -38,180 +40,327 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import L from "leaflet"; // Importando o Leaflet
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Propriedades recebidas do componente pai
 const props = defineProps({
-  items: Array,
-  loading: Boolean,
-  fields: Array,
+  items: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  fields: {
+    type: Array,
+    required: true,
+  },
   collection: {
     type: String,
     required: true,
   },
 });
 
-// Router para navegação
 const router = useRouter();
+const mapContainer = ref(null);
+const map = ref(null);
+const markers = ref(new Map()); // Usando Map para melhor gerenciamento de chaves
 
-// Computando os cabeçalhos
 const headers = computed(() =>
   props.fields.map((field) => ({
-    text: field, // Nome da coluna
-    value: field, // Chave usada no objeto `item`
+    text: field,
+    value: field,
   }))
 );
 
-// Referência do mapa
-const mapContainer = ref(null);
-let map = null;
-let markers = []; // Armazena os marcadores para referência posterior
+// Definição de ícone personalizado
+const createCustomIcon = () => {
+  return L.divIcon({
+    className: "custom-map-marker",
+    html: `
+      <div class="marker-inner" style="
+        width: 30px;
+        height: 30px;
+        background-color: var(--theme--primary);
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      "></div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+  });
+};
 
-// Inicializar o mapa e adicionar os marcadores
-onMounted(() => {
-  const mapElement = mapContainer.value;
-  if (mapElement) {
-    mapElement.style.height = "50vh"; // Garantir que o mapa tenha 50% da altura da tela
-    map = L.map(mapElement).setView(
-      [-19.629323252716748, -40.32739397081107], // Coordenadas iniciais (ajuste conforme necessário)
-      7
-    );
+// Inicializar o mapa
+const initializeMap = () => {
+  if (!mapContainer.value || map.value) return;
 
-    // Adicionando o tile layer (os "blocos" do mapa)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
+  map.value = L.map(mapContainer.value).setView(
+    [-19.629323252716748, -40.32739397081107],
+    7
+  );
 
-    // Criando o ícone personalizado
-    const customIcon = L.divIcon({
-      className: "custom-icon",
-      html: '<div style="width: 30px; height: 30px; background-color: blue; border-radius: 50%; border: 2px solid white;"></div>',
-      iconSize: [30, 30],
-      iconAnchor: [15, 15],
-      popupAnchor: [0, -15],
-    });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map.value);
 
-    // L.marker([51.5, -0.09], { icon: customIcon })
-    //   .addTo(map)
-    //   .bindPopup("Testando marcador simples")
-    //   .openPopup();
+  // Forçar o mapa a atualizar seu tamanho
+  setTimeout(() => {
+    map.value?.invalidateSize();
+  }, 100);
+};
 
-    // Iterando sobre os itens e adicionando marcadores no mapa
-    props.items.forEach((item) => {
-      const coordinates = item.mapa?.coordinates;
-      if (
-        coordinates &&
-        Array.isArray(coordinates) &&
-        coordinates.length === 2
-      ) {
-        const [longitude, latitude] = coordinates;
-        const marker = L.marker([latitude, longitude], {
-          icon: customIcon,
-        })
-          .addTo(map)
-          .bindPopup(`<b>${item.nome}</b>`);
-        markers.push({ id: item.id, marker });
-      } else {
-        console.warn(
-          `Coordenadas inválidas para o item ${item.id}:`,
-          coordinates
-        );
-      }
-    });
+// Atualizar marcadores
+const updateMarkers = () => {
+  if (!map.value) return;
 
-    // Forçar o ajuste da visualização do mapa após os marcadores serem adicionados
-    map.invalidateSize();
-  }
-});
+  // Limpar marcadores existentes
+  markers.value.forEach((marker) => {
+    marker.remove();
+  });
+  markers.value.clear();
 
-// Centralizar o mapa ao clicar no item
+  // Adicionar novos marcadores
+  props.items.forEach((item) => {
+    const coordinates = item.mapa?.coordinates;
+
+    if (
+      !coordinates ||
+      !Array.isArray(coordinates) ||
+      coordinates.length !== 2
+    ) {
+      console.warn(`Invalid coordinates for item ${item.id}:`, coordinates);
+      return;
+    }
+
+    const [longitude, latitude] = coordinates;
+
+    if (!isValidCoordinate(latitude, longitude)) {
+      console.warn(
+        `Invalid latitude/longitude for item ${item.id}: ${latitude}, ${longitude}`
+      );
+      return;
+    }
+
+    try {
+      const marker = L.marker([latitude, longitude], {
+        icon: createCustomIcon(),
+      }).addTo(map.value).bindPopup(`
+          <div class="marker-popup">
+            <strong>${item.nome || "Unnamed Location"}</strong>
+          </div>
+        `);
+
+      markers.value.set(item.id, marker);
+    } catch (error) {
+      console.error(`Error creating marker for item ${item.id}:`, error);
+    }
+  });
+};
+
+//  Validar coordenadas
+const isValidCoordinate = (lat, lng) => {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    !isNaN(lat) &&
+    !isNaN(lng)
+  );
+};
+
+// Focar no item
 const focusOnItem = (item) => {
   const coordinates = item.mapa?.coordinates;
-  if (coordinates && map) {
-    const [longitude, latitude] = coordinates;
-    map.setView([latitude, longitude], 15);
-    const marker = markers.find((m) => m.id === item.id)?.marker;
+  if (!coordinates || !map.value) return;
+
+  const [longitude, latitude] = coordinates;
+
+  if (!isValidCoordinate(latitude, longitude)) return;
+
+  // Primeiro, vamos parar qualquer animação em andamento
+  map.value.stop();
+
+  // Usar setView em vez de flyTo para garantir posicionamento consistente
+  map.value.setView([latitude, longitude], 15, {
+    animate: true,
+    duration: 0.5, // Reduzindo a duração da animação
+    easeLinearity: 1, // Movimento mais linear
+    noMoveStart: true, // Previne eventos de movimento indesejados
+  });
+
+  // Garantir que o mapa está centralizado após a animação
+  setTimeout(() => {
+    map.value?.setView([latitude, longitude], 15, {
+      animate: false,
+    });
+
+    const marker = markers.value.get(item.id);
     if (marker) {
       marker.openPopup();
     }
+  }, 100); // Um pouco mais que a duração da animação
+};
+
+// Observar alterações nos itens
+watch(() => props.items, updateMarkers, { deep: true });
+
+// Hooks de vida
+onMounted(() => {
+  if (!map.value) {
+    initializeMap();
+  }
+  updateMarkers();
+
+  // Adicionar evento de redimensionamento do mapa
+  const resizeHandler = () => {
+    map.value?.invalidateSize();
+  };
+
+  window.addEventListener("resize", resizeHandler);
+});
+
+onUnmounted(() => {
+  // Remover marcadores e mapa
+  markers.value.forEach((marker) => marker.remove());
+  if (map.value) {
+    map.value.remove();
+  }
+
+  // Remover o evento de redimensionamento
+  window.removeEventListener("resize", resizeHandler);
+});
+
+// Função para voltar à visualização inicial
+const resetMap = () => {
+  if (map.value) {
+    // Coordenada inicial e zoom
+    const initialLatLng = [-19.629323252716748, -40.32739397081107];
+    const initialZoom = 7;
+
+    // Centralizar o mapa na posição inicial
+    map.value.setView(initialLatLng, initialZoom, {
+      animate: true,
+      duration: 0.5, // Duração da animação
+    });
   }
 };
 </script>
 
 <style scoped>
-/* Layout geral */
 .directus-table-layout {
-  padding: 16px;
+  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px); /* Subtrai o cabeçalho */
+  padding: 16px;
+  position: relative;
 }
 
 .layout-container {
   display: flex;
   flex-direction: column;
+  gap: 16px;
   height: 100%;
 }
 
 .map-container {
+  height: 50vh;
+  min-height: 300px;
   width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--background-normal-alt);
 }
 
 .table-container {
-  height: 50%;
+  flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  background: var(--theme--background);
+  border-radius: 8px;
+  border: 1px solid var(--background-normal-alt);
 }
 
-/* Estilo do cabeçalho */
 .table-header {
   display: flex;
-  background-color: var(--color-background);
-  border-bottom: 2px solid var(--background-normal-alt);
-  margin-bottom: 8px;
+  position: sticky;
+  top: 0;
+  background-color: var(--theme--background);
+  z-index: 1;
 }
 
 .table-header-item {
   flex: 1;
-  padding: 10px;
-  font-weight: bold;
-  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
   background-color: var(--color-primary-light);
   color: var(--color-primary-dark);
+  border-bottom: 2px solid var(--background-normal-alt);
 }
 
-/* Estilo das linhas da tabela */
 .table-row {
   display: flex;
-  border: 1px solid var(--background-normal-alt);
-  border-radius: 8px; /* Bordas arredondadas */
-  margin-bottom: 8px; /* Espaçamento entre as linhas */
+  border-bottom: 1px solid var(--background-normal-alt);
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra leve */
-  transition: background-color 0.3s, box-shadow 0.3s; /* Suavização */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
 }
 
 .table-row:hover {
   background-color: var(--theme--primary-background);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* Realce na sombra */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Estilo de cada célula */
 .table-cell {
   flex: 1;
-  padding: 10px;
-  text-align: left;
+  padding: 12px 16px;
 }
 
-.custom-icon .circle-icon {
-  width: 30px; /* Largura do círculo */
-  height: 30px; /* Altura do círculo */
-  background-color: blue; /* Cor de fundo azul */
-  border-radius: 50%; /* Faz o fundo ser um círculo */
-  border: 2px solid white; /* Adiciona uma borda branca (opcional) */
+.reset-map-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: var(--theme--primary);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s;
+  z-index: 9999999;
+}
+
+.reset-map-btn:hover {
+  background-color: var(--theme--primary-background);
+}
+
+.reset-map-btn:focus {
+  outline: none;
+}
+
+/* Marker popup styles */
+:global(.marker-popup) {
+  padding: 8px;
+  text-align: center;
+}
+
+:global(.leaflet-popup-content-wrapper) {
+  border-radius: 8px;
+}
+
+:global(.custom-map-marker) {
+  background: transparent;
+  border: none;
 }
 </style>
