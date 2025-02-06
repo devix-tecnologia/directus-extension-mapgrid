@@ -5,12 +5,9 @@
     </div>
 
     <div v-else class="layout-container">
-      <!-- geolocation -->
       <div class="map-container" ref="mapContainer" id="map"></div>
 
-      <!-- Tabela -->
       <div class="table-container">
-        <!-- Botão para voltar à visualização inicial -->
         <button v-if="map" class="reset-map-btn" @click="resetMap">
           Reset view
         </button>
@@ -26,14 +23,16 @@
 
         <div
           v-for="item in items"
+          v-if="items.length > 0"
           :key="item.id"
-          class="table-row"
+          class="table-row item-lista"
           @click="focusOnItem(item)"
         >
           <div v-for="header in headers" :key="header.value" class="table-cell">
-            {{ item[header.value] }}
+            {{ formatValue(item, header.value) }}
           </div>
         </div>
+        <div v-else class="no-items-message">Nenhum item encontrado.</div>
       </div>
     </div>
   </div>
@@ -55,27 +54,52 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  collection: {
+    type: String,
+    required: true,
+  },
   fields: {
     type: Array,
     required: true,
   },
-  collection: {
-    type: String,
-    required: true,
+  layoutOptions: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
 const router = useRouter();
 const mapContainer = ref(null);
 const map = ref(null);
-const markers = ref(new Map()); // Usando Map para melhor gerenciamento de chaves
+const markers = ref(new Map());
 
-const headers = computed(() =>
-  props.fields.map((field) => ({
-    text: field,
-    value: field,
-  }))
-);
+const headers = computed(() => {
+  const columns = [
+    props.layoutOptions.coluna1,
+    props.layoutOptions.coluna2,
+    props.layoutOptions.coluna3,
+    props.layoutOptions.coluna4,
+    props.layoutOptions.coluna5,
+  ].filter(Boolean);
+
+  return columns.map((column) => ({
+    text: column,
+    value: column,
+  }));
+});
+
+const formatValue = (item, field) => {
+  if (!item || !field) return "";
+
+  if (!item.hasOwnProperty(field)) {
+    console.warn(`Field "${field}" not found in item:`, item);
+    return "";
+  }
+
+  const value = item[field];
+  if (value === null || value === undefined) return "";
+  return value;
+};
 
 // Definição de ícone personalizado
 const createCustomIcon = () => {
@@ -154,7 +178,9 @@ const updateMarkers = () => {
         icon: createCustomIcon(),
       }).addTo(map.value).bindPopup(`
           <div class="marker-popup">
-            <strong>${item.nome || "Unnamed Location"}</strong>
+            <strong>${
+              item[props.layoutOptions.title] || "Select a field as title"
+            }</strong>
           </div>
         `);
 
@@ -280,6 +306,7 @@ const resetMap = () => {
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--background-normal-alt);
+  z-index: 1;
 }
 
 .table-container {
@@ -305,6 +332,8 @@ const resetMap = () => {
   background-color: var(--color-primary-light);
   color: var(--color-primary-dark);
   border-bottom: 2px solid var(--background-normal-alt);
+  text-transform: uppercase;
+  font-size: 12px;
 }
 
 .table-row {
@@ -338,7 +367,7 @@ const resetMap = () => {
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   transition: background-color 0.3s;
-  z-index: 9999999;
+  z-index: 29;
 }
 
 .reset-map-btn:hover {
@@ -362,5 +391,18 @@ const resetMap = () => {
 :global(.custom-map-marker) {
   background: transparent;
   border: none;
+}
+
+.no-items-message {
+  padding: 16px;
+  text-align: center;
+  color: var(--theme--foreground-subdued);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 </style>
