@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@types/leaflet':
-        specifier: ^1.9.15
+        specifier: ^1.9.16
         version: 1.9.16
       leaflet:
         specifier: ^1.9.4
@@ -19,7 +19,7 @@ importers:
         specifier: ^12.1.4
         version: 12.1.4(@types/node@22.13.4)(@unhead/vue@1.11.19(vue@3.5.13(typescript@5.7.3)))(knex@3.1.0)(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))(terser@5.39.0)(typescript@5.7.3)
       typescript:
-        specifier: ^5.7.2
+        specifier: ^5.7.3
         version: 5.7.3
       vue:
         specifier: ^3.5.13
