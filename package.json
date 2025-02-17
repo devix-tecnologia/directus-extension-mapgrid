@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Extension for show map and grid list on Layout Directus",
   "icon": "extension",
-  "author": "Devix Tecnologia <contato@devix.co>",
   "keywords": [
     "directus",
     "directus-extension",
@@ -12,8 +11,35 @@
     "grid"
   ],
   "type": "module",
+  "license": "MIT",
+  "author": "Devix Tecnologia",
+  "contributors": [
+    {
+      "name": "Sidarta Veloso",
+      "github": "https://github.com/sidartaveloso",
+      "linkedin": "https://www.linkedin.com/in/sidartaveloso"
+    },
+    {
+      "name": "Fernando Gatti",
+      "github": "https://github.com/gattifernando",
+      "linkedin": "https://www.linkedin.com/in/gattifernando/"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devix-tecnologia/directus-extension-mapgrid"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "files": [
-    "dist"
+    "dist/",
+    "package.json",
+    "pnpm-lock.yaml"
   ],
   "directus:extension": {
     "type": "layout",
