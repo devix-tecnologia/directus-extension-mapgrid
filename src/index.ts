@@ -4,7 +4,7 @@ import {
   useSync,
   useItems,
 } from "@directus/extensions-sdk";
-import Layout from "./layout.vue"; // Componente Vue personalizado
+import Layout from "./layout.vue";
 import { LayoutOptions, LayoutQuery } from "./types";
 import { computed, toRefs } from "vue";
 import Options from "./options.vue";
@@ -13,7 +13,8 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: "mapgrid",
   name: "MapGrid",
   icon: "map",
-  component: Layout, // Usaremos o layout.vue para customizar a tabela
+  component: Layout,
+  description: "Show map and grid list on Layout.",
   slots: {
     options: Options,
     sidebar: () => undefined,

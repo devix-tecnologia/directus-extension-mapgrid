@@ -1,12 +1,14 @@
 {
   "name": "mapgrid",
-  "description": "Extensão para exibir mapas no Directus",
+  "description": "Extension for show map and grid list on Layout Directus",
   "icon": "extension",
   "version": "1.0.0",
   "keywords": [
     "directus",
     "directus-extension",
-    "directus-extension-layout"
+    "directus-extension-layout",
+    "map",
+    "grid"
   ],
   "type": "module",
   "files": [
@@ -16,7 +18,11 @@
     "type": "layout",
     "path": "dist/index.js",
     "source": "src/index.ts",
-    "host": "^10.10.0"
+    "host": "^10.10.0",
+    "sandbox": {
+      "enabled": true,
+      "requestedScopes": {}
+    }
   },
   "scripts": {
     "build": "directus-extension build",
