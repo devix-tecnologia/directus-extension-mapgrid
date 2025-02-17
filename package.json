@@ -1,5 +1,5 @@
 {
-  "name": "mapgrid",
+  "name": "@devix-tecnologia/directus-extension-mapgrid",
   "version": "1.0.0",
   "description": "Extension for show map and grid list on Layout Directus",
   "icon": "extension",
