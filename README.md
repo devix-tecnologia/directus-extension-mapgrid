@@ -1,36 +1,38 @@
-# Directus - Extensão Layout MapGrid
+# Directus - MapGrid Layout Extension
 
-Este projeto é uma extensão do tipo Layout para o Directus voltada para visualização de conteúdo em mapa e grid ao mesmo tempo.
+This project is a Layout-type extension for Directus, designed for viewing content in both map and grid formats simultaneously. Developed by [Devix Tecnologia](https://devix.co).
 
-## 💎 Usando a extensão
+## 💎 Using the Extension
 
-- Garanta que sua coleção tenha um campo com nome `geolocation`, do tipo "Mapa".
-- Ative o Layout no menu de configurações a direita selecionando "MapGrid" no dropdown;
+- Ensure that your collection has a field named `geolocation`, of type "Map".
+- Enable the Layout in the settings menu on the right by selecting "MapGrid" from the dropdown.
 
-![Tela de visualização da extensão](docs/tela.jpg)
+![Extension visualization screen](docs/tela.jpg)
 
-##  🚀  Levantando um Directus a partir de docker-compose
+## 🚀 Running Directus with Docker Compose
 
-- Baixe este projeto ou copie o arquivo `docker-compose.yml` e inicie uma instalação do zero;
-- Com o docker instalado na máquina ([saiba mais](https://docs.docker.com/get-docker/)), rode o comando:
+- Download this project or copy the `docker-compose.yml` file and start a fresh installation.
+- With Docker installed on your machine ([learn more](https://docs.docker.com/get-docker/)), run the command:
+
 ```
  docker compose up
 ```
 
-
-> [!IMPORTANT] 
-> _O docker-compose usado neste projeto está configurado para permitir iframe de qualquer domínio. Em produção você deve liberar apenas domínios confiáveis."_
+> [!IMPORTANT]
+> _The docker-compose used in this project is configured to allow iframes from any domain. In production, you should only allow trusted domains._
 >
-> Além disso, para que o mapa usado funcione, é preciso estar atento para duas configurações em relação ao CSP (content security policy): 
- ```yaml
-CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "*" # permite iframe de qualquer domínio
-CONTENT_SECURITY_POLICY_DIRECTIVES__IMG_SRC: "self http://0.0.0.0:8055 https: https://*.tile.openstreetmap.org data:" # permite imagens do mapa
-DIRECTUS_HTTP_HEADERS__CONTENT_SECURITY_POLICY: "default-src *; img-src * 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *" # define uma política global de segurança para sua aplicação através do cabeçalho HTTP Content-Security-Policy
+> Additionally, for the map to function properly, ensure the following CSP (Content Security Policy) settings are correctly configured:
+
+```yaml
+CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "*" # allows iframes from any domain
+CONTENT_SECURITY_POLICY_DIRECTIVES__IMG_SRC: "self http://0.0.0.0:8055 https: https://*.tile.openstreetmap.org data:" # allows map images
+DIRECTUS_HTTP_HEADERS__CONTENT_SECURITY_POLICY: "default-src *; img-src * 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *" # sets a global security policy for your application via the Content-Security-Policy HTTP header
 ```
 
-## 📌 Links importantes
+## 📌 Important Links
 
-- [Quickstart Directus](https://docs.directus.io/getting-started/quickstart.html) (na aba Docker Installation)
-- [Como Criar uma extensão](https://docs.directus.io/extensions/creating-extensions.html) 
-- [Acessar serviços do Directus](https://docs.directus.io/extensions/services/introduction.html)
-- [Acessar itens gravados nas coleções](https://docs.directus.io/extensions/services/accessing-items.html) 
+- [Directus Quickstart](https://docs.directus.io/getting-started/quickstart.html) (under the Docker Installation tab)
+- [How to Create an Extension](https://docs.directus.io/extensions/creating-extensions.html)
+- [Access Directus Services](https://docs.directus.io/extensions/services/introduction.html)
+- [Access Stored Collection Items](https://docs.directus.io/extensions/services/accessing-items.html)
+
