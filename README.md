@@ -7,7 +7,7 @@ This project is a Layout-type extension for Directus, designed for viewing conte
 - Ensure that your collection has a field named `geolocation`, of type "Map".
 - Enable the Layout in the settings menu on the right by selecting "MapGrid" from the dropdown.
 
-![Extension visualization screen](docs/tela.jpg)
+![Extension visualization screen](https://github.com/devix-tecnologia/directus-extension-mapgrid/raw/main/docs/tela.jpg)
 
 ## 🚀 Running Directus with Docker Compose
 

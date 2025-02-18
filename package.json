@@ -15,14 +15,14 @@
   "author": "Devix Tecnologia",
   "contributors": [
     {
-      "name": "Sidarta Veloso",
-      "github": "https://github.com/sidartaveloso",
-      "linkedin": "https://www.linkedin.com/in/sidartaveloso"
-    },
-    {
       "name": "Fernando Gatti",
       "github": "https://github.com/gattifernando",
       "linkedin": "https://www.linkedin.com/in/gattifernando/"
+    },
+    {
+      "name": "Sidarta Veloso",
+      "github": "https://github.com/sidartaveloso",
+      "linkedin": "https://www.linkedin.com/in/sidartaveloso"
     }
   ],
   "repository": {
