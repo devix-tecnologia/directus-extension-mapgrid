@@ -8,15 +8,9 @@
       <div class="map-container" ref="mapContainer" id="map"></div>
 
       <div class="table-container">
-        <button v-if="map" class="reset-map-btn" @click="resetMap">
-          Reset view
-        </button>
+        <button v-if="map" class="reset-map-btn" @click="resetMap">Reset view</button>
         <div class="table-header">
-          <div
-            v-for="header in headers"
-            :key="header.value"
-            class="table-header-item"
-          >
+          <div v-for="header in headers" :key="header.value" class="table-header-item">
             {{ header.text }}
           </div>
         </div>
@@ -39,10 +33,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const props = defineProps({
   items: {
@@ -89,22 +83,22 @@ const headers = computed(() => {
 });
 
 const formatValue = (item, field) => {
-  if (!item || !field) return "";
+  if (!item || !field) return '';
 
   if (!item.hasOwnProperty(field)) {
     console.warn(`Field "${field}" not found in item:`, item);
-    return "";
+    return '';
   }
 
   const value = item[field];
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) return '';
   return value;
 };
 
 // Definição de ícone personalizado
 const createCustomIcon = () => {
   return L.divIcon({
-    className: "custom-map-marker",
+    className: 'custom-map-marker',
     html: `
       <div class="marker-inner" style="
         width: 30px;
@@ -125,12 +119,9 @@ const createCustomIcon = () => {
 const initializeMap = () => {
   if (!mapContainer.value || map.value) return;
 
-  map.value = L.map(mapContainer.value).setView(
-    [-19.629323252716748, -40.32739397081107],
-    7
-  );
+  map.value = L.map(mapContainer.value).setView([-19.629323252716748, -40.32739397081107], 7);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map.value);
@@ -155,11 +146,7 @@ const updateMarkers = () => {
   props.items.forEach((item) => {
     const coordinates = item.geolocation?.coordinates;
 
-    if (
-      !coordinates ||
-      !Array.isArray(coordinates) ||
-      coordinates.length !== 2
-    ) {
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
       console.warn(`Invalid coordinates for item ${item.id}:`, coordinates);
       return;
     }
@@ -167,9 +154,7 @@ const updateMarkers = () => {
     const [longitude, latitude] = coordinates;
 
     if (!isValidCoordinate(latitude, longitude)) {
-      console.warn(
-        `Invalid latitude/longitude for item ${item.id}: ${latitude}, ${longitude}`
-      );
+      console.warn(`Invalid latitude/longitude for item ${item.id}: ${latitude}, ${longitude}`);
       return;
     }
 
@@ -178,9 +163,7 @@ const updateMarkers = () => {
         icon: createCustomIcon(),
       }).addTo(map.value).bindPopup(`
           <div class="marker-popup">
-            <strong>${
-              item[props.layoutOptions.title] || "Select a field as title"
-            }</strong>
+            <strong>${item[props.layoutOptions.title] || 'Select a field as title'}</strong>
           </div>
         `);
 
@@ -194,8 +177,8 @@ const updateMarkers = () => {
 //  Validar coordenadas
 const isValidCoordinate = (lat, lng) => {
   return (
-    typeof lat === "number" &&
-    typeof lng === "number" &&
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
     lat >= -90 &&
     lat <= 90 &&
     lng >= -180 &&
@@ -253,7 +236,7 @@ onMounted(() => {
     map.value?.invalidateSize();
   };
 
-  window.addEventListener("resize", resizeHandler);
+  window.addEventListener('resize', resizeHandler);
 });
 
 onUnmounted(() => {
@@ -264,7 +247,7 @@ onUnmounted(() => {
   }
 
   // Remover o evento de redimensionamento
-  window.removeEventListener("resize", resizeHandler);
+  window.removeEventListener('resize', resizeHandler);
 });
 
 // Função para voltar à visualização inicial

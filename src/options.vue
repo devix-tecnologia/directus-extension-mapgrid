@@ -77,12 +77,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRefs, computed } from "vue";
-import { useCollection, useSync } from "@directus/extensions-sdk";
-import { LayoutOptions } from "./types";
+import { defineComponent, toRefs, computed } from 'vue';
+import { useCollection, useSync } from '@directus/extensions-sdk';
+import { LayoutOptions } from './types';
 
 export default defineComponent({
-  name: "Options",
+  name: 'Options',
   props: {
     collection: { type: String, required: true },
     layoutOptions: { type: Object as () => LayoutOptions, required: true },
@@ -95,26 +95,26 @@ export default defineComponent({
     coluna5: { type: String, default: null },
   },
   emits: [
-    "update:layoutOptions",
-    "update:title",
-    "update:coluna1",
-    "update:coluna2",
-    "update:coluna3",
-    "update:coluna4",
-    "update:coluna5",
+    'update:layoutOptions',
+    'update:title',
+    'update:coluna1',
+    'update:coluna2',
+    'update:coluna3',
+    'update:coluna4',
+    'update:coluna5',
   ],
   setup(props, { emit }) {
     const { collection: collectionKey } = toRefs(props);
     const collection = useCollection(collectionKey);
 
-    const title = useSync(props, "title", emit);
-    const coluna1 = useSync(props, "coluna1", emit);
-    const coluna2 = useSync(props, "coluna2", emit);
-    const coluna3 = useSync(props, "coluna3", emit);
-    const coluna4 = useSync(props, "coluna4", emit);
-    const coluna5 = useSync(props, "coluna5", emit);
+    const title = useSync(props, 'title', emit);
+    const coluna1 = useSync(props, 'coluna1', emit);
+    const coluna2 = useSync(props, 'coluna2', emit);
+    const coluna3 = useSync(props, 'coluna3', emit);
+    const coluna4 = useSync(props, 'coluna4', emit);
+    const coluna5 = useSync(props, 'coluna5', emit);
 
-    const layoutOptions = useSync(props, "layoutOptions", emit);
+    const layoutOptions = useSync(props, 'layoutOptions', emit);
 
     const iconTemplateWritable = computed({
       get() {
