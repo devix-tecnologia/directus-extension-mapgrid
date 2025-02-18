@@ -10,6 +10,17 @@
       placeholder="Select a field"
     />
   </div>
+  <div class="field">
+    <div class="type-label">Geolocation</div>
+    <v-select
+      v-model="geolocation"
+      :collection="collection"
+      :items="[{ name: '---', field: null }, ...camposSelecao]"
+      item-text="name"
+      item-value="field"
+      placeholder="Select a field"
+    />
+  </div>
   <!-- Coluna 1 -->
   <div class="field">
     <div class="type-label">Col 1</div>
@@ -88,6 +99,7 @@ export default defineComponent({
     layoutOptions: { type: Object as () => LayoutOptions, required: true },
     fieldsInCollection: { type: Array, required: true },
     title: { type: String, default: null },
+    geolocation: { type: String, default: null },
     coluna1: { type: String, default: null },
     coluna2: { type: String, default: null },
     coluna3: { type: String, default: null },
@@ -96,6 +108,7 @@ export default defineComponent({
   },
   emits: [
     'update:layoutOptions',
+    'update:geolocation',
     'update:title',
     'update:coluna1',
     'update:coluna2',
@@ -108,6 +121,7 @@ export default defineComponent({
     const collection = useCollection(collectionKey);
 
     const title = useSync(props, 'title', emit);
+    const geolocation = useSync(props, 'geolocation', emit);
     const coluna1 = useSync(props, 'coluna1', emit);
     const coluna2 = useSync(props, 'coluna2', emit);
     const coluna3 = useSync(props, 'coluna3', emit);
@@ -149,12 +163,18 @@ export default defineComponent({
       },
     });
 
+    const camposSelecao = computed(() =>
+      collection.fields.value.filter((f) => f.meta?.interface === 'map')
+    );
+
     return {
       iconTemplateWritable,
       headerTemplateWritable,
       cardContentTemplateWritable,
+      camposSelecao,
 
       title,
+      geolocation,
       coluna1,
       coluna2,
       coluna3,

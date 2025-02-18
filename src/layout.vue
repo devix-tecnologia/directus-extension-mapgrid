@@ -82,6 +82,8 @@ const headers = computed(() => {
   }));
 });
 
+const local = props.layoutOptions.geolocation;
+
 const formatValue = (item, field) => {
   if (!item || !field) return '';
 
@@ -144,7 +146,7 @@ const updateMarkers = () => {
 
   // Adicionar novos marcadores
   props.items.forEach((item) => {
-    const coordinates = item.geolocation?.coordinates;
+    const coordinates = item[local]?.coordinates;
 
     if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
       console.warn(`Invalid coordinates for item ${item.id}:`, coordinates);
@@ -190,7 +192,7 @@ const isValidCoordinate = (lat, lng) => {
 
 // Focar no item
 const focusOnItem = (item) => {
-  const coordinates = item.geolocation?.coordinates;
+  const coordinates = item[local]?.coordinates;
   if (!coordinates || !map.value) return;
 
   const [longitude, latitude] = coordinates;
