@@ -31,7 +31,7 @@
   },
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": ">=10.0.0" 
+    "pnpm": ">=10.0.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -60,13 +60,15 @@
     "dev": "directus-extension build -w --no-minify",
     "link": "directus-extension link",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.vue",
+    "lint": "eslint \"src/**/*.{ts,vue}\"",
+    "lint:fix": "eslint \"src/**/*.{ts,vue}\" --fix",
     "format": "prettier --write src/",
     "prepare": "husky"
   },
   "devDependencies": {
     "@directus/extensions-sdk": "^13.0.1",
     "@directus/types": "^13.0.0",
+    "@eslint/js": "^9.20.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.1",
     "@semantic-release/npm": "^12.0.1",
@@ -76,12 +78,14 @@
     "eslint": "^9.20.1",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-vue": "^9.32.0",
+    "globals": "^15.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "prettier": "^3.5.1",
     "semantic-release": "^24.2.3",
     "typescript": "^5.7.3",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-eslint-parser": "^9.4.3"
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",

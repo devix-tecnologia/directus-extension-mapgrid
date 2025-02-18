@@ -52,7 +52,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         coluna5,
       };
 
-      function createViewOption<T>(key: keyof LayoutOptions, defaultValue: any) {
+      function createViewOption<T>(key: keyof LayoutOptions, defaultValue: unknown) {
         return computed<T>({
           get() {
             return layoutOptions.value?.[key] !== undefined
