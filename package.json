@@ -49,24 +49,66 @@
     "sandbox": {
       "enabled": true,
       "requestedScopes": {}
-    }
+    },
+    "types": [
+      "layout"
+    ]
   },
   "scripts": {
     "build": "directus-extension build",
     "dev": "directus-extension build -w --no-minify",
-    "link": "directus-extension link"
+    "link": "directus-extension link",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.vue",
+    "format": "prettier --write src/",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@directus/extensions-sdk": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.1",
     "@semantic-release/npm": "^12.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/parser": "^8.24.1",
+    "@vue/eslint-config-typescript": "^14.4.0",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-vue": "^9.32.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.1",
     "semantic-release": "^24.2.3",
     "typescript": "^5.7.3",
     "vue": "^3.5.13"
   },
   "dependencies": {
+    "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.16",
     "leaflet": "^1.9.4"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 100,
+    "semi": true,
+    "tabWidth": 2
+  },
+  "lint-staged": {
+    "*.{ts,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/npm",
+      "@semantic-release/github",
+      "@semantic-release/git"
+    ]
   }
 }
