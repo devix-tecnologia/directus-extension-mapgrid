@@ -30,7 +30,8 @@
     "url": "https://github.com/devix-tecnologia/directus-extension-mapgrid"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0" 
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
