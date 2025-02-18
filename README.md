@@ -4,7 +4,7 @@ This project is a Layout-type extension for Directus, designed for viewing conte
 
 ## 💎 Using the Extension
 
-- Ensure that your collection has a field named `geolocation`, of type "Map".
+- Ensure that your collection has a field of type "Map" and select the field in the Layout Options: Geolocation.
 - Enable the Layout in the settings menu on the right by selecting "MapGrid" from the dropdown.
 
 ![Extension visualization screen](https://github.com/devix-tecnologia/directus-extension-mapgrid/raw/main/docs/tela.jpg)

@@ -10,6 +10,7 @@ export interface LayoutOptions {
   coordinates?: string;
   fields?: string[];
   title?: string;
+  geolocation?: string;
   coluna1?: string;
   coluna2?: string;
   coluna3?: string;

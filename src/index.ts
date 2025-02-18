@@ -23,7 +23,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { sort, limit, page, fields } = useLayoutQuery();
 
     // Aqui, os campos a serem usados na listagem
-    const { title, coluna1, coluna2, coluna3, coluna4, coluna5 } = useLayoutOptions();
+    const { title, geolocation, coluna1, coluna2, coluna3, coluna4, coluna5 } = useLayoutOptions();
 
     const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
       sort,
@@ -37,6 +37,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     // Aqui, os campos a serem usados na listagem
     function useLayoutOptions() {
       const title = createViewOption('title', undefined);
+      const geolocation = createViewOption('geolocation', undefined);
       const coluna1 = createViewOption('coluna1', undefined);
       const coluna2 = createViewOption('coluna2', undefined);
       const coluna3 = createViewOption('coluna3', undefined);
@@ -45,6 +46,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
       return {
         title,
+        geolocation,
         coluna1,
         coluna2,
         coluna3,
@@ -98,6 +100,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       fieldsInCollection,
 
       title,
+      geolocation,
       coluna1,
       coluna2,
       coluna3,
