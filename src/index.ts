@@ -36,12 +36,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
     // Aqui, os campos a serem usados na listagem
     function useLayoutOptions() {
-      const title = createViewOption<string | null>('title', null);
-      const coluna1 = createViewOption<string | null>('coluna1', null);
-      const coluna2 = createViewOption<string | null>('coluna2', null);
-      const coluna3 = createViewOption<string | null>('coluna3', null);
-      const coluna4 = createViewOption<string | null>('coluna4', null);
-      const coluna5 = createViewOption<string | null>('coluna5', null);
+      const title = createViewOption('title', undefined);
+      const coluna1 = createViewOption('coluna1', undefined);
+      const coluna2 = createViewOption('coluna2', undefined);
+      const coluna3 = createViewOption('coluna3', undefined);
+      const coluna4 = createViewOption('coluna4', undefined);
+      const coluna5 = createViewOption('coluna5', undefined);
 
       return {
         title,
@@ -52,14 +52,17 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         coluna5,
       };
 
-      function createViewOption<T>(key: keyof LayoutOptions, defaultValue: unknown) {
-        return computed<T>({
+      function createViewOption<K extends keyof LayoutOptions>(
+        key: K,
+        defaultValue: LayoutOptions[K]
+      ) {
+        return computed<LayoutOptions[K]>({
           get() {
             return layoutOptions.value?.[key] !== undefined
-              ? layoutOptions.value?.[key]
+              ? layoutOptions.value[key]
               : defaultValue;
           },
-          set(newValue: T) {
+          set(newValue: LayoutOptions[K]) {
             layoutOptions.value = {
               ...layoutOptions.value,
               [key]: newValue,
