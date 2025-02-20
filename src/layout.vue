@@ -5,10 +5,12 @@
     </div>
 
     <div v-else class="layout-container">
-      <div class="map-container" ref="mapContainer" id="map"></div>
+      <div class="map-wrapper">
+        <div ref="mapContainer" class="map-container"></div>
+        <VButton class="reset-map-btn" @click="resetMap">Reset View</VButton>
+      </div>
 
       <div class="table-container">
-        <button v-if="map" class="reset-map-btn" @click="resetMap">Reset view</button>
         <div class="table-header">
           <div v-for="header in headers" :key="header.value" class="table-header-item">
             {{ header.text }}
@@ -17,7 +19,7 @@
 
         <div
           v-for="item in items"
-          v-if="items.length > 0"
+          v-if="items && items.length > 0"
           :key="item.id"
           class="table-row item-lista"
           @click="focusOnItem(item)"
@@ -25,18 +27,31 @@
           <div v-for="header in headers" :key="header.value" class="table-cell">
             {{ formatValue(item, header.value) }}
           </div>
+          <div class="actions">
+            <VButton
+              class="edit-btn"
+              rounded
+              icon
+              outlined
+              small
+              @click.stop="editItem(item)"
+              title="Edit"
+            >
+              <VIcon small name="edit" />
+            </VButton>
+          </div>
         </div>
-        <div v-else class="no-items-message">Nenhum item encontrado.</div>
+        <div v-else class="no-items-message">No items found.</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter } from 'vue-router';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 const props = defineProps({
   items: {
@@ -52,28 +67,33 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  fields: {
-    type: Array,
-    required: true,
+  title: {
+    type: String,
+    default: 'name',
   },
-  layoutOptions: {
-    type: Object,
-    default: () => ({}),
+  geolocation: {
+    type: String,
+    default: 'geolocation',
   },
+  coluna1: String,
+  coluna2: String,
+  coluna3: String,
+  coluna4: String,
+  coluna5: String,
 });
 
 const router = useRouter();
 const mapContainer = ref(null);
 const map = ref(null);
-const markers = ref(new Map());
+const markers = ref([]);
 
 const headers = computed(() => {
   const columns = [
-    props.layoutOptions.coluna1,
-    props.layoutOptions.coluna2,
-    props.layoutOptions.coluna3,
-    props.layoutOptions.coluna4,
-    props.layoutOptions.coluna5,
+    props.coluna1,
+    props.coluna2,
+    props.coluna3,
+    props.coluna4,
+    props.coluna5,
   ].filter(Boolean);
 
   return columns.map((column) => ({
@@ -82,190 +102,158 @@ const headers = computed(() => {
   }));
 });
 
-const local = props.layoutOptions.geolocation;
-
 const formatValue = (item, field) => {
   if (!item || !field) return '';
-
-  if (!item.hasOwnProperty(field)) {
-    console.warn(`Field "${field}" not found in item:`, item);
-    return '';
-  }
-
+  if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
   const value = item[field];
-  if (value === null || value === undefined) return '';
-  return value;
+  return value === null || value === undefined ? '' : value;
 };
 
-// Definição de ícone personalizado
-const createCustomIcon = () => {
-  return L.divIcon({
-    className: 'custom-map-marker',
-    html: `
-      <div class="marker-inner" style="
-        width: 30px;
-        height: 30px;
-        background-color: var(--theme--primary);
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      "></div>
-    `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15],
+// Initialize the map and calculate center/bounds based on items
+const initializeMap = () => {
+  if (!mapContainer.value) return;
+
+  map.value = new maplibregl.Map({
+    container: mapContainer.value,
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: [
+            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256,
+          attribution:
+            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        },
+      },
+      layers: [
+        {
+          id: 'osm',
+          type: 'raster',
+          source: 'osm',
+        },
+      ],
+    },
+    center: [0, 0], // Temporary initial center
+    zoom: 1, // Minimum initial zoom until bounds are adjusted
+  });
+
+  map.value.on('load', () => {
+    updateMarkers();
+    fitMapToMarkers();
+    console.log('Map loaded successfully');
+  });
+
+  map.value.on('error', (e) => {
+    console.error('Map error:', e);
   });
 };
 
-// Inicializar o geolocation
-const initializeMap = () => {
-  if (!mapContainer.value || map.value) return;
-
-  map.value = L.map(mapContainer.value).setView([-19.629323252716748, -40.32739397081107], 7);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(map.value);
-
-  // Forçar o geolocation a atualizar seu tamanho
-  setTimeout(() => {
-    map.value?.invalidateSize();
-  }, 100);
-};
-
-// Atualizar marcadores
+// Update markers with a custom icon
 const updateMarkers = () => {
   if (!map.value) return;
 
-  // Limpar marcadores existentes
-  markers.value.forEach((marker) => {
-    marker.remove();
-  });
-  markers.value.clear();
-
-  // Adicionar novos marcadores
-  props.items.forEach((item) => {
-    const coordinates = item[local]?.coordinates;
-
-    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-      console.warn(`Invalid coordinates for item ${item.id}:`, coordinates);
-      return;
-    }
-
-    const [longitude, latitude] = coordinates;
-
-    if (!isValidCoordinate(latitude, longitude)) {
-      console.warn(`Invalid latitude/longitude for item ${item.id}: ${latitude}, ${longitude}`);
-      return;
-    }
-
-    try {
-      const marker = L.marker([latitude, longitude], {
-        icon: createCustomIcon(),
-      }).addTo(map.value).bindPopup(`
-          <div class="marker-popup">
-            <strong>${item[props.layoutOptions.title] || 'Select a field as title'}</strong>
-          </div>
-        `);
-
-      markers.value.set(item.id, marker);
-    } catch (error) {
-      console.error(`Error creating marker for item ${item.id}:`, error);
-    }
-  });
-};
-
-//  Validar coordenadas
-const isValidCoordinate = (lat, lng) => {
-  return (
-    typeof lat === 'number' &&
-    typeof lng === 'number' &&
-    lat >= -90 &&
-    lat <= 90 &&
-    lng >= -180 &&
-    lng <= 180 &&
-    !isNaN(lat) &&
-    !isNaN(lng)
-  );
-};
-
-// Focar no item
-const focusOnItem = (item) => {
-  const coordinates = item[local]?.coordinates;
-  if (!coordinates || !map.value) return;
-
-  const [longitude, latitude] = coordinates;
-
-  if (!isValidCoordinate(latitude, longitude)) return;
-
-  // Primeiro, vamos parar qualquer animação em andamento
-  map.value.stop();
-
-  // Usar setView em vez de flyTo para garantir posicionamento consistente
-  map.value.setView([latitude, longitude], 15, {
-    animate: true,
-    duration: 0.5, // Reduzindo a duração da animação
-    easeLinearity: 1, // Movimento mais linear
-    noMoveStart: true, // Previne eventos de movimento indesejados
-  });
-
-  // Garantir que o geolocation está centralizado após a animação
-  setTimeout(() => {
-    map.value?.setView([latitude, longitude], 15, {
-      animate: false,
-    });
-
-    const marker = markers.value.get(item.id);
-    if (marker) {
-      marker.openPopup();
-    }
-  }, 100); // Um pouco mais que a duração da animação
-};
-
-// Observar alterações nos itens
-watch(() => props.items, updateMarkers, { deep: true });
-
-// Hooks de vida
-onMounted(() => {
-  if (!map.value) {
-    initializeMap();
-  }
-  updateMarkers();
-
-  // Adicionar evento de redimensionamento do geolocation
-  const resizeHandler = () => {
-    map.value?.invalidateSize();
-  };
-
-  window.addEventListener('resize', resizeHandler);
-});
-
-onUnmounted(() => {
-  // Remover marcadores e geolocation
   markers.value.forEach((marker) => marker.remove());
-  if (map.value) {
-    map.value.remove();
+  markers.value = [];
+
+  props.items.forEach((item) => {
+    const coords = item[props.geolocation]?.coordinates;
+    if (!coords || coords.length !== 2) {
+      console.log('Item with invalid coordinates:', item);
+      return;
+    }
+
+    const [longitude, latitude] = coords;
+
+    // Custom marker element
+    const markerElement = document.createElement('div');
+    markerElement.className = 'custom-marker';
+    markerElement.style.backgroundColor = 'var(--theme--primary)';
+    markerElement.style.width = '30px';
+    markerElement.style.height = '30px';
+    markerElement.style.borderRadius = '50%';
+    markerElement.style.border = '2px solid white';
+    markerElement.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.3)';
+    markerElement.style.cursor = 'pointer';
+
+    const marker = new maplibregl.Marker({ element: markerElement })
+      .setLngLat([longitude, latitude])
+      .setPopup(new maplibregl.Popup().setHTML(`<strong>${item[props.title] || item.id}</strong>`))
+      .addTo(map.value);
+
+    markers.value.push(marker);
+  });
+  console.log('Markers updated:', markers.value);
+};
+
+// Adjust the map to show all markers
+const fitMapToMarkers = () => {
+  if (!map.value || markers.value.length === 0) return;
+
+  const bounds = new maplibregl.LngLatBounds();
+  markers.value.forEach((marker) => {
+    bounds.extend(marker.getLngLat());
+  });
+
+  map.value.fitBounds(bounds, {
+    padding: 50, // Padding around points
+    maxZoom: 15, // Maximum zoom limit
+    duration: 1000,
+  });
+};
+
+const focusOnItem = (item) => {
+  if (!map.value || !item || !item[props.geolocation]?.coordinates) {
+    console.log('Unable to focus on item:', item);
+    return;
   }
 
-  // Remover o evento de redimensionamento
-  window.removeEventListener('resize', resizeHandler);
+  const [longitude, latitude] = item[props.geolocation].coordinates;
+  map.value.flyTo({
+    center: [longitude, latitude],
+    zoom: 15,
+    duration: 1000,
+  });
+};
+
+const resetMap = () => {
+  if (!map.value) {
+    console.log('Map not initialized');
+    return;
+  }
+  fitMapToMarkers(); // Reset to show all markers
+};
+
+// Open the item edit screen
+const editItem = (item) => {
+  router.push(`/content/${props.collection}/${item.id}`);
+};
+
+onMounted(() => {
+  initializeMap();
 });
 
-// Função para voltar à visualização inicial
-const resetMap = () => {
-  if (map.value) {
-    // Coordenada inicial e zoom
-    const initialLatLng = [-19.629323252716748, -40.32739397081107];
-    const initialZoom = 7;
+watch(
+  () => props.items,
+  () => {
+    updateMarkers();
+    fitMapToMarkers(); // Adjust map whenever items change
+  },
+  { deep: true }
+);
 
-    // Centralizar o geolocation na posição inicial
-    map.value.setView(initialLatLng, initialZoom, {
-      animate: true,
-      duration: 0.5, // Duração da animação
-    });
-  }
-};
+// Debug
+watch(
+  () => props.items,
+  (newItems) => {
+    console.log('Raw items:', newItems);
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -284,22 +272,33 @@ const resetMap = () => {
   height: 100%;
 }
 
-.map-container {
-  height: 50vh;
+.map-wrapper {
+  position: relative;
+  height: 60%;
   min-height: 300px;
+}
+
+.map-container {
+  height: 100%;
   width: 100%;
   border-radius: 8px;
-  overflow: hidden;
   border: 1px solid var(--background-normal-alt);
-  z-index: 1;
+}
+
+.reset-map-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 29;
 }
 
 .table-container {
-  flex: 1;
+  height: 40%;
   overflow-y: auto;
   background: var(--theme--background);
   border-radius: 8px;
   border: 1px solid var(--background-normal-alt);
+  position: relative;
 }
 
 .table-header {
@@ -313,7 +312,7 @@ const resetMap = () => {
 .table-header-item {
   flex: 1;
   padding: 12px 16px;
-  font-weight: 600;
+  font-weight: bold;
   background-color: var(--color-primary-light);
   color: var(--color-primary-dark);
   border-bottom: 2px solid var(--background-normal-alt);
@@ -327,6 +326,7 @@ const resetMap = () => {
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: background-color 0.2s ease;
+  position: relative;
 }
 
 .table-row:hover {
@@ -334,48 +334,28 @@ const resetMap = () => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
+.table-row:hover .edit-btn {
+  opacity: 1;
+}
+
 .table-cell {
   flex: 1;
   padding: 12px 16px;
 }
 
-.reset-map-btn {
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: var(--theme--primary);
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  transition: background-color 0.3s;
-  z-index: 29;
-}
-
-.reset-map-btn:hover {
-  background-color: var(--theme--primary-background);
-}
-
-.reset-map-btn:focus {
-  outline: none;
-}
-
-/* Marker popup styles */
-:global(.marker-popup) {
-  padding: 8px;
-  text-align: center;
-}
-
-:global(.leaflet-popup-content-wrapper) {
-  border-radius: 8px;
-}
-
-:global(.custom-map-marker) {
-  background: transparent;
-  border: none;
+  top: 0;
+  bottom: 0;
+  right: 0;
 }
 
 .no-items-message {
