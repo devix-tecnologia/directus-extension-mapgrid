@@ -1,7 +1,9 @@
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="map-container"></div>
-    <VButton class="reset-map-btn" @click="resetMap">Reset View</VButton>
+    <VButton class="reset-map-btn" icon @click="resetMap" title="Reset view"
+      ><VIcon name="zoom_out_map"
+    /></VButton>
   </div>
 </template>
 
@@ -25,13 +27,17 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['focus-on-item']);
-
 const mapContainer = ref(null);
 const map = ref(null);
-const markers = ref([]);
+const popups = ref([]); // Armazena os popups abertos
+const clusterMarkers = ref([]); // Armazena os marcadores de cluster com SVG
 
-// Initialize the map and calculate center/bounds based on items
+// Obtém a cor computada de var(--theme--primary)
+const getThemePrimaryColor = () => {
+  const style = getComputedStyle(document.documentElement);
+  return style.getPropertyValue('--theme--primary').trim() || '#007bff'; // Fallback para azul padrão
+};
+
 const initializeMap = () => {
   if (!mapContainer.value) return;
 
@@ -60,14 +66,110 @@ const initializeMap = () => {
         },
       ],
     },
-    center: [0, 0], // Temporary initial center
-    zoom: 1, // Minimum initial zoom until bounds are adjusted
+    center: [0, 0],
+    zoom: 1,
   });
 
   map.value.on('load', () => {
-    updateMarkers();
+    // Adiciona a fonte de dados com clustering
+    map.value.addSource('points', {
+      type: 'geojson',
+      data: generateGeoJson(),
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50,
+    });
+
+    // Camada para clusters (apenas visual de fundo)
+    map.value.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'points',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          getThemePrimaryColor(), // Menos de 10 pontos
+          10,
+          '#51bbd6', // 10-50 pontos
+          50,
+          '#f28cb1', // Mais de 50 pontos
+        ],
+        'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 50, 40],
+      },
+    });
+
+    // Camada para pontos individuais
+    map.value.addLayer({
+      id: 'unclustered-point',
+      type: 'circle',
+      source: 'points',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': getThemePrimaryColor(),
+        'circle-radius': 10,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff',
+      },
+    });
+
+    // Clique em pontos individuais para abrir popup
+    map.value.on('click', 'unclustered-point', (e) => {
+      const coordinates = e.features[0].geometry.coordinates.slice();
+      const title = e.features[0].properties.title;
+
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+
+      const popup = new maplibregl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(`<strong>${title}</strong>`)
+        .addTo(map.value);
+
+      popups.value.push(popup);
+    });
+
+    // Cursor pointer ao passar sobre pontos individuais
+    map.value.on('mouseenter', 'unclustered-point', () => {
+      map.value.getCanvas().style.cursor = 'pointer';
+    });
+    map.value.on('mouseleave', 'unclustered-point', () => {
+      map.value.getCanvas().style.cursor = '';
+    });
+
+    // Clique em cluster para expandir
+    map.value.on('click', 'clusters', (e) => {
+      const features = map.value.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+      const clusterId = features[0].properties.cluster_id;
+      map.value
+        .getSource('points')
+        .getClusterExpansionZoom(clusterId)
+        .then((zoom) => {
+          map.value.easeTo({
+            center: features[0].geometry.coordinates,
+            zoom: zoom,
+          });
+        });
+    });
+
+    // Cursor pointer ao passar sobre clusters
+    map.value.on('mouseenter', 'clusters', () => {
+      map.value.getCanvas().style.cursor = 'pointer';
+    });
+    map.value.on('mouseleave', 'clusters', () => {
+      map.value.getCanvas().style.cursor = '';
+    });
+
+    updateClusterMarkers();
     fitMapToMarkers();
     console.log('Map loaded successfully');
+  });
+
+  // Atualiza clusters ao mudar o zoom ou mover o mapa
+  map.value.on('moveend', () => {
+    updateClusterMarkers();
   });
 
   map.value.on('error', (e) => {
@@ -75,65 +177,75 @@ const initializeMap = () => {
   });
 };
 
-// Update markers with a custom icon
-const updateMarkers = () => {
-  if (!map.value) return;
-
-  markers.value.forEach((marker) => marker.remove());
-  markers.value = [];
-
-  props.items.forEach((item) => {
-    const coords = item[props.geolocation]?.coordinates;
-    if (!coords || coords.length !== 2) {
-      console.log('Item with invalid coordinates:', item);
-      return;
-    }
-
-    const [longitude, latitude] = coords;
-
-    const markerElement = document.createElement('div');
-    markerElement.className = 'custom-marker';
-    markerElement.style.backgroundColor = 'var(--theme--primary)';
-    markerElement.style.width = '30px';
-    markerElement.style.height = '30px';
-    markerElement.style.borderRadius = '50%';
-    markerElement.style.border = '2px solid white';
-    markerElement.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.3)';
-    markerElement.style.cursor = 'pointer';
-
-    const marker = new maplibregl.Marker({ element: markerElement })
-      .setLngLat([longitude, latitude])
-      .setPopup(new maplibregl.Popup().setHTML(`<strong>${item[props.title] || item.id}</strong>`))
-      .addTo(map.value);
-
-    markers.value.push(marker);
-  });
-  console.log('Markers updated:', markers.value);
+// Gera GeoJSON a partir dos itens
+const generateGeoJson = () => {
+  const geojson = {
+    type: 'FeatureCollection',
+    features: props.items
+      .map((item) => {
+        const coords = item[props.geolocation]?.coordinates;
+        if (!coords || coords.length !== 2) {
+          console.log('Item with invalid coordinates:', item);
+          return null;
+        }
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [coords[0], coords[1]], // [longitude, latitude]
+          },
+          properties: {
+            id: item.id,
+            title: item[props.title] || item.id,
+          },
+        };
+      })
+      .filter((feature) => feature !== null),
+  };
+  // console.log('Generated GeoJSON:', geojson);
+  return geojson;
 };
 
-// Adjust the map to show all markers
+// Ajusta o mapa para mostrar todos os pontos
 const fitMapToMarkers = () => {
-  if (!map.value || markers.value.length === 0) return;
+  if (!map.value || props.items.length === 0) return;
 
   const bounds = new maplibregl.LngLatBounds();
-  markers.value.forEach((marker) => {
-    bounds.extend(marker.getLngLat());
+  props.items.forEach((item) => {
+    const coords = item[props.geolocation]?.coordinates;
+    if (coords && coords.length === 2) {
+      bounds.extend([coords[0], coords[1]]); // [longitude, latitude]
+    }
   });
 
-  map.value.fitBounds(bounds, {
-    padding: 50,
-    maxZoom: 15,
-    duration: 1000,
-  });
+  if (!bounds.isEmpty()) {
+    map.value.fitBounds(bounds, {
+      padding: 50,
+      maxZoom: 15,
+      duration: 1000,
+    });
+  }
 };
 
 const focusOnItem = (item) => {
   if (!map.value || !item || !item[props.geolocation]?.coordinates) {
-    console.log('Unable to focus on item:', item);
+    // console.log('Unable to focus on item:', item);
     return;
   }
 
   const [longitude, latitude] = item[props.geolocation].coordinates;
+
+  // Fecha todos os popups existentes
+  closeAllPopups();
+
+  // Cria e abre um novo popup para o item focado
+  const popup = new maplibregl.Popup()
+    .setLngLat([longitude, latitude])
+    .setHTML(`<strong>${item[props.title] || item.id}</strong>`)
+    .addTo(map.value);
+
+  popups.value.push(popup);
+
   map.value.flyTo({
     center: [longitude, latitude],
     zoom: 15,
@@ -146,7 +258,69 @@ const resetMap = () => {
     console.log('Map not initialized');
     return;
   }
+  closeAllPopups(); // Fecha todos os popups ao resetar
   fitMapToMarkers();
+};
+
+// Fecha todos os popups abertos
+const closeAllPopups = () => {
+  popups.value.forEach((popup) => popup.remove());
+  popups.value = [];
+};
+
+// Atualiza os marcadores e clusters com contagem
+const updateClusterMarkers = () => {
+  if (!map.value || !map.value.isStyleLoaded()) return;
+
+  const source = map.value.getSource('points');
+  if (!source) return;
+
+  source.setData(generateGeoJson());
+
+  // Remove marcadores de cluster existentes
+  clusterMarkers.value.forEach((marker) => marker.remove());
+  clusterMarkers.value = [];
+
+  // Obtém os clusters renderizados
+  const clusters = map.value.querySourceFeatures('points', { filter: ['has', 'point_count'] });
+  console.log('Clusters found:', clusters);
+
+  clusters.forEach((cluster) => {
+    const pointCount = cluster.properties.point_count;
+    const coordinates = cluster.geometry.coordinates;
+
+    // Cria um SVG para o número do cluster
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '40');
+    svg.setAttribute('height', '40');
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', '50%');
+    text.setAttribute('y', '50%');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('fill', '#fff');
+    text.setAttribute('font-size', '14');
+    text.setAttribute('font-family', 'Arial');
+    text.textContent = pointCount.toString();
+    svg.appendChild(text);
+
+    const markerElement = document.createElement('div');
+    markerElement.appendChild(svg);
+    markerElement.style.width = '40px';
+    markerElement.style.height = '40px';
+    markerElement.style.pointerEvents = 'none'; // Evita interferência com eventos do mapa
+
+    const marker = new maplibregl.Marker({
+      element: markerElement,
+      offset: [0, 0],
+    })
+      .setLngLat(coordinates)
+      .addTo(map.value);
+
+    clusterMarkers.value.push(marker);
+  });
+
+  map.value.setPaintProperty('unclustered-point', 'circle-color', getThemePrimaryColor());
 };
 
 onMounted(() => {
@@ -156,7 +330,7 @@ onMounted(() => {
 watch(
   () => props.items,
   () => {
-    updateMarkers();
+    updateClusterMarkers();
     fitMapToMarkers();
   },
   { deep: true }
