@@ -46,7 +46,7 @@
     "type": "layout",
     "path": "dist/index.js",
     "source": "src/index.ts",
-    "host": "^10.10.0",
+    "host": "^11.4.1",
     "sandbox": {
       "enabled": true,
       "requestedScopes": {}
@@ -72,6 +72,7 @@
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.1",
     "@semantic-release/npm": "^12.0.1",
+    "@types/maplibre-gl": "^1.14.0",
     "@typescript-eslint/eslint-plugin": "^8.24.1",
     "@typescript-eslint/parser": "^8.24.1",
     "@vue/eslint-config-typescript": "^14.4.0",
@@ -89,8 +90,7 @@
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",
-    "@types/leaflet": "^1.9.16",
-    "leaflet": "^1.9.4"
+    "maplibre-gl": "^5.1.0"
   },
   "prettier": {
     "singleQuote": true,

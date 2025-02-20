@@ -21,7 +21,7 @@ This project is a Layout-type extension for Directus, designed for viewing conte
 > [!IMPORTANT]
 > _The docker-compose used in this project is configured to allow iframes from any domain. In production, you should only allow trusted domains._
 >
-> Additionally, for the map to function properly, ensure the following CSP (Content Security Policy) settings are correctly configured:
+> In the previous version, the Leaflet map was used. For it to work properly, the following CSP (Content Security Policy) settings must be configured correctly (this is no longer necessary in the current version that uses Maplibre-gl, but here's a note):
 
 ```yaml
 CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "*" # allows iframes from any domain
