@@ -1,9 +1,9 @@
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="map-container"></div>
-    <VButton class="reset-map-btn" icon @click="resetMap" title="Reset view"
-      ><VIcon name="zoom_out_map"
-    /></VButton>
+    <VButton class="reset-map-btn" icon @click="resetMap" title="Reset view">
+      <VIcon name="zoom_out_map" />
+    </VButton>
   </div>
 </template>
 
@@ -36,6 +36,33 @@ const clusterMarkers = ref([]); // Armazena os marcadores de cluster com SVG
 const getThemePrimaryColor = () => {
   const style = getComputedStyle(document.documentElement);
   return style.getPropertyValue('--theme--primary').trim() || '#007bff'; // Fallback para azul padrão
+};
+
+// Interpreta o template de título para um item
+const getFormattedTitle = (item) => {
+  if (!props.title) return item.id;
+  let formatted = props.title;
+  const matches = formatted.match(/\{\{([^}]+)\}\}/g) || [];
+  matches.forEach((match) => {
+    const field = match.slice(2, -2); // Remove {{ e }}
+    let value = item[field] || '';
+    // Trata valores que são objetos
+    if (value && typeof value === 'object') {
+      if (Array.isArray(value)) {
+        // Se for array (ex.: coordinates), usa como string
+        value = value.join(', ');
+      } else if ('coordinates' in value) {
+        // Caso especial para geolocation com coordinates
+        value = `${value.coordinates[1]}, ${value.coordinates[0]}`; // lat, lng
+      } else {
+        // Pega a primeira propriedade do objeto como fallback
+        const firstProp = Object.values(value)[0];
+        value = firstProp !== undefined ? String(firstProp) : '[Object]';
+      }
+    }
+    formatted = formatted.replace(match, value);
+  });
+  return formatted.trim() || item.id; // Usa ID como fallback se vazio
 };
 
 const initializeMap = () => {
@@ -80,7 +107,7 @@ const initializeMap = () => {
       clusterRadius: 50,
     });
 
-    // Camada para clusters (apenas visual de fundo)
+    // Camada para clusters (com suas cores atualizadas)
     map.value.addLayer({
       id: 'clusters',
       type: 'circle',
@@ -92,9 +119,9 @@ const initializeMap = () => {
           ['get', 'point_count'],
           getThemePrimaryColor(), // Menos de 10 pontos
           10,
-          '#51bbd6', // 10-50 pontos
+          '#51bbd6c0', // 10-50 pontos
           50,
-          '#f28cb1', // Mais de 50 pontos
+          '#f28cb1cf', // Mais de 50 pontos
         ],
         'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 50, 40],
       },
@@ -117,7 +144,7 @@ const initializeMap = () => {
     // Clique em pontos individuais para abrir popup
     map.value.on('click', 'unclustered-point', (e) => {
       const coordinates = e.features[0].geometry.coordinates.slice();
-      const title = e.features[0].properties.title;
+      const title = e.features[0].properties.formattedTitle;
 
       while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
         coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
@@ -177,7 +204,7 @@ const initializeMap = () => {
   });
 };
 
-// Gera GeoJSON a partir dos itens
+// Gera GeoJSON a partir dos itens com título formatado
 const generateGeoJson = () => {
   const geojson = {
     type: 'FeatureCollection',
@@ -196,13 +223,13 @@ const generateGeoJson = () => {
           },
           properties: {
             id: item.id,
-            title: item[props.title] || item.id,
+            formattedTitle: getFormattedTitle(item), // Usa título formatado
           },
         };
       })
       .filter((feature) => feature !== null),
   };
-  // console.log('Generated GeoJSON:', geojson);
+  console.log('Generated GeoJSON:', geojson);
   return geojson;
 };
 
@@ -229,7 +256,7 @@ const fitMapToMarkers = () => {
 
 const focusOnItem = (item) => {
   if (!map.value || !item || !item[props.geolocation]?.coordinates) {
-    // console.log('Unable to focus on item:', item);
+    console.log('Unable to focus on item:', item);
     return;
   }
 
@@ -241,7 +268,7 @@ const focusOnItem = (item) => {
   // Cria e abre um novo popup para o item focado
   const popup = new maplibregl.Popup()
     .setLngLat([longitude, latitude])
-    .setHTML(`<strong>${item[props.title] || item.id}</strong>`)
+    .setHTML(`<strong>${getFormattedTitle(item)}</strong>`) // Usa título formatado
     .addTo(map.value);
 
   popups.value.push(popup);

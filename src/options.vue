@@ -1,14 +1,7 @@
 <template>
   <div class="field">
     <div class="type-label">Title Pin Map</div>
-    <v-select
-      v-model="title"
-      :collection="collection"
-      :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-      item-text="name"
-      item-value="field"
-      placeholder="Select a field"
-    />
+    <v-collection-field-template v-model="title" :collection="collection" />
   </div>
   <div class="field">
     <div class="type-label">Geolocation</div>
@@ -98,7 +91,7 @@ export default defineComponent({
     collection: { type: String, required: true },
     layoutOptions: { type: Object as () => LayoutOptions, required: true },
     fieldsInCollection: { type: Array, required: true },
-    title: { type: String, default: null },
+    title: { type: String, default: '' },
     geolocation: { type: String, default: null },
     coluna1: { type: String, default: null },
     coluna2: { type: String, default: null },
@@ -186,16 +179,12 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.options-container {
-  padding: 16px;
-  width: 100%;
-  display: block;
-}
 .field {
   margin-bottom: 16px;
   width: 100%;
   display: block;
 }
+
 .type-label {
   font-weight: bold;
   margin-bottom: 4px;
