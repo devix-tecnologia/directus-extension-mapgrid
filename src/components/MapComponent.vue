@@ -25,44 +25,44 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  zoomOnClick: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const emit = defineEmits(['select-item']);
 
 const mapContainer = ref(null);
 const map = ref(null);
-const popups = ref([]); // Armazena os popups abertos
-const clusterMarkers = ref([]); // Armazena os marcadores de cluster com SVG
+const popups = ref([]);
+const clusterMarkers = ref([]);
 
-// Obtém a cor computada de var(--theme--primary)
 const getThemePrimaryColor = () => {
   const style = getComputedStyle(document.documentElement);
-  return style.getPropertyValue('--theme--primary').trim() || '#007bff'; // Fallback para azul padrão
+  return style.getPropertyValue('--theme--primary').trim() || '#007bff';
 };
 
-// Interpreta o template de título para um item
 const getFormattedTitle = (item) => {
   if (!props.title) return item.id;
   let formatted = props.title;
   const matches = formatted.match(/\{\{([^}]+)\}\}/g) || [];
   matches.forEach((match) => {
-    const field = match.slice(2, -2); // Remove {{ e }}
+    const field = match.slice(2, -2);
     let value = item[field] || '';
-    // Trata valores que são objetos
     if (value && typeof value === 'object') {
       if (Array.isArray(value)) {
-        // Se for array (ex.: coordinates), usa como string
         value = value.join(', ');
       } else if ('coordinates' in value) {
-        // Caso especial para geolocation com coordinates
-        value = `${value.coordinates[1]}, ${value.coordinates[0]}`; // lat, lng
+        value = `${value.coordinates[1]}, ${value.coordinates[0]}`;
       } else {
-        // Pega a primeira propriedade do objeto como fallback
         const firstProp = Object.values(value)[0];
         value = firstProp !== undefined ? String(firstProp) : '[Object]';
       }
     }
     formatted = formatted.replace(match, value);
   });
-  return formatted.trim() || item.id; // Usa ID como fallback se vazio
+  return formatted.trim() || item.id;
 };
 
 const initializeMap = () => {
@@ -98,7 +98,6 @@ const initializeMap = () => {
   });
 
   map.value.on('load', () => {
-    // Adiciona a fonte de dados com clustering
     map.value.addSource('points', {
       type: 'geojson',
       data: generateGeoJson(),
@@ -107,7 +106,6 @@ const initializeMap = () => {
       clusterRadius: 50,
     });
 
-    // Camada para clusters (com suas cores atualizadas)
     map.value.addLayer({
       id: 'clusters',
       type: 'circle',
@@ -117,17 +115,16 @@ const initializeMap = () => {
         'circle-color': [
           'step',
           ['get', 'point_count'],
-          getThemePrimaryColor(), // Menos de 10 pontos
+          getThemePrimaryColor(),
           10,
-          '#51bbd6c0', // 10-50 pontos
+          '#51bbd6c0',
           50,
-          '#f28cb1cf', // Mais de 50 pontos
+          '#f28cb1cf',
         ],
         'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 50, 40],
       },
     });
 
-    // Camada para pontos individuais
     map.value.addLayer({
       id: 'unclustered-point',
       type: 'circle',
@@ -141,24 +138,25 @@ const initializeMap = () => {
       },
     });
 
-    // Clique em pontos individuais para abrir popup
     map.value.on('click', 'unclustered-point', (e) => {
       const coordinates = e.features[0].geometry.coordinates.slice();
       const title = e.features[0].properties.formattedTitle;
+      const id = e.features[0].properties.id;
 
       while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
         coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
       }
 
+      closeAllPopups();
       const popup = new maplibregl.Popup()
         .setLngLat(coordinates)
         .setHTML(`<strong>${title}</strong>`)
         .addTo(map.value);
-
       popups.value.push(popup);
+
+      emit('select-item', id);
     });
 
-    // Cursor pointer ao passar sobre pontos individuais
     map.value.on('mouseenter', 'unclustered-point', () => {
       map.value.getCanvas().style.cursor = 'pointer';
     });
@@ -166,7 +164,6 @@ const initializeMap = () => {
       map.value.getCanvas().style.cursor = '';
     });
 
-    // Clique em cluster para expandir
     map.value.on('click', 'clusters', (e) => {
       const features = map.value.queryRenderedFeatures(e.point, { layers: ['clusters'] });
       const clusterId = features[0].properties.cluster_id;
@@ -181,7 +178,6 @@ const initializeMap = () => {
         });
     });
 
-    // Cursor pointer ao passar sobre clusters
     map.value.on('mouseenter', 'clusters', () => {
       map.value.getCanvas().style.cursor = 'pointer';
     });
@@ -194,7 +190,6 @@ const initializeMap = () => {
     console.log('Map loaded successfully');
   });
 
-  // Atualiza clusters ao mudar o zoom ou mover o mapa
   map.value.on('moveend', () => {
     updateClusterMarkers();
   });
@@ -204,7 +199,6 @@ const initializeMap = () => {
   });
 };
 
-// Gera GeoJSON a partir dos itens com título formatado
 const generateGeoJson = () => {
   const geojson = {
     type: 'FeatureCollection',
@@ -219,11 +213,11 @@ const generateGeoJson = () => {
           type: 'Feature',
           geometry: {
             type: 'Point',
-            coordinates: [coords[0], coords[1]], // [longitude, latitude]
+            coordinates: [coords[0], coords[1]],
           },
           properties: {
             id: item.id,
-            formattedTitle: getFormattedTitle(item), // Usa título formatado
+            formattedTitle: getFormattedTitle(item),
           },
         };
       })
@@ -233,7 +227,6 @@ const generateGeoJson = () => {
   return geojson;
 };
 
-// Ajusta o mapa para mostrar todos os pontos
 const fitMapToMarkers = () => {
   if (!map.value || props.items.length === 0) return;
 
@@ -241,7 +234,7 @@ const fitMapToMarkers = () => {
   props.items.forEach((item) => {
     const coords = item[props.geolocation]?.coordinates;
     if (coords && coords.length === 2) {
-      bounds.extend([coords[0], coords[1]]); // [longitude, latitude]
+      bounds.extend([coords[0], coords[1]]);
     }
   });
 
@@ -262,22 +255,23 @@ const focusOnItem = (item) => {
 
   const [longitude, latitude] = item[props.geolocation].coordinates;
 
-  // Fecha todos os popups existentes
   closeAllPopups();
 
-  // Cria e abre um novo popup para o item focado
   const popup = new maplibregl.Popup()
     .setLngLat([longitude, latitude])
-    .setHTML(`<strong>${getFormattedTitle(item)}</strong>`) // Usa título formatado
+    .setHTML(`<strong>${getFormattedTitle(item)}</strong>`)
     .addTo(map.value);
-
   popups.value.push(popup);
 
-  map.value.flyTo({
-    center: [longitude, latitude],
-    zoom: 15,
-    duration: 1000,
-  });
+  if (props.zoomOnClick) {
+    map.value.flyTo({
+      center: [longitude, latitude],
+      zoom: 15,
+      duration: 1000,
+    });
+  }
+
+  emit('select-item', item.id);
 };
 
 const resetMap = () => {
@@ -285,17 +279,15 @@ const resetMap = () => {
     console.log('Map not initialized');
     return;
   }
-  closeAllPopups(); // Fecha todos os popups ao resetar
+  // closeAllPopups();
   fitMapToMarkers();
 };
 
-// Fecha todos os popups abertos
 const closeAllPopups = () => {
   popups.value.forEach((popup) => popup.remove());
   popups.value = [];
 };
 
-// Atualiza os marcadores e clusters com contagem
 const updateClusterMarkers = () => {
   if (!map.value || !map.value.isStyleLoaded()) return;
 
@@ -304,11 +296,9 @@ const updateClusterMarkers = () => {
 
   source.setData(generateGeoJson());
 
-  // Remove marcadores de cluster existentes
   clusterMarkers.value.forEach((marker) => marker.remove());
   clusterMarkers.value = [];
 
-  // Obtém os clusters renderizados
   const clusters = map.value.querySourceFeatures('points', { filter: ['has', 'point_count'] });
   console.log('Clusters found:', clusters);
 
@@ -316,7 +306,6 @@ const updateClusterMarkers = () => {
     const pointCount = cluster.properties.point_count;
     const coordinates = cluster.geometry.coordinates;
 
-    // Cria um SVG para o número do cluster
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('width', '40');
     svg.setAttribute('height', '40');
@@ -335,7 +324,7 @@ const updateClusterMarkers = () => {
     markerElement.appendChild(svg);
     markerElement.style.width = '40px';
     markerElement.style.height = '40px';
-    markerElement.style.pointerEvents = 'none'; // Evita interferência com eventos do mapa
+    markerElement.style.pointerEvents = 'none';
 
     const marker = new maplibregl.Marker({
       element: markerElement,
