@@ -11,6 +11,7 @@ export interface LayoutOptions {
   fields?: string[];
   title?: string;
   geolocation?: string;
+  zoomOnClick?: boolean;
   coluna1?: string;
   coluna2?: string;
   coluna3?: string;

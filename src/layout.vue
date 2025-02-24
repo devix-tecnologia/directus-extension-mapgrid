@@ -5,8 +5,16 @@
     </div>
 
     <div v-else class="layout-container">
-      <MapComponent ref="mapRef" :items="items" :geolocation="geolocation" :title="title" />
+      <MapComponent
+        ref="mapComponent"
+        :items="items"
+        :geolocation="geolocation"
+        :title="title"
+        :zoom-on-click="zoomOnClick"
+        @select-item="handleSelectItem"
+      />
       <TableComponent
+        ref="tableComponent"
         :items="items"
         :headers="headers"
         :collection="collection"
@@ -50,10 +58,15 @@ const props = defineProps({
   coluna3: String,
   coluna4: String,
   coluna5: String,
+  zoomOnClick: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const router = useRouter();
-const mapRef = ref(null);
+const mapComponent = ref(null);
+const tableComponent = ref(null);
 
 const headers = computed(() => {
   const columns = [
@@ -71,8 +84,14 @@ const headers = computed(() => {
 });
 
 const handleFocusOnItem = (item) => {
-  if (mapRef.value && mapRef.value.focusOnItem) {
-    mapRef.value.focusOnItem(item);
+  if (mapComponent.value) {
+    mapComponent.value.focusOnItem(item);
+  }
+};
+
+const handleSelectItem = (id) => {
+  if (tableComponent.value) {
+    tableComponent.value.selectItem(id);
   }
 };
 

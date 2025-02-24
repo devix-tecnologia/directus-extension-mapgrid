@@ -11,6 +11,7 @@
       v-if="items && items.length > 0"
       :key="item.id"
       class="table-row item-lista"
+      :class="{ selected: selectedItemId === item.id }"
       @click="emit('focus-on-item', item)"
     >
       <div v-for="header in headers" :key="header.value" class="table-cell">
@@ -35,6 +36,8 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
+
 const props = defineProps({
   items: {
     type: Array,
@@ -52,12 +55,22 @@ const props = defineProps({
 
 const emit = defineEmits(['focus-on-item', 'edit-item']);
 
+const selectedItemId = ref(null); // Estado para o item selecionado
+
 const formatValue = (item, field) => {
   if (!item || !field) return '';
   if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
   const value = item[field];
   return value === null || value === undefined ? '' : value;
 };
+
+// Função para selecionar um item
+const selectItem = (id) => {
+  selectedItemId.value = id;
+};
+
+// Expor a função para o componente pai
+defineExpose({ selectItem });
 </script>
 
 <style scoped>
@@ -105,6 +118,11 @@ const formatValue = (item, field) => {
 
 .table-row:hover .edit-btn {
   opacity: 1;
+}
+
+.table-row.selected {
+  background-color: var(--theme--primary-background);
+  border-left: 4px solid var(--theme--primary);
 }
 
 .table-cell {
