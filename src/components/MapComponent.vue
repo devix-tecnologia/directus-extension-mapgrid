@@ -103,7 +103,7 @@ const initializeMap = () => {
       data: generateGeoJson(),
       cluster: true,
       clusterMaxZoom: 14,
-      clusterRadius: 50,
+      clusterRadius: 20,
     });
 
     map.value.addLayer({
@@ -264,11 +264,32 @@ const focusOnItem = (item) => {
   popups.value.push(popup);
 
   if (props.zoomOnClick) {
+    // Faz zoom no marcador se zoomOnClick for true
     map.value.flyTo({
       center: [longitude, latitude],
       zoom: 15,
       duration: 1000,
     });
+  } else {
+    // Apenas destaca o marcador se zoomOnClick for false
+    const bounds = map.value.getBounds();
+    if (
+      longitude < bounds.getWest() ||
+      longitude > bounds.getEast() ||
+      latitude < bounds.getSouth() ||
+      latitude > bounds.getNorth()
+    ) {
+      // Move o mapa para enquadrar o ponto sem zoom
+      map.value.easeTo({
+        center: [longitude, latitude],
+        duration: 1000,
+      });
+    }
+    // Destaque temporário no marcador
+    map.value.setPaintProperty('unclustered-point', 'circle-stroke-width', 4);
+    setTimeout(() => {
+      map.value.setPaintProperty('unclustered-point', 'circle-stroke-width', 2);
+    }, 1000);
   }
 
   emit('select-item', item.id);

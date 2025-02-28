@@ -1,34 +1,37 @@
 <template>
-  <div class="table-container">
+  <div class="table-container" ref="tableContainer">
     <div class="table-header">
       <div v-for="header in headers" :key="header.value" class="table-header-item">
         {{ header.text }}
       </div>
     </div>
 
-    <div
-      v-for="item in items"
-      v-if="items && items.length > 0"
-      :key="item.id"
-      class="table-row item-lista"
-      :class="{ selected: selectedItemId === item.id }"
-      @click="emit('focus-on-item', item)"
-    >
-      <div v-for="header in headers" :key="header.value" class="table-cell">
-        {{ formatValue(item, header.value) }}
-      </div>
-      <div class="actions">
-        <VButton
-          class="edit-btn"
-          rounded
-          icon
-          outlined
-          small
-          @click.stop="emit('edit-item', item)"
-          title="Edit"
-        >
-          <VIcon small name="edit" />
-        </VButton>
+    <div v-if="items && items.length > 0">
+      <div
+        v-for="item in items"
+        :key="item.id"
+        ref="tableRows"
+        :data-id="item.id"
+        class="table-row item-lista"
+        :class="{ selected: selectedItemId === item.id }"
+        @click="emit('focus-on-item', item)"
+      >
+        <div v-for="header in headers" :key="header.value" class="table-cell">
+          {{ formatValue(item, header.value) }}
+        </div>
+        <div class="actions">
+          <VButton
+            class="edit-btn"
+            rounded
+            icon
+            outlined
+            small
+            @click.stop="emit('edit-item', item)"
+            title="Edit"
+          >
+            <VIcon small name="edit" />
+          </VButton>
+        </div>
       </div>
     </div>
     <div v-else class="no-items-message">No items found.</div>
@@ -36,7 +39,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 
 const props = defineProps({
   items: {
@@ -56,6 +59,9 @@ const props = defineProps({
 const emit = defineEmits(['focus-on-item', 'edit-item']);
 
 const selectedItemId = ref(null); // Estado para o item selecionado
+const tableRows = ref(null); // Referência às linhas da tabela
+const tableContainer = ref(null); // Referência ao container da tabela
+let lastSelectedIndex = ref(-1); // Último índice selecionado
 
 const formatValue = (item, field) => {
   if (!item || !field) return '';
@@ -64,9 +70,46 @@ const formatValue = (item, field) => {
   return value === null || value === undefined ? '' : value;
 };
 
-// Função para selecionar um item
+// Função para selecionar um item e rolar até ele
 const selectItem = (id) => {
+  console.log('Selecting item with ID:', id);
+  const newIndex = props.items.findIndex((item) => item.id === id);
+  console.log('New index:', newIndex, 'Last index:', lastSelectedIndex.value);
+
   selectedItemId.value = id;
+
+  nextTick(() => {
+    setTimeout(() => {
+      if (tableRows.value && tableContainer.value) {
+        const selectedRow = Array.isArray(tableRows.value)
+          ? tableRows.value.find((row) => row.getAttribute('data-id') === id.toString())
+          : tableRows.value;
+
+        if (selectedRow) {
+          console.log('Found selected row:', selectedRow);
+
+          const container = tableContainer.value;
+          const rowRect = selectedRow.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+
+          // Calcula a posição do scroll para centralizar o item
+          const scrollOffset =
+            selectedRow.offsetTop - container.clientHeight / 2 + selectedRow.clientHeight / 2;
+
+          container.scrollTo({
+            top: scrollOffset,
+            behavior: 'smooth',
+          });
+
+          lastSelectedIndex.value = newIndex;
+        } else {
+          console.log('Selected row not found for ID:', id);
+        }
+      } else {
+        console.log('No table rows or container found');
+      }
+    }, 50);
+  });
 };
 
 // Expor a função para o componente pai
