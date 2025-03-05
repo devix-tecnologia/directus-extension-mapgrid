@@ -29,7 +29,7 @@ services:
             - directus-network
 
     directus:     
-        image: directus/directus:11.4.1
+        image: directus/directus:11.5.1
         environment:
           KEY: "255d861b-5ea1-5996-9aa3-922530ec40b1"
           SECRET: "6116487b-cda1-52c2-b5b5-c8022c45e263"
@@ -52,7 +52,7 @@ services:
 
           PUBLIC_URL: "http://localhost:8055"
           CACHE_ENABLED: "false"  # Cache desabilitado
-          ASSETS_CONTENT_SECURITY_POLICY_DIRECTIVES__MEDIA_SRC: array:'self',http://localhost:3000/   
+        #   ASSETS_CONTENT_SECURITY_POLICY_DIRECTIVES__MEDIA_SRC: array:'self',http://localhost:3000/    
         #   CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "*" # usar isso apenas em desenvolvimento.   
 
         #   CONTENT_SECURITY_POLICY_DIRECTIVES__IMG_SRC: "self http://0.0.0.0:8055 https: https://*.tile.openstreetmap.org data:"

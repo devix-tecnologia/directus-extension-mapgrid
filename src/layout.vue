@@ -105,14 +105,14 @@ const editItem = (item) => {
   height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  /* padding: 16px; */
   position: relative;
 }
 
 .layout-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  /* gap: 16px; */
   height: 100%;
 }
 
