@@ -117,11 +117,27 @@ defineExpose({ selectItem });
 </script>
 
 <style scoped>
+/* Works on Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent important;
+}
+
+*::-webkit-scrollbar-track {
+  /* background: var(--white-color); */
+  background-color: transparent !important;
+  display: none;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--theme--primary);
+  border-radius: 20px;
+}
+
 .table-container {
   height: 40%;
   overflow-y: auto;
   background: var(--theme--background);
-  border-radius: 8px;
   border: 1px solid var(--background-normal-alt);
   position: relative;
 }
