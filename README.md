@@ -18,21 +18,9 @@ This project is a Layout-type extension for Directus, designed for viewing conte
  docker compose up
 ```
 
-> [!IMPORTANT]
-> _The docker-compose used in this project is configured to allow iframes from any domain. In production, you should only allow trusted domains._
->
-> In the previous version, the Leaflet map was used. For it to work properly, the following CSP (Content Security Policy) settings must be configured correctly (this is no longer necessary in the current version that uses Maplibre-gl, but here's a note):
-
-```yaml
-CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "*" # allows iframes from any domain
-CONTENT_SECURITY_POLICY_DIRECTIVES__IMG_SRC: "self http://0.0.0.0:8055 https: https://*.tile.openstreetmap.org data:" # allows map images
-DIRECTUS_HTTP_HEADERS__CONTENT_SECURITY_POLICY: "default-src *; img-src * 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *" # sets a global security policy for your application via the Content-Security-Policy HTTP header
-```
-
 ## 📌 Important Links
 
 - [Directus Quickstart](https://docs.directus.io/getting-started/quickstart.html) (under the Docker Installation tab)
 - [How to Create an Extension](https://docs.directus.io/extensions/creating-extensions.html)
 - [Access Directus Services](https://docs.directus.io/extensions/services/introduction.html)
 - [Access Stored Collection Items](https://docs.directus.io/extensions/services/accessing-items.html)
-
