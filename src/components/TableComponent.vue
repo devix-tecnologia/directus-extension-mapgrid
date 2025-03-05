@@ -146,7 +146,7 @@ defineExpose({ selectItem });
   display: flex;
   position: sticky;
   top: 0;
-  background-color: var(--theme--background);
+  background-color: var(--background-normal-alt);
   z-index: 1;
 }
 
