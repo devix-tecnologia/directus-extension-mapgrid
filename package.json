@@ -30,8 +30,8 @@
     "url": "https://github.com/devix-tecnologia/directus-extension-mapgrid"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=10.0.0"
+    "node": ">=22.13.1",
+    "pnpm": ">=10.15.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -58,6 +58,7 @@
   "scripts": {
     "build": "directus-extension build",
     "dev": "directus-extension build -w --no-minify",
+    "validate": "directus-extension validate",
     "link": "directus-extension link",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,vue}\"",
@@ -66,31 +67,30 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@directus/extensions-sdk": "^13.0.3",
-    "@directus/types": "^13.0.0",
-    "@eslint/js": "^9.21.0",
+    "@directus/extensions-sdk": "^16.0.2",
+    "@directus/types": "^13.2.3",
+    "@eslint/js": "^9.36.0",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.1",
-    "@semantic-release/npm": "^12.0.1",
-    "@types/maplibre-gl": "^1.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.26.0",
-    "@typescript-eslint/parser": "^8.26.0",
-    "@vue/eslint-config-typescript": "^14.4.0",
-    "eslint": "^9.21.0",
-    "eslint-config-prettier": "^10.0.2",
-    "eslint-plugin-vue": "^9.33.0",
-    "globals": "^15.15.0",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.5.0",
+    "globals": "^16.4.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.4.3",
-    "prettier": "^3.5.3",
-    "semantic-release": "^24.2.3",
-    "typescript": "^5.8.2",
-    "vue": "^3.5.13",
-    "vue-eslint-parser": "^9.4.3"
+    "lint-staged": "^16.2.3",
+    "prettier": "^3.6.2",
+    "semantic-release": "^24.2.9",
+    "typescript": "^5.9.3",
+    "vue": "^3.5.22",
+    "vue-eslint-parser": "^10.2.0"
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",
-    "maplibre-gl": "^5.2.0"
+    "maplibre-gl": "^5.8.0"
   },
   "prettier": {
     "singleQuote": true,

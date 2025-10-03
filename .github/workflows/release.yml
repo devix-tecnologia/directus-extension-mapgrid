@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -29,13 +29,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.13.1
           registry-url: 'https://registry.npmjs.org'
 
       - name: Setup PNPM
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 10.2.1
+          version: 10.15.0
           run_install: false
 
       - name: Get pnpm store directory
@@ -51,30 +51,39 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Check PNPM version
+      - name: Verify PNPM version
         run: pnpm --version
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Type check
+      - name: Run type check
         run: pnpm run typecheck
 
-      - name: Lint
+      - name: Run linter
         run: pnpm run lint
+
+      - name: Check code formatting
+        run: pnpm exec prettier --check src/
         
-      - name: Build
+      - name: Build extension
         run: pnpm run build
 
-      - name: Release
+      - name: Validate extension
+        run: pnpm run validate
+
+      - name: Release with Semantic Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
 
-      - name: Upload artifact
+      - name: Upload build artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+          retention-days: 30
