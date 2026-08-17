@@ -1,8 +1,10 @@
 <template>
   <div class="directus-table-layout">
-    <div v-if="loading" class="loading-container">
-      <loader />
-    </div>
+    <v-info v-if="loading" icon="refresh" title="Loading..." center>
+      <template #append>
+        <v-progress-circular indeterminate />
+      </template>
+    </v-info>
 
     <div v-else class="layout-container">
       <MapComponent
@@ -105,21 +107,16 @@ const editItem = (item) => {
   height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
-  /* padding: 16px; */
   position: relative;
+  padding: var(--content-padding);
+  padding-top: 0;
+  padding-bottom: var(--content-padding-bottom);
 }
 
 .layout-container {
   display: flex;
   flex-direction: column;
-  /* gap: 16px; */
   height: 100%;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
+  gap: var(--content-padding);
 }
 </style>

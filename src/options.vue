@@ -1,91 +1,111 @@
 <template>
   <div class="field">
-    <div class="type-label">Popup Pin Map</div>
+    <div class="type-label">
+      <v-icon name="info" small left />
+      Popup Pin Map
+    </div>
     <v-collection-field-template v-model="title" :collection="collection" />
   </div>
+
+  <v-divider />
+
   <div class="field">
-    <div class="type-label">Geolocation</div>
+    <div class="type-label">
+      <v-icon name="place" small left />
+      Geolocation
+    </div>
     <v-select
       v-model="geolocation"
       :collection="collection"
       :items="[{ name: '---', field: null }, ...camposSelecao]"
       item-text="name"
       item-value="field"
-      placeholder="Select a field"
+      placeholder="Select a geolocation field"
+      :show-deselect="true"
     />
   </div>
-  <!-- Checkbox antes de Col 1 -->
+
+  <v-divider />
+
   <div class="field">
-    <div class="type-label">Zoom on Table Click</div>
+    <div class="type-label">
+      <v-icon name="zoom_in" small left />
+      Zoom on Table Click
+    </div>
     <v-checkbox
       v-model="localZoomOnClick"
       label="Zoom when clicking table items"
       @update:modelValue="updateZoomOnClick"
     />
   </div>
-  <!-- Coluna 1 -->
-  <div class="field">
-    <div class="type-label">Col 1</div>
-    <v-select
-      v-model="coluna1"
-      :collection="collection"
-      :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-      item-text="name"
-      item-value="field"
-      placeholder="Select a field"
-    />
-  </div>
 
-  <!-- Coluna 2 -->
-  <div class="field">
-    <div class="type-label">Col 2</div>
-    <v-select
-      v-model="coluna2"
-      :collection="collection"
-      :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-      item-text="name"
-      item-value="field"
-      placeholder="Select a field"
-    />
-  </div>
+  <v-divider />
 
-  <!-- Coluna 3 -->
-  <div class="field">
-    <div class="type-label">Col 3</div>
-    <v-select
-      v-model="coluna3"
-      :collection="collection"
-      :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-      item-text="name"
-      item-value="field"
-      placeholder="Select a field"
-    />
-  </div>
+  <div class="field-group">
+    <div class="type-label">
+      <v-icon name="view_column" small left />
+      Table Columns
+    </div>
 
-  <!-- Coluna 4 -->
-  <div class="field">
-    <div class="type-label">Col 4</div>
-    <v-select
-      v-model="coluna4"
-      :collection="collection"
-      :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-      item-text="name"
-      item-value="field"
-      placeholder="Select a field"
-    />
-  </div>
+    <div class="field">
+      <v-select
+        v-model="coluna1"
+        :collection="collection"
+        :items="[{ name: '---', field: null }, ...fieldsInCollection]"
+        item-text="name"
+        item-value="field"
+        placeholder="Column 1"
+        :show-deselect="true"
+      />
+    </div>
 
-  <!-- Coluna 5 -->
-  <div class="field">
-    <div class="type-label">Col 5</div>
-    <v-select
-      v-model="coluna5"
-      :collection="collection"
-      :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-      item-text="name"
-      item-value="field"
-      placeholder="Select a field"
-    />
+    <div class="field">
+      <v-select
+        v-model="coluna2"
+        :collection="collection"
+        :items="[{ name: '---', field: null }, ...fieldsInCollection]"
+        item-text="name"
+        item-value="field"
+        placeholder="Column 2"
+        :show-deselect="true"
+      />
+    </div>
+
+    <div class="field">
+      <v-select
+        v-model="coluna3"
+        :collection="collection"
+        :items="[{ name: '---', field: null }, ...fieldsInCollection]"
+        item-text="name"
+        item-value="field"
+        placeholder="Column 3"
+        :show-deselect="true"
+      />
+    </div>
+
+    <div class="field">
+      <v-select
+        v-model="coluna4"
+        :collection="collection"
+        :items="[{ name: '---', field: null }, ...fieldsInCollection]"
+        item-text="name"
+        item-value="field"
+        placeholder="Column 4"
+        :show-deselect="true"
+      />
+    </div>
+
+    <div class="field">
+      <v-select
+        v-model="coluna5"
+        :collection="collection"
+        :items="[{ name: '---', field: null }, ...fieldsInCollection]"
+        item-text="name"
+        item-value="field"
+        placeholder="Column 5"
+        :show-deselect="true"
+      />
+    </div>
   </div>
 </template>
 
@@ -122,7 +142,7 @@ export default defineComponent({
   ],
   setup(props, { emit }) {
     const { collection: collectionKey } = toRefs(props);
-    const collection = useCollection(collectionKey);
+    const collection = useCollection(collectionKey as any);
 
     const title = useSync(props, 'title', emit);
     const geolocation = useSync(props, 'geolocation', emit);
@@ -143,56 +163,17 @@ export default defineComponent({
       }
     );
 
-    const updateZoomOnClick = (newValue) => {
-      console.log('Zoom on Click updated:', newValue); // Debug
+    const updateZoomOnClick = (newValue: boolean) => {
+      console.log('Zoom on Click updated:', newValue);
       emit('update:zoomOnClick', newValue);
     };
 
-    const layoutOptions = useSync(props, 'layoutOptions', emit);
-
-    const iconTemplateWritable = computed({
-      get() {
-        return layoutOptions.value?.iconTemplate;
-      },
-      set(newValue) {
-        layoutOptions.value = Object.assign({}, layoutOptions.value, {
-          iconTemplate: newValue,
-        });
-      },
-    });
-
-    const headerTemplateWritable = computed({
-      get() {
-        return layoutOptions.value?.headerTemplate;
-      },
-      set(newValue) {
-        layoutOptions.value = Object.assign({}, layoutOptions.value, {
-          headerTemplate: newValue,
-        });
-      },
-    });
-
-    const cardContentTemplateWritable = computed({
-      get() {
-        return layoutOptions.value?.cardContentTemplate;
-      },
-      set(newValue) {
-        layoutOptions.value = Object.assign({}, layoutOptions.value, {
-          cardContentTemplate: newValue,
-        });
-      },
-    });
-
     const camposSelecao = computed(() =>
-      collection.fields.value.filter((f) => f.meta?.interface === 'map')
+      collection.fields.value.filter((f: any) => f.meta?.interface === 'map')
     );
 
     return {
-      iconTemplateWritable,
-      headerTemplateWritable,
-      cardContentTemplateWritable,
       camposSelecao,
-
       title,
       geolocation,
       coluna1,
@@ -200,7 +181,7 @@ export default defineComponent({
       coluna3,
       coluna4,
       coluna5,
-      localZoomOnClick, // Usado no v-model do checkbox
+      localZoomOnClick,
       updateZoomOnClick,
     };
   },
@@ -209,13 +190,26 @@ export default defineComponent({
 
 <style scoped>
 .field {
-  margin-bottom: 16px;
-  width: 100%;
-  display: block;
+  margin-bottom: var(--form-vertical-gap);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-vertical-gap);
 }
 
 .type-label {
-  font-weight: bold;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--theme--foreground);
+}
+
+.type-label .v-icon {
+  --v-icon-color: var(--theme--primary);
 }
 </style>

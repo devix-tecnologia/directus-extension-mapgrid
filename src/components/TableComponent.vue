@@ -1,45 +1,40 @@
 <template>
   <div class="table-container" ref="tableContainer">
-    <div class="table-header">
-      <div v-for="header in headers" :key="header.value" class="table-header-item">
-        {{ header.text }}
-      </div>
-    </div>
-
-    <div v-if="items && items.length > 0">
-      <div
-        v-for="item in items"
-        :key="item.id"
-        ref="tableRows"
-        :data-id="item.id"
-        class="table-row item-lista"
-        :class="{ selected: selectedItemId === item.id }"
-        @click="emit('focus-on-item', item)"
-      >
-        <div v-for="header in headers" :key="header.value" class="table-cell">
-          {{ formatValue(item, header.value) }}
-        </div>
+    <v-table
+      v-if="items && items.length > 0"
+      :headers="tableHeaders"
+      :items="items"
+      :show-select="false"
+      :show-resize="true"
+      fixed-header
+      @click:row="handleRowClick"
+    >
+      <template #[`item.actions`]="{ item }">
         <div class="actions">
-          <VButton
-            class="edit-btn"
-            rounded
-            icon
-            outlined
+          <v-icon
+            v-tooltip="'Edit'"
+            class="edit-icon"
+            name="edit"
             small
+            clickable
             @click.stop="emit('edit-item', item)"
-            title="Edit"
-          >
-            <VIcon small name="edit" />
-          </VButton>
+          />
         </div>
-      </div>
-    </div>
-    <div v-else class="no-items-message">No items found.</div>
+      </template>
+
+      <template v-for="header in headers" :key="header.value" #[`item.${header.value}`]="{ item }">
+        <span :class="{ 'selected-row': selectedItemId === item.id }">
+          {{ formatValue(item, header.value) }}
+        </span>
+      </template>
+    </v-table>
+
+    <v-info v-else icon="search" :title="'No items found'" center />
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 
 const props = defineProps({
   items: {
@@ -58,16 +53,36 @@ const props = defineProps({
 
 const emit = defineEmits(['focus-on-item', 'edit-item']);
 
-const selectedItemId = ref(null); // Estado para o item selecionado
-const tableRows = ref(null); // Referência às linhas da tabela
-const tableContainer = ref(null); // Referência ao container da tabela
-let lastSelectedIndex = ref(-1); // Último índice selecionado
+const selectedItemId = ref(null);
+const tableContainer = ref(null);
+let lastSelectedIndex = ref(-1);
+
+const tableHeaders = computed(() => [
+  ...props.headers.map((header) => ({
+    text: header.text,
+    value: header.value,
+    sortable: true,
+    width: null,
+  })),
+  {
+    text: 'Actions',
+    value: 'actions',
+    sortable: false,
+    width: 100,
+    align: 'right',
+  },
+]);
 
 const formatValue = (item, field) => {
   if (!item || !field) return '';
   if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
   const value = item[field];
   return value === null || value === undefined ? '' : value;
+};
+
+const handleRowClick = ({ item }) => {
+  emit('focus-on-item', item);
+  selectedItemId.value = item.id;
 };
 
 // Função para selecionar um item e rolar até ele
@@ -80,10 +95,8 @@ const selectItem = (id) => {
 
   nextTick(() => {
     setTimeout(() => {
-      if (tableRows.value && tableContainer.value) {
-        const selectedRow = Array.isArray(tableRows.value)
-          ? tableRows.value.find((row) => row.getAttribute('data-id') === id.toString())
-          : tableRows.value;
+      if (tableContainer.value) {
+        const selectedRow = tableContainer.value.querySelector(`[data-id="${id}"]`);
 
         if (selectedRow) {
           console.log('Found selected row:', selectedRow);
@@ -106,7 +119,7 @@ const selectItem = (id) => {
           console.log('Selected row not found for ID:', id);
         }
       } else {
-        console.log('No table rows or container found');
+        console.log('No table container found');
       }
     }, 50);
   });
@@ -117,96 +130,61 @@ defineExpose({ selectItem });
 </script>
 
 <style scoped>
-/* Works on Chrome, Edge, and Safari */
-*::-webkit-scrollbar {
-  width: 8px;
-  background-color: transparent important;
-}
-
-*::-webkit-scrollbar-track {
-  /* background: var(--white-color); */
-  background-color: transparent !important;
-  display: none;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-color: var(--theme--primary);
-  border-radius: 20px;
-}
-
 .table-container {
   height: 40%;
   overflow-y: auto;
   background: var(--theme--background);
-  border: 1px solid var(--background-normal-alt);
+  border: 1px solid var(--theme--border-color-subdued);
+  border-radius: var(--theme--border-radius);
   position: relative;
 }
 
-.table-header {
-  display: flex;
-  position: sticky;
-  top: 0;
-  background-color: var(--background-normal-alt);
-  z-index: 1;
-}
-
-.table-header-item {
-  flex: 1;
-  padding: 12px 16px;
-  font-weight: bold;
-  background-color: var(--color-primary-light);
-  color: var(--color-primary-dark);
-  border-bottom: 2px solid var(--background-normal-alt);
-  text-transform: uppercase;
-  font-size: 12px;
-}
-
-.table-row {
-  display: flex;
-  border-bottom: 1px solid var(--background-normal-alt);
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s ease;
-  position: relative;
-}
-
-.table-row:hover {
-  background-color: var(--theme--primary-background);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.table-row:hover .edit-btn {
-  opacity: 1;
-}
-
-.table-row.selected {
-  background-color: var(--theme--primary-background);
-  border-left: 4px solid var(--theme--primary);
-}
-
-.table-cell {
-  flex: 1;
-  padding: 12px 16px;
+.table-container :deep(.v-table) {
+  --v-table-background-color: var(--theme--background);
+  --v-table-header-background-color: var(--theme--background-subdued);
 }
 
 .actions {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 8px;
 }
 
-.edit-btn {
+.edit-icon {
   opacity: 0;
-  transition: opacity 0.2s ease;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
+  transition: opacity var(--medium) var(--transition);
+  --v-icon-color: var(--theme--primary);
+  --v-icon-color-hover: var(--theme--primary);
 }
 
-.no-items-message {
-  padding: 16px;
-  text-align: center;
-  color: var(--theme--foreground-subdued);
+.table-container :deep(tr:hover) .edit-icon {
+  opacity: 1;
+}
+
+.table-container :deep(tr.selected),
+.table-container :deep(tr:has(.selected-row)) {
+  background-color: var(--theme--primary-background) !important;
+  border-left: 4px solid var(--theme--primary);
+}
+
+.selected-row {
+  font-weight: 600;
+}
+
+/* Scrollbar styling */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background-color: var(--theme--primary);
+  border-radius: var(--theme--border-radius);
 }
 </style>

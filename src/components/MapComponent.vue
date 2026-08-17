@@ -1,9 +1,9 @@
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="map-container"></div>
-    <VButton class="reset-map-btn" icon @click="resetMap" title="Reset view">
-      <VIcon name="zoom_out_map" />
-    </VButton>
+    <v-button v-tooltip="'Reset view'" class="reset-map-btn" icon rounded @click="resetMap">
+      <v-icon name="zoom_out_map" />
+    </v-button>
   </div>
 </template>
 
@@ -386,7 +386,9 @@ defineExpose({ focusOnItem });
 .map-container {
   height: 100%;
   width: 100%;
-  border: 1px solid var(--background-normal-alt);
+  border: 1px solid var(--theme--border-color-subdued);
+  border-radius: var(--theme--border-radius);
+  overflow: hidden;
 }
 
 .reset-map-btn {
@@ -394,5 +396,12 @@ defineExpose({ focusOnItem });
   top: 20px;
   right: 20px;
   z-index: 29;
+  --v-button-background-color: var(--theme--background);
+  --v-button-background-color-hover: var(--theme--background-accent);
+  box-shadow: var(--theme--elevation-2xl);
+}
+
+.reset-map-btn :deep(.v-icon) {
+  --v-icon-color: var(--theme--primary);
 }
 </style>
