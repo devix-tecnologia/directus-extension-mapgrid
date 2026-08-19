@@ -30,3 +30,41 @@ compatibilizar com o visual do directus, priorizando utilizar os componentes de 
 - Componentes Diretus já eram utilizados (v-table, v-select, v-button, v-info, etc.), as melhorias foram em consistência de variáveis de tema e organização
 - Erro de typecheck pré-existente em `src/index.ts` (mismatch `@vue/reactivity` 3.5.22 vs 3.5.18) — não relacionado a esta task
 - Docker hot-reload funciona com `EXTENSIONS_AUTO_RELOAD: "true"`, mas rebuild manual (`pnpm build`) é necessário para refletir alterações
+
+---
+
+## Revisão de código (code review)
+
+Revisão conduzida seguindo os princípios do **Total TypeScript** (Matt Pocock): comentários no código são sinal de que o código não foi suficientamente refatorado — nomes de funções, variáveis e tipos deveriam ser claros o suficiente para dispensá-los.
+
+### Problemas encontrados e corrigidos
+
+| Problema | Arquivos afetados | Solução aplicada |
+|---|---|---|
+| Comentários remanescentes no código-fonte | `index.ts` (4), `MapComponent.vue` (4) | Removidos. Lógica descrita por comentários extraída em funções nomeadas |
+| `<script setup>` sem `lang="ts"` | `layout.vue`, `TableComponent.vue`, `MapComponent.vue` | Adicionado `<script setup lang="ts">` em todos |
+| Cast `any` explícito | `options.vue` (`useCollection(collectionKey as any)`) | Removido — `collectionKey` já é `Ref<string>`, tipo compatível |
+| Parâmetros sem tipo | Todos os `.vue` (handlers, refs, emits) | Interfaces `GeoItem`, `RowItem`, `Header`, `GeoJsonFeature` definidas; todos os parâmetros e refs tipados |
+| Repetição de template (5 selects de coluna) | `options.vue` | Refatorado com `v-for` + constante `COLUMN_KEYS` |
+| `REFACTORING.md` desatualizado | `REFACTORING.md` | Reescrito para refletir o estado real do código |
+
+### Funções extraídas em `MapComponent.vue`
+
+A função monolítica `focusOnItem` (que continha 4 comentários explicando o que o código já dizia) foi refatorada em funções nomeadas autoexplicativas:
+
+| Função anterior | Funções extraídas |
+|---|---|
+| Bloco inline com comentário "Faz zoom..." | `flyToItem(coords)` |
+| Bloco inline com comentário "Apenas destaca..." | `panToVisibleArea(coords)` + `flashHighlightMarker()` |
+| Bloco inline com comentário "Move o mapa..." | `panToVisibleArea(coords)` |
+| `generateGeoJson()` | `buildGeoJson()` (nome mais preciso) |
+| `fitMapToMarkers()` | `fitBoundsToItems()` |
+| `closeAllPopups()` | `dismissAllPopups()` |
+| SVG inline sem função | `createClusterLabelElement(count)` |
+
+### Validação
+
+- `pnpm lint` — limpo (sem erros)
+- `pnpm build` — sucesso
+- `pnpm typecheck` — erros pré-existentes apenas (`@vue/reactivity` mismatch 3.5.22 vs 3.5.18 em `index.ts`)
+- Comentários no código-fonte: **zero**

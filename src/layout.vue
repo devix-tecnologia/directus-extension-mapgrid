@@ -29,77 +29,57 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import MapComponent from './components/MapComponent.vue';
 import TableComponent from './components/TableComponent.vue';
 
-const props = defineProps({
-  items: {
-    type: Array,
-    required: true,
-    default: () => [],
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  collection: {
-    type: String,
-    required: true,
-  },
-  title: {
-    type: String,
-    default: 'name',
-  },
-  geolocation: {
-    type: String,
-    default: 'geolocation',
-  },
-  coluna1: String,
-  coluna2: String,
-  coluna3: String,
-  coluna4: String,
-  coluna5: String,
-  zoomOnClick: {
-    type: Boolean,
-    default: false,
-  },
-});
+interface RowItem {
+  id: string | number;
+  [key: string]: unknown;
+}
+
+interface Header {
+  text: string;
+  value: string;
+}
+
+const props = defineProps<{
+  items: RowItem[];
+  loading?: boolean;
+  collection: string;
+  title?: string;
+  geolocation?: string;
+  coluna1?: string;
+  coluna2?: string;
+  coluna3?: string;
+  coluna4?: string;
+  coluna5?: string;
+  zoomOnClick?: boolean;
+}>();
 
 const router = useRouter();
-const mapComponent = ref(null);
-const tableComponent = ref(null);
+const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
+const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 
-const headers = computed(() => {
-  const columns = [
-    props.coluna1,
-    props.coluna2,
-    props.coluna3,
-    props.coluna4,
-    props.coluna5,
-  ].filter(Boolean);
+const headers = computed<Header[]>(() => {
+  const columns = [props.coluna1, props.coluna2, props.coluna3, props.coluna4, props.coluna5].filter(
+    Boolean,
+  ) as string[];
 
-  return columns.map((column) => ({
-    text: column,
-    value: column,
-  }));
+  return columns.map((column) => ({ text: column, value: column }));
 });
 
-const handleFocusOnItem = (item) => {
-  if (mapComponent.value) {
-    mapComponent.value.focusOnItem(item);
-  }
+const handleFocusOnItem = (item: RowItem): void => {
+  mapComponent.value?.focusOnItem(item);
 };
 
-const handleSelectItem = (id) => {
-  if (tableComponent.value) {
-    tableComponent.value.selectItem(id);
-  }
+const handleSelectItem = (id: string | number): void => {
+  tableComponent.value?.selectItem(id);
 };
 
-const editItem = (item) => {
+const editItem = (item: RowItem): void => {
   router.push(`/content/${props.collection}/${item.id}`);
 };
 </script>

@@ -2,164 +2,75 @@
 
 ## Resumo
 
-Este documento descreve as mudanças realizadas para integrar os componentes UI nativos do Directus na extensão MapGrid, melhorando a consistência visual e a integração com os temas do Directus.
+Integração visual da extensão MapGrid com o design system do Directus, utilizando componentes nativos e variáveis de tema para consistência com o Directus Studio.
 
 ## Componentes Refatorados
 
-### 1. TableComponent.vue
+### 1. `options.vue`
 
-**Mudanças Principais:**
-- ✅ Substituída a tabela customizada pelo componente `<v-table>` do Directus
-- ✅ Implementado `<v-info>` para mensagem de "nenhum item encontrado"
-- ✅ Utilizado `<v-icon>` com `v-tooltip` para ações de edição
-- ✅ Adotadas variáveis CSS do tema Directus (`--theme--background`, `--theme--primary`, etc.)
+- `v-detail` (accordion) agrupa seções: Popup Pin Map, Geolocation, Zoom on Table Click, Table Columns
+- `v-select`, `v-checkbox`, `v-collection-field-template` mantidos (já eram componentes Diretus)
+- Labels e `<div class="type-label">` manuais removidos — `v-detail` fornece header nativo
+- 5 selects de coluna renderizados via `v-for` eliminando repetição de模板
 
-**Componentes Directus Utilizados:**
-- `v-table` - Tabela com suporte a cabeçalhos, ordenação e seleção
-- `v-info` - Componente para mensagens informativas
-- `v-icon` - Ícones com suporte a tooltips
+### 2. `layout.vue`
 
-**Benefícios:**
-- Hover states consistentes com o Directus
-- Suporte automático a temas claro/escuro
-- Animações e transições padronizadas
-- Melhor acessibilidade
+- Classes renomeadas para `mapgrid-*` evitando conflito com namespace do Directus
+- Container principal (`mapgrid-container`) com `border`, `border-radius` e `background` do tema
+- Estado vazio com `v-info` quando `items.length === 0`
+- Loading com `v-info` + `v-progress-circular` (já existente)
 
-### 2. MapComponent.vue
+### 3. `TableComponent.vue`
 
-**Mudanças Principais:**
-- ✅ Substituído botão customizado por `<v-button>` do Directus
-- ✅ Implementado `<v-icon>` para ícones
-- ✅ Adicionado `v-tooltip` para melhor UX
-- ✅ Aplicadas variáveis CSS do tema (`--theme--border-color-subdued`, `--theme--elevation-2xl`)
+- Scrollbar customizada com variáveis do tema (`--theme--background-subdued`, `--theme--foreground-subdued`)
+- Seleção de linha mais sutil: fundo `--theme--primary-background` e texto `--theme--primary`
+- Ícone edit com transição de opacidade no hover
+- `v-table` com header `--theme--background-subdued`
 
-**Componentes Directus Utilizados:**
-- `v-button` - Botão com suporte a ícones e variantes
-- `v-icon` - Ícone do Material Design
-- `v-tooltip` (diretiva) - Tooltips acessíveis
+### 4. `MapComponent.vue`
 
-**Benefícios:**
-- Botões com estados hover/active consistentes
-- Elevação e sombras padronizadas
-- Integração perfeita com o sistema de cores do tema
+- Botão reset usando `var(--content-padding)` ao invés de valores fixos
+- Border do mapa herdado do container pai
+- Lógica de `focusOnItem` extraída em funções nomeadas: `flyToItem`, `panToVisibleArea`, `flashHighlightMarker`, `openPopupAt`
 
-### 3. layout.vue
+## Padrões TypeScript
 
-**Mudanças Principais:**
-- ✅ Substituído loader customizado por `<v-info>` + `<v-progress-circular>`
-- ✅ Utilizadas variáveis CSS do Directus para espaçamento (`--content-padding`)
-- ✅ Melhorado estado de carregamento com feedback visual
+- Todos os componentes `.vue` utilizam `<script setup lang="ts">` ou `<script lang="ts">`
+- Interfaces explícitas para `GeoItem`, `RowItem`, `Header`, `GeoJsonFeature`
+- Parâmetros e refs tipados — nenhum `any` explícito
+- `options.vue`: colunas refatoradas com `COLUMN_KEYS` const e `WritableComputedRef[]`
+- Zero comentários no código-fonte — nomes de funções e variáveis descrevem a intenção
 
-**Componentes Directus Utilizados:**
-- `v-info` - Container informativo com suporte a ícones e slots
-- `v-progress-circular` - Indicador de progresso circular
+## Funções Extraitas (MapComponent.vue)
 
-**Benefícios:**
-- Estado de loading consistente com outras áreas do Directus
-- Espaçamento responsivo e adaptável
-- Melhor experiência visual durante carregamento
-
-### 4. options.vue
-
-**Mudanças Principais:**
-- ✅ Adicionado `<v-divider>` para separação visual entre seções
-- ✅ Implementado `<v-icon>` nos labels para melhor contexto visual
-- ✅ Melhorado layout com agrupamento de campos relacionados
-- ✅ Aplicadas variáveis de espaçamento do Directus (`--form-vertical-gap`)
-
-**Componentes Directus Utilizados:**
-- `v-select` - Seletor de campos (já existente, mantido)
-- `v-checkbox` - Checkbox (já existente, mantido)
-- `v-collection-field-template` - Template de campo de coleção (já existente, mantido)
-- `v-divider` - Divisor visual entre seções
-- `v-icon` - Ícones nos labels
-
-**Benefícios:**
-- Interface de configuração mais clara e organizada
-- Contexto visual melhorado com ícones temáticos
-- Espaçamento consistente com formulários do Directus
-- Melhor agrupamento lógico de opções relacionadas
+| Função | Responsabilidade |
+|---|---|
+| `resolveThemePrimaryColor()` | Obtém cor primária do CSS theme |
+| `resolveFieldTemplate()` | Renderiza template `{{field}}` com dados do item |
+| `resolveFieldValue()` | Serializa valor de campo (string, array, geo, objeto) |
+| `buildGeoJson()` | Gera FeatureCollection a partir dos items |
+| `fitBoundsToItems()` | Ajusta bounds do mapa aos markers |
+| `dismissAllPopups()` | Fecha todos os popups abertos |
+| `createClusterLabelElement()` | Cria elemento SVG para label de cluster |
+| `refreshClusterLabels()` | Atualiza markers de cluster no mapa |
+| `openPopupAt()` | Abre popup em coordenadas |
+| `flyToItem()` | Anima zoom até item |
+| `panToVisibleArea()` | Move mapa para enquadrar ponto visível |
+| `flashHighlightMarker()` | Destaque temporário no marcador |
+| `registerMapEvents()` | Registra todos os eventos do mapa |
 
 ## Variáveis CSS do Directus Utilizadas
 
 ### Cores e Tema
-- `--theme--background` - Cor de fundo principal
-- `--theme--background-subdued` - Cor de fundo secundária
-- `--theme--background-accent` - Cor de fundo de destaque
-- `--theme--primary` - Cor primária do tema
-- `--theme--primary-background` - Cor de fundo primária
-- `--theme--foreground` - Cor de texto principal
-- `--theme--foreground-subdued` - Cor de texto secundário
-- `--theme--border-color-subdued` - Cor de borda suave
+- `--theme--background`, `--theme--background-subdued`, `--theme--background-accent`
+- `--theme--primary`, `--theme--primary-background`
+- `--theme--foreground`, `--theme--foreground-subdued`
+- `--theme--border-color-subdued`, `--theme--border-radius`
+- `--theme--elevation-2xl`
 
-### Espaçamento e Layout
-- `--content-padding` - Espaçamento de conteúdo
-- `--content-padding-bottom` - Espaçamento inferior de conteúdo
-- `--form-vertical-gap` - Espaçamento vertical em formulários
+### Espaçamento
+- `--content-padding`, `--content-padding-bottom`
+- `--form-vertical-gap`, `--form-horizontal-gap`
 
-### Efeitos e Transições
-- `--theme--border-radius` - Raio de borda padrão
-- `--theme--elevation-2xl` - Sombra de elevação extra grande
-- `--medium` - Duração de transição média
-- `--transition` - Função de timing de transição
-
-## Personalização de Componentes
-
-Todos os componentes do Directus expõem propriedades CSS customizáveis. Exemplos:
-
-```css
-/* Customizar cor do botão */
-.reset-map-btn {
-  --v-button-background-color: var(--theme--background);
-  --v-button-background-color-hover: var(--theme--background-accent);
-}
-
-/* Customizar tabela */
-.table-container :deep(.v-table) {
-  --v-table-background-color: var(--theme--background);
-  --v-table-header-background-color: var(--theme--background-subdued);
-}
-
-/* Customizar ícone */
-.edit-icon {
-  --v-icon-color: var(--theme--primary);
-  --v-icon-color-hover: var(--theme--primary);
-}
-```
-
-## Recursos e Documentação
-
-- **Playground de Componentes:** https://components.directus.io/
-- **Documentação UI Library:** https://directus.io/docs/guides/extensions/app-extensions/ui-library
-- **Variáveis CSS de Temas:** https://github.com/directus/directus/tree/main/app/src/styles/themes
-- **Código Fonte dos Componentes:** https://github.com/directus/directus/tree/main/app/src/components
-
-## Benefícios Gerais da Refatoração
-
-1. **Consistência Visual:** Interface alinhada com o design system do Directus
-2. **Suporte a Temas:** Funciona perfeitamente com temas claros e escuros
-3. **Acessibilidade:** Componentes nativos incluem melhores práticas de a11y
-4. **Manutenibilidade:** Menos código customizado para manter
-5. **Performance:** Componentes otimizados do Directus
-6. **Experiência do Usuário:** Comportamentos familiares para usuários do Directus
-7. **Responsividade:** Componentes responsivos por padrão
-8. **Internacionalização:** Suporte a i18n quando aplicável
-
-## Próximos Passos Sugeridos
-
-- [ ] Adicionar mais tooltips informativos onde apropriado
-- [ ] Considerar uso de `v-notice` para mensagens de erro/sucesso
-- [ ] Explorar `v-skeleton-loader` para estados de carregamento mais elaborados
-- [ ] Implementar `v-dialog` para confirmações de ações destrutivas (se aplicável)
-- [ ] Adicionar `v-chip` para tags ou status de itens (se aplicável)
-
-## Checklist de Qualidade
-
-- ✅ Todos os componentes seguem convenções do Directus
-- ✅ Variáveis CSS do tema utilizadas consistentemente
-- ✅ Estados de hover/focus/active implementados
-- ✅ Suporte a tema claro/escuro
-- ✅ Componentes responsivos
-- ✅ Código TypeScript sem erros
-- ✅ Espaçamento consistente
-- ✅ Ícones adequados e contextuais
+### Transições
+- `--transition-fast`, `--transition`

@@ -22,7 +22,6 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { fields: fieldsInCollection } = useCollection(collection);
     const { sort, limit, page, fields } = useLayoutQuery();
 
-    // Aqui, os campos a serem usados na listagem
     const { title, geolocation, zoomOnClick, coluna1, coluna2, coluna3, coluna4, coluna5 } =
       useLayoutOptions();
 
@@ -35,7 +34,6 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       search,
     });
 
-    // Aqui, os campos a serem usados na listagem
     function useLayoutOptions() {
       const title = createViewOption('title', undefined);
       const zoomOnClick = createViewOption('zoomOnClick', undefined);
@@ -76,7 +74,6 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         });
       }
     }
-    // até aqui
 
     function useLayoutQuery() {
       const page = computed(() => layoutQuery.value?.page || 1);
@@ -113,5 +110,3 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     };
   },
 });
-
-//funciona
