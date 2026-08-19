@@ -187,16 +187,13 @@ const initializeMap = () => {
 
     updateClusterMarkers();
     fitMapToMarkers();
-    console.log('Map loaded successfully');
   });
 
   map.value.on('moveend', () => {
     updateClusterMarkers();
   });
 
-  map.value.on('error', (e) => {
-    console.error('Map error:', e);
-  });
+  map.value.on('error', () => {});
 };
 
 const generateGeoJson = () => {
@@ -206,7 +203,6 @@ const generateGeoJson = () => {
       .map((item) => {
         const coords = item[props.geolocation]?.coordinates;
         if (!coords || coords.length !== 2) {
-          console.log('Item with invalid coordinates:', item);
           return null;
         }
         return {
@@ -223,7 +219,6 @@ const generateGeoJson = () => {
       })
       .filter((feature) => feature !== null),
   };
-  console.log('Generated GeoJSON:', geojson);
   return geojson;
 };
 
@@ -249,7 +244,6 @@ const fitMapToMarkers = () => {
 
 const focusOnItem = (item) => {
   if (!map.value || !item || !item[props.geolocation]?.coordinates) {
-    console.log('Unable to focus on item:', item);
     return;
   }
 
@@ -296,11 +290,7 @@ const focusOnItem = (item) => {
 };
 
 const resetMap = () => {
-  if (!map.value) {
-    console.log('Map not initialized');
-    return;
-  }
-  // closeAllPopups();
+  if (!map.value) return;
   fitMapToMarkers();
 };
 
@@ -321,7 +311,6 @@ const updateClusterMarkers = () => {
   clusterMarkers.value = [];
 
   const clusters = map.value.querySourceFeatures('points', { filter: ['has', 'point_count'] });
-  console.log('Clusters found:', clusters);
 
   clusters.forEach((cluster) => {
     const pointCount = cluster.properties.point_count;
@@ -386,15 +375,14 @@ defineExpose({ focusOnItem });
 .map-container {
   height: 100%;
   width: 100%;
-  border: 1px solid var(--theme--border-color-subdued);
   border-radius: var(--theme--border-radius);
   overflow: hidden;
 }
 
 .reset-map-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: var(--content-padding);
+  right: var(--content-padding);
   z-index: 29;
   --v-button-background-color: var(--theme--background);
   --v-button-background-color-hover: var(--theme--background-accent);

@@ -55,7 +55,6 @@ const emit = defineEmits(['focus-on-item', 'edit-item']);
 
 const selectedItemId = ref(null);
 const tableContainer = ref(null);
-let lastSelectedIndex = ref(-1);
 
 const tableHeaders = computed(() => [
   ...props.headers.map((header) => ({
@@ -85,11 +84,8 @@ const handleRowClick = ({ item }) => {
   selectedItemId.value = item.id;
 };
 
-// Função para selecionar um item e rolar até ele
 const selectItem = (id) => {
-  console.log('Selecting item with ID:', id);
   const newIndex = props.items.findIndex((item) => item.id === id);
-  console.log('New index:', newIndex, 'Last index:', lastSelectedIndex.value);
 
   selectedItemId.value = id;
 
@@ -99,13 +95,8 @@ const selectItem = (id) => {
         const selectedRow = tableContainer.value.querySelector(`[data-id="${id}"]`);
 
         if (selectedRow) {
-          console.log('Found selected row:', selectedRow);
-
           const container = tableContainer.value;
-          const rowRect = selectedRow.getBoundingClientRect();
-          const containerRect = container.getBoundingClientRect();
 
-          // Calcula a posição do scroll para centralizar o item
           const scrollOffset =
             selectedRow.offsetTop - container.clientHeight / 2 + selectedRow.clientHeight / 2;
 
@@ -113,19 +104,12 @@ const selectItem = (id) => {
             top: scrollOffset,
             behavior: 'smooth',
           });
-
-          lastSelectedIndex.value = newIndex;
-        } else {
-          console.log('Selected row not found for ID:', id);
         }
-      } else {
-        console.log('No table container found');
       }
     }, 50);
   });
 };
 
-// Expor a função para o componente pai
 defineExpose({ selectItem });
 </script>
 
@@ -133,14 +117,11 @@ defineExpose({ selectItem });
 .table-container {
   height: 40%;
   overflow-y: auto;
-  background: var(--theme--background);
-  border: 1px solid var(--theme--border-color-subdued);
-  border-radius: var(--theme--border-radius);
   position: relative;
 }
 
 .table-container :deep(.v-table) {
-  --v-table-background-color: var(--theme--background);
+  --v-table-background-color: transparent;
   --v-table-header-background-color: var(--theme--background-subdued);
 }
 
@@ -148,14 +129,14 @@ defineExpose({ selectItem });
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  padding: 0 8px;
+  gap: var(--form-horizontal-gap);
+  padding: 0 var(--form-horizontal-gap);
 }
 
 .edit-icon {
   opacity: 0;
-  transition: opacity var(--medium) var(--transition);
-  --v-icon-color: var(--theme--primary);
+  transition: opacity var(--transition-fast) var(--transition);
+  --v-icon-color: var(--theme--foreground-subdued);
   --v-icon-color-hover: var(--theme--primary);
 }
 
@@ -163,28 +144,30 @@ defineExpose({ selectItem });
   opacity: 1;
 }
 
-.table-container :deep(tr.selected),
 .table-container :deep(tr:has(.selected-row)) {
   background-color: var(--theme--primary-background) !important;
-  border-left: 4px solid var(--theme--primary);
 }
 
 .selected-row {
   font-weight: 600;
+  color: var(--theme--primary);
 }
 
-/* Scrollbar styling */
 .table-container::-webkit-scrollbar {
   width: 8px;
-  background-color: transparent;
 }
 
 .table-container::-webkit-scrollbar-track {
-  background-color: transparent;
+  background: var(--theme--background-subdued);
+  border-radius: var(--theme--border-radius);
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background-color: var(--theme--primary);
+  background: var(--theme--foreground-subdued);
   border-radius: var(--theme--border-radius);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--theme--foreground);
 }
 </style>

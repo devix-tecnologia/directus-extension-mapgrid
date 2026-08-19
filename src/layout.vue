@@ -1,12 +1,14 @@
 <template>
-  <div class="directus-table-layout">
+  <div class="mapgrid-layout">
     <v-info v-if="loading" icon="refresh" title="Loading..." center>
       <template #append>
         <v-progress-circular indeterminate />
       </template>
     </v-info>
 
-    <div v-else class="layout-container">
+    <v-info v-else-if="items.length === 0" icon="map" title="No items found" center />
+
+    <div v-else class="mapgrid-container">
       <MapComponent
         ref="mapComponent"
         :items="items"
@@ -103,7 +105,7 @@ const editItem = (item) => {
 </script>
 
 <style scoped>
-.directus-table-layout {
+.mapgrid-layout {
   height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
@@ -113,10 +115,14 @@ const editItem = (item) => {
   padding-bottom: var(--content-padding-bottom);
 }
 
-.layout-container {
+.mapgrid-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   gap: var(--content-padding);
+  background: var(--theme--background);
+  border: 1px solid var(--theme--border-color-subdued);
+  border-radius: var(--theme--border-radius);
+  overflow: hidden;
 }
 </style>
