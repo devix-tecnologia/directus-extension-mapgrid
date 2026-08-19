@@ -2,7 +2,7 @@
   <div class="table-container" ref="tableContainer">
     <v-table
       v-if="items && items.length > 0"
-      :headers="tableHeaders"
+      :headers="resolvedHeaders"
       :items="items"
       :show-select="false"
       :show-resize="true"
@@ -24,88 +24,89 @@
 
       <template v-for="header in headers" :key="header.value" #[`item.${header.value}`]="{ item }">
         <span :class="{ 'selected-row': selectedItemId === item.id }">
-          {{ formatValue(item, header.value) }}
+          {{ renderCellValue(item, header.value) }}
         </span>
       </template>
     </v-table>
 
-    <v-info v-else icon="search" :title="'No items found'" center />
+    <v-info v-else icon="search" title="No items found" center />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
 
-const props = defineProps({
-  items: {
-    type: Array,
-    required: true,
-  },
-  headers: {
-    type: Array,
-    required: true,
-  },
-  collection: {
-    type: String,
-    required: true,
-  },
-});
+interface Header {
+  text: string;
+  value: string;
+}
 
-const emit = defineEmits(['focus-on-item', 'edit-item']);
+interface RowItem {
+  id: string | number;
+  [key: string]: unknown;
+}
 
-const selectedItemId = ref(null);
-const tableContainer = ref(null);
+const props = defineProps<{
+  items: RowItem[];
+  headers: Header[];
+  collection: string;
+}>();
 
-const tableHeaders = computed(() => [
+const emit = defineEmits<{
+  'focus-on-item': [item: RowItem];
+  'edit-item': [item: RowItem];
+}>();
+
+const selectedItemId = ref<string | number | null>(null);
+const tableContainer = ref<HTMLDivElement | null>(null);
+
+const resolvedHeaders = computed(() => [
   ...props.headers.map((header) => ({
     text: header.text,
     value: header.value,
     sortable: true,
-    width: null,
+    width: null as number | null,
   })),
-  {
-    text: 'Actions',
-    value: 'actions',
-    sortable: false,
-    width: 100,
-    align: 'right',
-  },
+  { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
-const formatValue = (item, field) => {
-  if (!item || !field) return '';
-  if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
-  const value = item[field];
-  return value === null || value === undefined ? '' : value;
+const serializeValue = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'object') return String(value);
+  if (Array.isArray(value)) return value.join(', ');
+  if ('coordinates' in (value as Record<string, unknown>)) {
+    const geo = value as { coordinates: [number, number] };
+    return `${geo.coordinates[1]}, ${geo.coordinates[0]}`;
+  }
+  return JSON.stringify(value);
 };
 
-const handleRowClick = ({ item }) => {
+const renderCellValue = (item: RowItem, field: string): string => {
+  if (!item || !field) return '';
+  if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
+  return serializeValue(item[field]);
+};
+
+const handleRowClick = ({ item }: { item: RowItem }): void => {
   emit('focus-on-item', item);
   selectedItemId.value = item.id;
 };
 
-const selectItem = (id) => {
-  const newIndex = props.items.findIndex((item) => item.id === id);
-
+const selectItem = (id: string | number): void => {
   selectedItemId.value = id;
 
   nextTick(() => {
     setTimeout(() => {
-      if (tableContainer.value) {
-        const selectedRow = tableContainer.value.querySelector(`[data-id="${id}"]`);
+      if (!tableContainer.value) return;
 
-        if (selectedRow) {
-          const container = tableContainer.value;
+      const selectedRow = tableContainer.value.querySelector(`[data-id="${id}"]`);
+      if (!selectedRow) return;
 
-          const scrollOffset =
-            selectedRow.offsetTop - container.clientHeight / 2 + selectedRow.clientHeight / 2;
+      const row = selectedRow as HTMLElement;
+      const container = tableContainer.value;
+      const scrollOffset = row.offsetTop - container.clientHeight / 2 + row.clientHeight / 2;
 
-          container.scrollTo({
-            top: scrollOffset,
-            behavior: 'smooth',
-          });
-        }
-      }
+      container.scrollTo({ top: scrollOffset, behavior: 'smooth' });
     }, 50);
   });
 };

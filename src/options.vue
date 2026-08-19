@@ -1,16 +1,16 @@
 <template>
-  <v-detail icon="info" :header="'Popup Pin Map'">
+  <v-detail icon="info" header="Popup Pin Map">
     <div class="field">
       <v-collection-field-template v-model="title" :collection="collection" />
     </div>
   </v-detail>
 
-  <v-detail icon="place" :header="'Geolocation'">
+  <v-detail icon="place" header="Geolocation">
     <div class="field">
       <v-select
         v-model="geolocation"
         :collection="collection"
-        :items="[{ name: '---', field: null }, ...camposSelecao]"
+        :items="[{ name: '---', field: null }, ...geolocationFields]"
         item-text="name"
         item-value="field"
         placeholder="Select a geolocation field"
@@ -19,74 +19,26 @@
     </div>
   </v-detail>
 
-  <v-detail icon="zoom_in" :header="'Zoom on Table Click'">
+  <v-detail icon="zoom_in" header="Zoom on Table Click">
     <div class="field">
       <v-checkbox
         v-model="localZoomOnClick"
         label="Zoom when clicking table items"
-        @update:modelValue="updateZoomOnClick"
+        @update:modelValue="emit('update:zoomOnClick', $event)"
       />
     </div>
   </v-detail>
 
-  <v-detail icon="view_column" :header="'Table Columns'">
+  <v-detail icon="view_column" header="Table Columns">
     <div class="field-group">
-      <div class="field">
+      <div v-for="(column, idx) in columnRefs" :key="idx" class="field">
         <v-select
-          v-model="coluna1"
+          v-model="column.value"
           :collection="collection"
           :items="[{ name: '---', field: null }, ...fieldsInCollection]"
           item-text="name"
           item-value="field"
-          placeholder="Column 1"
-          :show-deselect="true"
-        />
-      </div>
-
-      <div class="field">
-        <v-select
-          v-model="coluna2"
-          :collection="collection"
-          :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-          item-text="name"
-          item-value="field"
-          placeholder="Column 2"
-          :show-deselect="true"
-        />
-      </div>
-
-      <div class="field">
-        <v-select
-          v-model="coluna3"
-          :collection="collection"
-          :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-          item-text="name"
-          item-value="field"
-          placeholder="Column 3"
-          :show-deselect="true"
-        />
-      </div>
-
-      <div class="field">
-        <v-select
-          v-model="coluna4"
-          :collection="collection"
-          :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-          item-text="name"
-          item-value="field"
-          placeholder="Column 4"
-          :show-deselect="true"
-        />
-      </div>
-
-      <div class="field">
-        <v-select
-          v-model="coluna5"
-          :collection="collection"
-          :items="[{ name: '---', field: null }, ...fieldsInCollection]"
-          item-text="name"
-          item-value="field"
-          placeholder="Column 5"
+          :placeholder="`Column ${idx + 1}`"
           :show-deselect="true"
         />
       </div>
@@ -95,9 +47,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRefs, computed, ref, watch } from 'vue';
+import { defineComponent, toRefs, computed, ref, watch, type WritableComputedRef } from 'vue';
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import { LayoutOptions } from './types';
+import type { LayoutOptions } from './types';
+
+const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
 
 export default defineComponent({
   name: 'Options',
@@ -127,15 +81,14 @@ export default defineComponent({
   ],
   setup(props, { emit }) {
     const { collection: collectionKey } = toRefs(props);
-    const collection = useCollection(collectionKey as any);
+    const collection = useCollection(collectionKey);
 
     const title = useSync(props, 'title', emit);
     const geolocation = useSync(props, 'geolocation', emit);
-    const coluna1 = useSync(props, 'coluna1', emit);
-    const coluna2 = useSync(props, 'coluna2', emit);
-    const coluna3 = useSync(props, 'coluna3', emit);
-    const coluna4 = useSync(props, 'coluna4', emit);
-    const coluna5 = useSync(props, 'coluna5', emit);
+
+    const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
+      useSync(props, key, emit),
+    );
 
     const localZoomOnClick = ref(props.zoomOnClick);
 
@@ -143,28 +96,22 @@ export default defineComponent({
       () => props.zoomOnClick,
       (newValue) => {
         localZoomOnClick.value = newValue;
-      }
+      },
     );
 
-    const updateZoomOnClick = (newValue: boolean) => {
-      emit('update:zoomOnClick', newValue);
-    };
-
-    const camposSelecao = computed(() =>
-      collection.fields.value.filter((f: any) => f.meta?.interface === 'map')
+    const geolocationFields = computed(() =>
+      collection.fields.value.filter(
+        (f: { meta?: { interface?: string } }) => f.meta?.interface === 'map',
+      ),
     );
 
     return {
-      camposSelecao,
+      geolocationFields,
       title,
       geolocation,
-      coluna1,
-      coluna2,
-      coluna3,
-      coluna4,
-      coluna5,
+      columnRefs,
       localZoomOnClick,
-      updateZoomOnClick,
+      emit,
     };
   },
 });
