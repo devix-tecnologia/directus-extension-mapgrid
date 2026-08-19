@@ -1,6 +1,6 @@
 # Task 003 — aplicar padrão storytype nos componentes visuais
 
-Status: pending
+Status: in-progress
 Type: refactor
 Assignee: marcospatricio
 
