@@ -45,12 +45,12 @@
 <script lang="ts">
 import { defineComponent, toRefs, computed, type WritableComputedRef } from 'vue';
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import type { LayoutOptions } from './types';
+import type { LayoutOptions } from '../../../types';
 
 const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
 
 export default defineComponent({
-  name: 'Options',
+  name: 'MapgridOptions',
   props: {
     collection: { type: String, required: true },
     layoutOptions: { type: Object as () => LayoutOptions, required: true },
@@ -99,7 +99,6 @@ export default defineComponent({
       geolocation,
       zoomOnClick,
       columnRefs,
-      emit,
     };
   },
 });

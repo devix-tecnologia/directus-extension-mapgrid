@@ -32,24 +32,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import MapComponent from './components/MapComponent.vue';
-import TableComponent from './components/TableComponent.vue';
-import type { GeoItem } from './services/geo/index.js';
-import type { Header } from './services/table/index.js';
+import { MapComponent } from '../../organisms/map-component/index.js';
+import { TableComponent } from '../../organisms/table-component/index.js';
+import type { Header } from '../../../services/table/index.js';
+import type { GeoItem } from '../../../services/geo/index.js';
+import type { MapgridLayoutProps } from './mapgrid-layout.types';
 
-const props = defineProps<{
-  items: GeoItem[];
-  loading?: boolean;
-  collection: string;
-  title?: string;
-  geolocation?: string;
-  coluna1?: string;
-  coluna2?: string;
-  coluna3?: string;
-  coluna4?: string;
-  coluna5?: string;
-  zoomOnClick?: boolean;
-}>();
+const props = defineProps<MapgridLayoutProps>();
 
 const router = useRouter();
 const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
@@ -73,6 +62,12 @@ const handleSelectItem = (id: string | number): void => {
 
 const editItem = (item: GeoItem): void => {
   router.push(`/content/${props.collection}/${item.id}`);
+};
+</script>
+
+<script lang="ts">
+export default {
+  name: 'MapgridLayout',
 };
 </script>
 

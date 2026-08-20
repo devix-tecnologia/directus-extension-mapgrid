@@ -1,6 +1,6 @@
 # Task 002 — aprimorar visual do mapgrid
 
-Status: in-progress
+Status: done
 Type: feat
 Assignee: marcospatricio
 
@@ -110,3 +110,41 @@ Revisão do ramo `feat/task-002` (diff `develop...feat/task-002`, commits `71e83
 ### Validação esperada na reentrega
 
 - `pnpm lint`, `pnpm build` e `pnpm typecheck` — **typecheck sem nenhum erro** (inclusive os antigos de `@vue/reactivity`, que devem ser resolvidos na task).
+
+---
+
+## Correções aplicadas
+
+Todos os ajustes da REVISION NOTES foram executados pelo time (sem devolução ao responsável original). Validado: `pnpm lint`, `pnpm build`, `pnpm typecheck` (zero erros) e `pnpm test` (14 testes).
+
+### Ajustes obrigatórios
+
+1. **Tipos duplicados** → consolidados em `src/services/{geo,table,value-formatter}/` com `.types.ts` + `index.ts` barrel
+2. **Serialização duplicada** → `serializeValue`/`resolveFieldTemplate` em `src/services/value-formatter/value-formatter.ts`
+3. **Coordenadas com casts** → `getItemCoordinates(item, geolocation): [number, number] | null` em `src/services/geo/geo.ts`
+4. **`map.value!`** → guard + variável local em todas as funções do mapa
+5. **`.filter(Boolean) as string[]`** → type predicate
+6. **Magic strings** → constantes `GEO_SOURCE_ID`, `GEO_CLUSTER_LAYER_ID`, `GEO_POINT_LAYER_ID`, `GEO_ANIMATION_DURATION`, `GEO_FIT_BOUNDS_MAX_ZOOM`
+7. **`zoomOnClick` redundante** → `useSync(props, 'zoomOnClick', emit)` (removidos ref + watch + emit manual)
+8. **Typecheck falhando** → `pnpm.overrides` unificando `vue ^3.5.22`; `pnpm typecheck` sem erros
+9. **Estrutura de módulos (Devix)** → aplicada com exceção de idioma: nomes em **inglês** (padrão do repositório)
+
+### Storybook e organização Storytype
+
+- Adicionados Storybook (`@storybook/vue3-vite` 10.5.10), `vitest`, `@vue/test-utils` e scripts `storybook`/`build-storybook`/`test`
+- Componentes reorganizados em níveis Atomic Design seguindo o padrão do `packages/directus-extension-3dmap`:
+  - `src/components/atoms/value-cell/`
+  - `src/components/molecules/map-toolbar/`
+  - `src/components/organisms/{map-component,table-component}/`
+  - `src/components/templates/{mapgrid-layout,mapgrid-options}/`
+- Cada componente com `.vue`, `.types.ts`, `.mock.ts`, `.stories.ts`, `.test.ts` e `index.ts` barrel
+- `.storybook/` com preview registrando mocks dos componentes Directus (`src/mocks/directus-mocks.ts`)
+- `pnpm storytype analyze`: **99/135 (73%)** (antes 61/135 = 45%)
+
+### Validação final
+
+- `pnpm lint` — limpo
+- `pnpm build` — sucesso
+- `pnpm typecheck` — zero erros
+- `pnpm test` — 14 testes passando
+- `pnpm build-storybook` — build concluído com sucesso

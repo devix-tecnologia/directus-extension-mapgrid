@@ -1,9 +1,7 @@
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="map-container"></div>
-    <v-button v-tooltip="'Reset view'" class="reset-map-btn" icon rounded @click="resetMap">
-      <v-icon name="zoom_out_map" />
-    </v-button>
+    <MapToolbar @reset="resetMap" />
   </div>
 </template>
 
@@ -11,6 +9,7 @@
 import { ref, onMounted, watch } from 'vue';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { MapToolbar } from '../../molecules/map-toolbar/index.js';
 import {
   GEO_ANIMATION_DURATION,
   GEO_CLUSTER_LAYER_ID,
@@ -21,19 +20,13 @@ import {
   type GeoItem,
   type GeoJsonFeature,
   type GeoJsonFeatureCollection,
-} from '../services/geo/index.js';
-import { resolveFieldTemplate } from '../services/value-formatter/index.js';
+} from '../../../services/geo/index.js';
+import { resolveFieldTemplate } from '../../../services/value-formatter/index.js';
+import type { MapComponentEmits, MapComponentProps } from './map-component.types';
 
-const props = defineProps<{
-  items: GeoItem[];
-  geolocation: string;
-  title: string;
-  zoomOnClick?: boolean;
-}>();
+const props = defineProps<MapComponentProps>();
 
-const emit = defineEmits<{
-  'select-item': [id: string | number];
-}>();
+const emit = defineEmits<MapComponentEmits>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
 const map = ref<maplibregl.Map | null>(null);
@@ -76,7 +69,11 @@ const fitBoundsToItems = (): void => {
   }
 
   if (!bounds.isEmpty()) {
-    m.fitBounds(bounds, { padding: 50, maxZoom: GEO_FIT_BOUNDS_MAX_ZOOM, duration: GEO_ANIMATION_DURATION });
+    m.fitBounds(bounds, {
+      padding: 50,
+      maxZoom: GEO_FIT_BOUNDS_MAX_ZOOM,
+      duration: GEO_ANIMATION_DURATION,
+    });
   }
 };
 
@@ -354,19 +351,5 @@ defineExpose({ focusOnItem });
   width: 100%;
   border-radius: var(--theme--border-radius);
   overflow: hidden;
-}
-
-.reset-map-btn {
-  position: absolute;
-  top: var(--content-padding);
-  right: var(--content-padding);
-  z-index: 29;
-  --v-button-background-color: var(--theme--background);
-  --v-button-background-color-hover: var(--theme--background-accent);
-  box-shadow: var(--theme--elevation-2xl);
-}
-
-.reset-map-btn :deep(.v-icon) {
-  --v-icon-color: var(--theme--primary);
 }
 </style>

@@ -25,5 +25,15 @@
 		"isolatedModules": true,
 		"rootDir": "./src"
 	},
-	"include": ["./src/**/*.ts"]
+	"include": ["./src/**/*.ts"],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"src/**/*.stories.ts",
+		"src/**/*.stories.tsx",
+		"src/**/*.test.ts",
+		"src/**/*.test.tsx",
+		"src/**/*.spec.ts",
+		"src/**/*.spec.tsx"
+	]
 }

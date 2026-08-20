@@ -23,9 +23,7 @@
       </template>
 
       <template v-for="header in headers" :key="header.value" #[`item.${header.value}`]="{ item }">
-        <span :class="{ 'selected-row': selectedItemId === item.id }">
-          {{ renderCellValue(item, header.value) }}
-        </span>
+        <ValueCell :class="{ 'selected-row': selectedItemId === item.id }" :value="item[header.value]" />
       </template>
     </v-table>
 
@@ -35,20 +33,14 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
-import type { Header, ResolvedHeader } from '../services/table/index.js';
-import type { GeoItem } from '../services/geo/index.js';
-import { serializeValue } from '../services/value-formatter/index.js';
+import { ValueCell } from '../../atoms/value-cell/index.js';
+import type { GeoItem } from '../../../services/geo/index.js';
+import type { Header, ResolvedHeader } from '../../../services/table/index.js';
+import type { TableComponentEmits, TableComponentProps } from './table-component.types';
 
-const props = defineProps<{
-  items: GeoItem[];
-  headers: Header[];
-  collection: string;
-}>();
+const props = defineProps<TableComponentProps>();
 
-const emit = defineEmits<{
-  'focus-on-item': [item: GeoItem];
-  'edit-item': [item: GeoItem];
-}>();
+const emit = defineEmits<TableComponentEmits>();
 
 const selectedItemId = ref<string | number | null>(null);
 const tableContainer = ref<HTMLDivElement | null>(null);
@@ -62,12 +54,6 @@ const resolvedHeaders = computed<ResolvedHeader[]>(() => [
   })),
   { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
-
-const renderCellValue = (item: GeoItem, field: string): string => {
-  if (!item || !field) return '';
-  if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
-  return serializeValue(item[field]);
-};
 
 const handleRowClick = ({ item }: { item: GeoItem }): void => {
   emit('focus-on-item', item);
@@ -94,6 +80,12 @@ const selectItem = (id: string | number): void => {
 };
 
 defineExpose({ selectItem });
+</script>
+
+<script lang="ts">
+export default {
+  name: 'TableComponent',
+};
 </script>
 
 <style scoped>
