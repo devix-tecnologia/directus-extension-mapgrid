@@ -161,11 +161,21 @@ watch(
   }
 );
 
+interface GeolocationField {
+  name: string;
+  field: string;
+  meta?: { interface?: string };
+}
+
 const geolocationFields = computed(() => {
   const fields = collection.fields;
   if (!fields) return [];
-  const fieldsArray = Array.isArray(fields) ? fields : Array.isArray(fields.value) ? fields.value : [];
-  return fieldsArray.filter((f: any) => f.meta?.interface === 'map');
+  const fieldsArray = Array.isArray(fields)
+    ? fields
+    : Array.isArray(fields.value)
+      ? fields.value
+      : [];
+  return fieldsArray.filter((f: GeolocationField) => f.meta?.interface === 'map');
 });
 </script>
 

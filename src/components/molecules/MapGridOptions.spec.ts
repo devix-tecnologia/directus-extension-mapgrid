@@ -5,15 +5,22 @@ vi.mock('@directus/extensions-sdk', () => ({
   useCollection: vi.fn(() => ({
     fields: ref([]),
   })),
-  useSync: vi.fn((props, key, emit) => {
-    return computed({
-      get: () => props[key],
-      set: (val) => emit(`update:${key}`, val),
-    });
-  }),
+  useSync: vi.fn(
+    (
+      props: Record<string, unknown>,
+      key: string,
+      emit: (event: string, ...args: unknown[]) => void
+    ) => {
+      return computed({
+        get: () => props[key],
+        set: (val: unknown) => emit(`update:${key}`, val),
+      });
+    }
+  ),
 }));
 
 import { mount } from '@vue/test-utils';
+import { directusComponentStubs } from '../../test-utils';
 import MapGridOptions from './MapGridOptions.vue';
 
 describe('MapGridOptions', () => {
@@ -34,38 +41,7 @@ describe('MapGridOptions', () => {
   it('should render options container', () => {
     const wrapper = mount(MapGridOptions, {
       props: defaultProps,
-      global: {
-        stubs: {
-          'v-detail': {
-            template: '<div class="v-detail"><slot /></div>',
-            props: ['icon', 'header'],
-          },
-          'v-select': {
-            template: '<div class="v-select" />',
-            props: [
-              'modelValue',
-              'collection',
-              'items',
-              'itemText',
-              'itemValue',
-              'placeholder',
-              'showDeselect',
-            ],
-          },
-          'v-input': {
-            template: '<div class="v-input" />',
-            props: ['modelValue', 'label', 'placeholder', 'type', 'step', 'min', 'max'],
-          },
-          'v-checkbox': {
-            template: '<div class="v-checkbox" />',
-            props: ['modelValue', 'label'],
-          },
-          'v-collection-field-template': {
-            template: '<div class="v-collection-field-template" />',
-            props: ['modelValue', 'collection'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.find('.field').exists()).toBe(true);
   });
@@ -73,38 +49,7 @@ describe('MapGridOptions', () => {
   it('should render multiple option sections', () => {
     const wrapper = mount(MapGridOptions, {
       props: defaultProps,
-      global: {
-        stubs: {
-          'v-detail': {
-            template: '<div class="v-detail"><slot /></div>',
-            props: ['icon', 'header'],
-          },
-          'v-select': {
-            template: '<div class="v-select" />',
-            props: [
-              'modelValue',
-              'collection',
-              'items',
-              'itemText',
-              'itemValue',
-              'placeholder',
-              'showDeselect',
-            ],
-          },
-          'v-input': {
-            template: '<div class="v-input" />',
-            props: ['modelValue', 'label', 'placeholder', 'type', 'step', 'min', 'max'],
-          },
-          'v-checkbox': {
-            template: '<div class="v-checkbox" />',
-            props: ['modelValue', 'label'],
-          },
-          'v-collection-field-template': {
-            template: '<div class="v-collection-field-template" />',
-            props: ['modelValue', 'collection'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.findAll('.v-detail').length).toBeGreaterThan(0);
   });

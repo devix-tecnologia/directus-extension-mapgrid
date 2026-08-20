@@ -3,7 +3,7 @@ import { computed, ref, toRefs } from 'vue';
 import DeleteAction from './components/atoms/DeleteAction.vue';
 import Options from './components/molecules/MapGridOptions.vue';
 import Layout from './components/templates/MapGridLayout.vue';
-import type { LayoutOptions, LayoutQuery } from './types.js';
+import type { LayoutOptions, LayoutQuery, RowItem } from './types.js';
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
@@ -36,7 +36,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       coluna3,
       coluna4,
       coluna5,
-    } = useLayoutOptions();
+    } = createLayoutOptions();
 
     const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
       sort,
@@ -47,7 +47,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       search,
     });
 
-    const selectedItems = ref<{ id: string | number; [key: string]: unknown }[]>([]);
+    const selectedItems = ref<RowItem[]>([]);
 
     const deleteItems = async (ids: (string | number)[]) => {
       await api.delete(`/items/${collection.value}`, { data: ids });
@@ -61,7 +61,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       selectedItems.value = [];
     };
 
-    function useLayoutOptions() {
+    function createLayoutOptions() {
       const title = createViewOption('title', undefined);
       const zoomOnClick = createViewOption('zoomOnClick', undefined);
       const geolocation = createViewOption('geolocation', undefined);

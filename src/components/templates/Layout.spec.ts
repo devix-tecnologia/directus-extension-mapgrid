@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { directusComponentStubs } from '../../test-utils';
 import MapGridLayout from './MapGridLayout.vue';
 
 vi.mock('vue-router', () => ({
@@ -21,18 +22,7 @@ describe('MapGridLayout', () => {
         collection: 'test_collection',
         selectedItems: [],
       },
-      global: {
-        stubs: {
-          'v-info': {
-            template: '<div class="v-info"><slot /><slot name="append" /></div>',
-            props: ['icon', 'title', 'center'],
-          },
-          'v-progress-circular': {
-            template: '<div class="v-progress" />',
-            props: ['indeterminate'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.find('.v-info').exists()).toBe(true);
   });
@@ -45,18 +35,7 @@ describe('MapGridLayout', () => {
         collection: 'test_collection',
         selectedItems: [],
       },
-      global: {
-        stubs: {
-          'v-info': {
-            template: '<div class="v-info"><slot /><slot name="append" /></div>',
-            props: ['icon', 'title', 'center'],
-          },
-          'v-progress-circular': {
-            template: '<div class="v-progress" />',
-            props: ['indeterminate'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.find('.v-info').exists()).toBe(true);
   });

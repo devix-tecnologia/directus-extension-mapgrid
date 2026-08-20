@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { directusComponentStubs, tooltipDirective } from '../../test-utils';
 
 vi.mock('maplibre-gl', () => {
   class MockMap {
@@ -75,19 +76,8 @@ describe('MapComponent', () => {
     const wrapper = mount(MapComponent, {
       props: defaultProps,
       global: {
-        stubs: {
-          'v-button': {
-            template: '<button class="v-button" @click="$emit(\'click\')"><slot /></button>',
-            props: ['icon', 'rounded'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-        },
-        directives: {
-          tooltip: () => {},
-        },
+        stubs: directusComponentStubs,
+        directives: { tooltip: tooltipDirective },
       },
     });
     expect(wrapper.find('.map-container').exists()).toBe(true);
@@ -97,20 +87,8 @@ describe('MapComponent', () => {
     const wrapper = mount(MapComponent, {
       props: defaultProps,
       global: {
-        stubs: {
-          'v-button': {
-            template:
-              '<button class="v-button reset-map-btn" @click="$emit(\'click\')"><slot /></button>',
-            props: ['icon', 'rounded'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-        },
-        directives: {
-          tooltip: () => {},
-        },
+        stubs: directusComponentStubs,
+        directives: { tooltip: tooltipDirective },
       },
     });
     expect(wrapper.find('.reset-map-btn').exists()).toBe(true);
@@ -120,19 +98,8 @@ describe('MapComponent', () => {
     const wrapper = mount(MapComponent, {
       props: defaultProps,
       global: {
-        stubs: {
-          'v-button': {
-            template: '<button class="v-button" @click="$emit(\'click\')"><slot /></button>',
-            props: ['icon', 'rounded'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-        },
-        directives: {
-          tooltip: () => {},
-        },
+        stubs: directusComponentStubs,
+        directives: { tooltip: tooltipDirective },
       },
     });
     expect(typeof wrapper.vm.focusOnItem).toBe('function');

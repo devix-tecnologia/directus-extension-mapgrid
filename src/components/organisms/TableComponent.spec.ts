@@ -1,11 +1,13 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import TableComponent from './TableComponent.vue';
+import { directusComponentStubs } from '../../test-utils';
 
 vi.mock('@directus/extensions-sdk', () => ({
   useCollection: vi.fn(),
   useSync: vi.fn(),
 }));
+
+import TableComponent from './TableComponent.vue';
 
 describe('TableComponent', () => {
   const defaultProps = {
@@ -28,22 +30,7 @@ describe('TableComponent', () => {
   it('should render table container', () => {
     const wrapper = mount(TableComponent, {
       props: defaultProps,
-      global: {
-        stubs: {
-          'v-table': {
-            template: '<div class="v-table"><slot /></div>',
-            props: ['items', 'headers', 'showSelect', 'fixedHeader'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-          'v-info': {
-            template: '<div class="v-info"><slot /></div>',
-            props: ['icon', 'title', 'center'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.find('.table-container').exists()).toBe(true);
   });
@@ -51,22 +38,7 @@ describe('TableComponent', () => {
   it('should render with items', () => {
     const wrapper = mount(TableComponent, {
       props: defaultProps,
-      global: {
-        stubs: {
-          'v-table': {
-            template: '<div class="v-table"><slot /></div>',
-            props: ['items', 'headers', 'showSelect', 'fixedHeader'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-          'v-info': {
-            template: '<div class="v-info"><slot /></div>',
-            props: ['icon', 'title', 'center'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.props('items')).toHaveLength(2);
   });
@@ -74,45 +46,15 @@ describe('TableComponent', () => {
   it('should expose selectItem method', () => {
     const wrapper = mount(TableComponent, {
       props: defaultProps,
-      global: {
-        stubs: {
-          'v-table': {
-            template: '<div class="v-table"><slot /></div>',
-            props: ['items', 'headers', 'showSelect', 'fixedHeader'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-          'v-info': {
-            template: '<div class="v-info"><slot /></div>',
-            props: ['icon', 'title', 'center'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(typeof wrapper.vm.selectItem).toBe('function');
   });
 
-  it('should emit focus-on-item event on row click', async () => {
+  it('should emit focus-on-item event on row click', () => {
     const wrapper = mount(TableComponent, {
       props: defaultProps,
-      global: {
-        stubs: {
-          'v-table': {
-            template: '<div class="v-table"><slot /></div>',
-            props: ['items', 'headers', 'showSelect', 'fixedHeader'],
-          },
-          'v-icon': {
-            template: '<span class="v-icon" />',
-            props: ['name'],
-          },
-          'v-info': {
-            template: '<div class="v-info"><slot /></div>',
-            props: ['icon', 'title', 'center'],
-          },
-        },
-      },
+      global: { stubs: directusComponentStubs },
     });
     expect(wrapper.emitted('focus-on-item')).toBeFalsy();
   });

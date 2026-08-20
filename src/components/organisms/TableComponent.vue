@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import type { Header, RowItem } from '../../types.js';
-import { serializeFieldValue } from '../../types.js';
+import { serializeItemRow } from '../../utils.js';
 
 const props = defineProps<{
   items: RowItem[];
@@ -54,6 +54,7 @@ const emit = defineEmits<{
 
 const selectedItemId = ref<string | number | null>(null);
 const tableContainer = ref<HTMLDivElement | null>(null);
+const SCROLL_DELAY_MS = 50;
 
 const selectedItems = computed({
   get: () => props.selectedItems,
@@ -70,11 +71,7 @@ const resolvedHeaders = computed(() => [
   { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
-const renderCellValue = (item: RowItem, field: string): string => {
-  if (!item || !field) return '';
-  if (!Object.hasOwn(item, field)) return '';
-  return serializeFieldValue(item[field]);
-};
+const renderCellValue = (item: RowItem, field: string): string => serializeItemRow(item, field);
 
 const handleRowClick = ({ item }: { item: RowItem }): void => {
   emit('focus-on-item', item);
@@ -96,7 +93,7 @@ const selectItem = (id: string | number): void => {
       const scrollOffset = row.offsetTop - container.clientHeight / 2 + row.clientHeight / 2;
 
       container.scrollTo({ top: scrollOffset, behavior: 'smooth' });
-    }, 50);
+    }, SCROLL_DELAY_MS);
   });
 };
 
