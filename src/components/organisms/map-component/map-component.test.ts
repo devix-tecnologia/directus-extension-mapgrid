@@ -23,6 +23,7 @@ const { mapInstance, MockMap, MockBounds, MockPopup, MockMarker } = vi.hoisted((
     flyTo: vi.fn(),
     easeTo: vi.fn(),
     fitBounds: vi.fn(),
+    resize: vi.fn(),
     isStyleLoaded: vi.fn(() => true),
     remove: vi.fn(),
   };

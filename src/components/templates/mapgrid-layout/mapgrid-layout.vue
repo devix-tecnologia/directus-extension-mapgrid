@@ -92,4 +92,14 @@ export default {
   border-radius: var(--theme--border-radius);
   overflow: hidden;
 }
+
+.mapgrid-container :deep(.map-wrapper) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mapgrid-container :deep(.table-container) {
+  flex: 0 0 40%;
+  min-height: 0;
+}
 </style>

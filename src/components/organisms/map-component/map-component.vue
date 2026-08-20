@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapToolbar } from '../../molecules/map-toolbar/index.js';
@@ -32,6 +32,7 @@ const mapContainer = ref<HTMLDivElement | null>(null);
 const map = ref<maplibregl.Map | null>(null);
 const popup = ref<maplibregl.Popup | null>(null);
 const clusterMarkers = ref<maplibregl.Marker[]>([]);
+const resizeObserver = ref<ResizeObserver | null>(null);
 
 const MARKER_SIZE = 40;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -325,6 +326,25 @@ const initializeMap = (): void => {
 
 onMounted(() => {
   initializeMap();
+  observeMapContainer();
+});
+
+const observeMapContainer = (): void => {
+  if (!mapContainer.value || typeof ResizeObserver === 'undefined') return;
+
+  resizeObserver.value = new ResizeObserver(() => {
+    map.value?.resize();
+  });
+  resizeObserver.value.observe(mapContainer.value);
+};
+
+onUnmounted(() => {
+  resizeObserver.value?.disconnect();
+  resizeObserver.value = null;
+  popup.value?.remove();
+  popup.value = null;
+  map.value?.remove();
+  map.value = null;
 });
 
 watch(
@@ -342,11 +362,13 @@ defineExpose({ focusOnItem });
 <style scoped>
 .map-wrapper {
   position: relative;
-  height: 60%;
-  min-height: 300px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 .map-container {
+  position: relative;
   height: 100%;
   width: 100%;
   border-radius: var(--theme--border-radius);

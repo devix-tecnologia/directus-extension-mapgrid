@@ -16,8 +16,8 @@ setup((app) => {
   app.provide(STORES_INJECT, createMockStores());
 
   const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [],
+    history: createMemoryHistory('/'),
+    routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }],
   });
   app.use(router);
 });
