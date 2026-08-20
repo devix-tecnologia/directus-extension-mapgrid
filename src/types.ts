@@ -12,6 +12,9 @@ export interface LayoutOptions {
   title?: string;
   geolocation?: string;
   zoomOnClick?: boolean;
+  mapCenterLng?: number;
+  mapCenterLat?: number;
+  mapZoom?: number;
   coluna1?: string;
   coluna2?: string;
   coluna3?: string;

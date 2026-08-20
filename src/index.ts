@@ -1,7 +1,8 @@
-import { defineLayout, useCollection, useSync, useItems } from '@directus/extensions-sdk';
+import { defineLayout, useCollection, useSync, useItems, useApi } from '@directus/extensions-sdk';
 import Layout from './layout.vue';
+import DeleteAction from './components/DeleteAction.vue';
 import { LayoutOptions, LayoutQuery } from './types.js';
-import { computed, toRefs } from 'vue';
+import { computed, ref, toRefs } from 'vue';
 import Options from './options.vue';
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
@@ -12,17 +13,18 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
   slots: {
     options: Options,
     sidebar: () => undefined,
-    actions: () => undefined,
+    actions: DeleteAction,
   },
   setup(props, { emit }) {
     const layoutOptions = useSync(props, 'layoutOptions', emit);
     const layoutQuery = useSync(props, 'layoutQuery', emit);
+    const api = useApi();
 
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection } = useCollection(collection);
     const { sort, limit, page, fields } = useLayoutQuery();
 
-    const { title, geolocation, zoomOnClick, coluna1, coluna2, coluna3, coluna4, coluna5 } =
+    const { title, geolocation, zoomOnClick, mapCenterLng, mapCenterLat, mapZoom, coluna1, coluna2, coluna3, coluna4, coluna5 } =
       useLayoutOptions();
 
     const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
@@ -34,10 +36,27 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       search,
     });
 
+    const selectedItems = ref<{ id: string | number; [key: string]: unknown }[]>([]);
+
+    const deleteItems = async (ids: (string | number)[]) => {
+      await api.delete(`/items/${collection.value}`, { data: ids });
+      items.value = items.value.filter((item) => !ids.includes(item.id));
+    };
+
+    const deleteSelectedItems = async () => {
+      if (!selectedItems.value.length) return;
+      const ids = selectedItems.value.map((item) => item.id);
+      await deleteItems(ids);
+      selectedItems.value = [];
+    };
+
     function useLayoutOptions() {
       const title = createViewOption('title', undefined);
       const zoomOnClick = createViewOption('zoomOnClick', undefined);
       const geolocation = createViewOption('geolocation', undefined);
+      const mapCenterLng = createViewOption('mapCenterLng', -47.9292);
+      const mapCenterLat = createViewOption('mapCenterLat', -15.7801);
+      const mapZoom = createViewOption('mapZoom', 4);
       const coluna1 = createViewOption('coluna1', undefined);
       const coluna2 = createViewOption('coluna2', undefined);
       const coluna3 = createViewOption('coluna3', undefined);
@@ -48,6 +67,9 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         title,
         geolocation,
         zoomOnClick,
+        mapCenterLng,
+        mapCenterLat,
+        mapZoom,
         coluna1,
         coluna2,
         coluna3,
@@ -102,11 +124,17 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       title,
       geolocation,
       zoomOnClick,
+      mapCenterLng,
+      mapCenterLat,
+      mapZoom,
       coluna1,
       coluna2,
       coluna3,
       coluna4,
       coluna5,
+
+      selectedItems,
+      deleteSelectedItems,
     };
   },
 });

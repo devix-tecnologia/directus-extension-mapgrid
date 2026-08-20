@@ -2,9 +2,10 @@
   <div class="table-container" ref="tableContainer">
     <v-table
       v-if="items && items.length > 0"
+      v-model="selectedItems"
       :headers="resolvedHeaders"
       :items="items"
-      :show-select="false"
+      :show-select="true"
       :show-resize="true"
       fixed-header
       @click:row="handleRowClick"
@@ -13,7 +14,7 @@
         <div class="actions">
           <v-icon
             v-tooltip="'Edit'"
-            class="edit-icon"
+            class="action-icon"
             name="edit"
             small
             clickable
@@ -50,15 +51,22 @@ const props = defineProps<{
   items: RowItem[];
   headers: Header[];
   collection: string;
+  selectedItems: RowItem[];
 }>();
 
 const emit = defineEmits<{
   'focus-on-item': [item: RowItem];
   'edit-item': [item: RowItem];
+  'update:selectedItems': [items: RowItem[]];
 }>();
 
 const selectedItemId = ref<string | number | null>(null);
 const tableContainer = ref<HTMLDivElement | null>(null);
+
+const selectedItems = computed({
+  get: () => props.selectedItems,
+  set: (value: RowItem[]) => emit('update:selectedItems', value),
+});
 
 const resolvedHeaders = computed(() => [
   ...props.headers.map((header) => ({
@@ -134,15 +142,11 @@ defineExpose({ selectItem });
   padding: 0 var(--form-horizontal-gap);
 }
 
-.edit-icon {
-  opacity: 0;
-  transition: opacity var(--transition-fast) var(--transition);
+.action-icon {
+  opacity: 1;
+  transition: color var(--transition-fast) var(--transition);
   --v-icon-color: var(--theme--foreground-subdued);
   --v-icon-color-hover: var(--theme--primary);
-}
-
-.table-container :deep(tr:hover) .edit-icon {
-  opacity: 1;
 }
 
 .table-container :deep(tr:has(.selected-row)) {

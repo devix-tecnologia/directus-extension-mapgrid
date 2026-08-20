@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, watchEffect, nextTick } from 'vue';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -28,6 +28,9 @@ const props = defineProps<{
   geolocation: string;
   title: string;
   zoomOnClick?: boolean;
+  centerLng?: number;
+  centerLat?: number;
+  initialZoom?: number;
 }>();
 
 const emit = defineEmits<{
@@ -224,7 +227,12 @@ const focusOnItem = (item: GeoItem): void => {
 
 const resetMap = (): void => {
   if (!map.value) return;
-  fitBoundsToItems();
+  if (props.items.length > 0) {
+    fitBoundsToItems();
+  } else {
+    map.value.setCenter(resolveMapCenter());
+    map.value.setZoom(props.initialZoom ?? DEFAULT_ZOOM);
+  }
 };
 
 const registerMapEvents = (): void => {
@@ -320,6 +328,15 @@ const registerMapEvents = (): void => {
   m.on('error', () => {});
 };
 
+const DEFAULT_CENTER: [number, number] = [-47.9292, -15.7801];
+const DEFAULT_ZOOM = 4;
+
+const resolveMapCenter = (): [number, number] => {
+  const lng = props.centerLng ?? DEFAULT_CENTER[0];
+  const lat = props.centerLat ?? DEFAULT_CENTER[1];
+  return [lng, lat];
+};
+
 const initializeMap = (): void => {
   if (!mapContainer.value) return;
 
@@ -342,8 +359,8 @@ const initializeMap = (): void => {
       },
       layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
     },
-    center: [0, 0],
-    zoom: 1,
+    center: resolveMapCenter(),
+    zoom: props.initialZoom ?? DEFAULT_ZOOM,
   });
 
   registerMapEvents();
@@ -353,11 +370,26 @@ onMounted(() => {
   initializeMap();
 });
 
+let previousItemCount = 0;
+
+watchEffect(() => {
+  const currentCount = props.items.length;
+  if (map.value && currentCount > 0 && currentCount !== previousItemCount) {
+    previousItemCount = currentCount;
+    nextTick(() => {
+      refreshClusterLabels();
+      fitBoundsToItems();
+    });
+  }
+});
+
 watch(
   () => props.items,
   () => {
-    refreshClusterLabels();
-    fitBoundsToItems();
+    nextTick(() => {
+      refreshClusterLabels();
+      fitBoundsToItems();
+    });
   },
   { deep: true },
 );

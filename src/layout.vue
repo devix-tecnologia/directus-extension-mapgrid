@@ -15,6 +15,9 @@
         :geolocation="geolocation"
         :title="title"
         :zoom-on-click="zoomOnClick"
+        :center-lng="mapCenterLng"
+        :center-lat="mapCenterLat"
+        :initial-zoom="mapZoom"
         @select-item="handleSelectItem"
       />
       <TableComponent
@@ -22,6 +25,8 @@
         :items="items"
         :headers="headers"
         :collection="collection"
+        :selected-items="selectedItems"
+        @update:selected-items="selectedItems = $event"
         @focus-on-item="handleFocusOnItem"
         @edit-item="editItem"
       />
@@ -32,6 +37,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useSync } from '@directus/extensions-sdk';
 import MapComponent from './components/MapComponent.vue';
 import TableComponent from './components/TableComponent.vue';
 
@@ -51,17 +57,29 @@ const props = defineProps<{
   collection: string;
   title?: string;
   geolocation?: string;
+  mapCenterLng?: number;
+  mapCenterLat?: number;
+  mapZoom?: number;
   coluna1?: string;
   coluna2?: string;
   coluna3?: string;
   coluna4?: string;
   coluna5?: string;
   zoomOnClick?: boolean;
+  deleteItems?: (ids: (string | number)[]) => Promise<void>;
+  selectedItems: RowItem[];
+  deleteSelectedItems?: () => Promise<void>;
+}>();
+
+const emit = defineEmits<{
+  'update:selectedItems': [items: RowItem[]];
 }>();
 
 const router = useRouter();
 const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
 const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
+
+const selectedItems = useSync(props, 'selectedItems', emit);
 
 const headers = computed<Header[]>(() => {
   const columns = [props.coluna1, props.coluna2, props.coluna3, props.coluna4, props.coluna5].filter(
