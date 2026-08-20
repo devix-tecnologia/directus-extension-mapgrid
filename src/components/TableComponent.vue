@@ -35,59 +35,41 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
-
-interface Header {
-  text: string;
-  value: string;
-}
-
-interface RowItem {
-  id: string | number;
-  [key: string]: unknown;
-}
+import type { Header, ResolvedHeader } from '../services/table/index.js';
+import type { GeoItem } from '../services/geo/index.js';
+import { serializeValue } from '../services/value-formatter/index.js';
 
 const props = defineProps<{
-  items: RowItem[];
+  items: GeoItem[];
   headers: Header[];
   collection: string;
 }>();
 
 const emit = defineEmits<{
-  'focus-on-item': [item: RowItem];
-  'edit-item': [item: RowItem];
+  'focus-on-item': [item: GeoItem];
+  'edit-item': [item: GeoItem];
 }>();
 
 const selectedItemId = ref<string | number | null>(null);
 const tableContainer = ref<HTMLDivElement | null>(null);
 
-const resolvedHeaders = computed(() => [
+const resolvedHeaders = computed<ResolvedHeader[]>(() => [
   ...props.headers.map((header) => ({
     text: header.text,
     value: header.value,
     sortable: true,
-    width: null as number | null,
+    width: null,
   })),
   { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
-const serializeValue = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value !== 'object') return String(value);
-  if (Array.isArray(value)) return value.join(', ');
-  if ('coordinates' in (value as Record<string, unknown>)) {
-    const geo = value as { coordinates: [number, number] };
-    return `${geo.coordinates[1]}, ${geo.coordinates[0]}`;
-  }
-  return JSON.stringify(value);
-};
-
-const renderCellValue = (item: RowItem, field: string): string => {
+const renderCellValue = (item: GeoItem, field: string): string => {
   if (!item || !field) return '';
   if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
   return serializeValue(item[field]);
 };
 
-const handleRowClick = ({ item }: { item: RowItem }): void => {
+const handleRowClick = ({ item }: { item: GeoItem }): void => {
   emit('focus-on-item', item);
   selectedItemId.value = item.id;
 };

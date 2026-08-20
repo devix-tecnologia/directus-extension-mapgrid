@@ -20,10 +20,10 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection } = useCollection(collection);
-    const { sort, limit, page, fields } = useLayoutQuery();
+    const { sort, limit, page, fields } = createLayoutQuery();
 
     const { title, geolocation, zoomOnClick, coluna1, coluna2, coluna3, coluna4, coluna5 } =
-      useLayoutOptions();
+      createLayoutOptions();
 
     const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
       sort,
@@ -34,7 +34,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       search,
     });
 
-    function useLayoutOptions() {
+    function createLayoutOptions() {
       const title = createViewOption('title', undefined);
       const zoomOnClick = createViewOption('zoomOnClick', undefined);
       const geolocation = createViewOption('geolocation', undefined);
@@ -75,7 +75,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       }
     }
 
-    function useLayoutQuery() {
+    function createLayoutQuery() {
       const page = computed(() => layoutQuery.value?.page || 1);
       const limit = computed(() => layoutQuery.value?.limit || 25);
       const sort = computed(() => layoutQuery.value?.sort || []);

@@ -21,11 +21,7 @@
 
   <v-detail icon="zoom_in" header="Zoom on Table Click">
     <div class="field">
-      <v-checkbox
-        v-model="localZoomOnClick"
-        label="Zoom when clicking table items"
-        @update:modelValue="emit('update:zoomOnClick', $event)"
-      />
+      <v-checkbox v-model="zoomOnClick" label="Zoom when clicking table items" />
     </div>
   </v-detail>
 
@@ -47,7 +43,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRefs, computed, ref, watch, type WritableComputedRef } from 'vue';
+import { defineComponent, toRefs, computed, type WritableComputedRef } from 'vue';
 import { useCollection, useSync } from '@directus/extensions-sdk';
 import type { LayoutOptions } from './types';
 
@@ -85,18 +81,10 @@ export default defineComponent({
 
     const title = useSync(props, 'title', emit);
     const geolocation = useSync(props, 'geolocation', emit);
+    const zoomOnClick = useSync(props, 'zoomOnClick', emit);
 
     const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
       useSync(props, key, emit),
-    );
-
-    const localZoomOnClick = ref(props.zoomOnClick);
-
-    watch(
-      () => props.zoomOnClick,
-      (newValue) => {
-        localZoomOnClick.value = newValue;
-      },
     );
 
     const geolocationFields = computed(() =>
@@ -109,8 +97,8 @@ export default defineComponent({
       geolocationFields,
       title,
       geolocation,
+      zoomOnClick,
       columnRefs,
-      localZoomOnClick,
       emit,
     };
   },

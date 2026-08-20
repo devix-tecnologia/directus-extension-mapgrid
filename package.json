@@ -118,5 +118,10 @@
       "@semantic-release/github",
       "@semantic-release/git"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "vue": "^3.5.22"
+    }
   }
 }

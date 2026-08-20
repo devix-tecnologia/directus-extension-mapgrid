@@ -34,19 +34,11 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import MapComponent from './components/MapComponent.vue';
 import TableComponent from './components/TableComponent.vue';
-
-interface RowItem {
-  id: string | number;
-  [key: string]: unknown;
-}
-
-interface Header {
-  text: string;
-  value: string;
-}
+import type { GeoItem } from './services/geo/index.js';
+import type { Header } from './services/table/index.js';
 
 const props = defineProps<{
-  items: RowItem[];
+  items: GeoItem[];
   loading?: boolean;
   collection: string;
   title?: string;
@@ -65,13 +57,13 @@ const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 
 const headers = computed<Header[]>(() => {
   const columns = [props.coluna1, props.coluna2, props.coluna3, props.coluna4, props.coluna5].filter(
-    Boolean,
-  ) as string[];
+    (c): c is string => Boolean(c),
+  );
 
   return columns.map((column) => ({ text: column, value: column }));
 });
 
-const handleFocusOnItem = (item: RowItem): void => {
+const handleFocusOnItem = (item: GeoItem): void => {
   mapComponent.value?.focusOnItem(item);
 };
 
@@ -79,7 +71,7 @@ const handleSelectItem = (id: string | number): void => {
   tableComponent.value?.selectItem(id);
 };
 
-const editItem = (item: RowItem): void => {
+const editItem = (item: GeoItem): void => {
   router.push(`/content/${props.collection}/${item.id}`);
 };
 </script>
