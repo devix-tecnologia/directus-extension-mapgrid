@@ -80,92 +80,77 @@
   </v-detail>
 </template>
 
-<script lang="ts">
-import { defineComponent, toRefs, computed, ref, watch, type WritableComputedRef } from 'vue';
+<script setup lang="ts">
+import { toRefs, computed, ref, watch, type WritableComputedRef } from 'vue';
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import type { LayoutOptions } from './types';
+import type { LayoutOptions } from './types.js';
 
 const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
 
-export default defineComponent({
-  name: 'Options',
-  props: {
-    collection: { type: String, required: true },
-    layoutOptions: { type: Object as () => LayoutOptions, required: true },
-    fieldsInCollection: { type: Array, required: true },
-    title: { type: String, default: '' },
-    geolocation: { type: String, default: null },
-    mapCenterLng: { type: Number, default: -47.9292 },
-    mapCenterLat: { type: Number, default: -15.7801 },
-    mapZoom: { type: Number, default: 4 },
-    coluna1: { type: String, default: null },
-    coluna2: { type: String, default: null },
-    coluna3: { type: String, default: null },
-    coluna4: { type: String, default: null },
-    coluna5: { type: String, default: null },
-    zoomOnClick: { type: Boolean, default: false },
+const props = defineProps<{
+  collection: string;
+  layoutOptions: LayoutOptions;
+  fieldsInCollection: Array<{ name: string; field: string; meta?: { interface?: string } }>;
+  title?: string;
+  geolocation?: string;
+  mapCenterLng?: number;
+  mapCenterLat?: number;
+  mapZoom?: number;
+  coluna1?: string;
+  coluna2?: string;
+  coluna3?: string;
+  coluna4?: string;
+  coluna5?: string;
+  zoomOnClick?: boolean;
+}>();
+
+const emit = defineEmits<{
+  'update:layoutOptions': [value: LayoutOptions];
+  'update:geolocation': [value: string | null];
+  'update:title': [value: string];
+  'update:mapCenterLng': [value: number];
+  'update:mapCenterLat': [value: number];
+  'update:mapZoom': [value: number];
+  'update:coluna1': [value: string | null];
+  'update:coluna2': [value: string | null];
+  'update:coluna3': [value: string | null];
+  'update:coluna4': [value: string | null];
+  'update:coluna5': [value: string | null];
+  'update:zoomOnClick': [value: boolean];
+}>();
+
+const { collection: collectionKey } = toRefs(props);
+const collection = useCollection(collectionKey);
+
+const title = useSync(props, 'title', emit);
+const geolocation = useSync(props, 'geolocation', emit);
+
+const localCenterLng = ref(props.mapCenterLng);
+const localCenterLat = ref(props.mapCenterLat);
+const localMapZoom = ref(props.mapZoom);
+
+watch(() => props.mapCenterLng, (v) => { localCenterLng.value = v; });
+watch(() => props.mapCenterLat, (v) => { localCenterLat.value = v; });
+watch(() => props.mapZoom, (v) => { localMapZoom.value = v; });
+
+const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
+  useSync(props, key, emit),
+);
+
+const localZoomOnClick = ref(props.zoomOnClick);
+
+watch(
+  () => props.zoomOnClick,
+  (newValue) => {
+    localZoomOnClick.value = newValue;
   },
-  emits: [
-    'update:layoutOptions',
-    'update:geolocation',
-    'update:title',
-    'update:mapCenterLng',
-    'update:mapCenterLat',
-    'update:mapZoom',
-    'update:coluna1',
-    'update:coluna2',
-    'update:coluna3',
-    'update:coluna4',
-    'update:coluna5',
-    'update:zoomOnClick',
-  ],
-  setup(props, { emit }) {
-    const { collection: collectionKey } = toRefs(props);
-    const collection = useCollection(collectionKey);
+);
 
-    const title = useSync(props, 'title', emit);
-    const geolocation = useSync(props, 'geolocation', emit);
-
-    const localCenterLng = ref(props.mapCenterLng);
-    const localCenterLat = ref(props.mapCenterLat);
-    const localMapZoom = ref(props.mapZoom);
-
-    watch(() => props.mapCenterLng, (v) => { localCenterLng.value = v; });
-    watch(() => props.mapCenterLat, (v) => { localCenterLat.value = v; });
-    watch(() => props.mapZoom, (v) => { localMapZoom.value = v; });
-
-    const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
-      useSync(props, key, emit),
-    );
-
-    const localZoomOnClick = ref(props.zoomOnClick);
-
-    watch(
-      () => props.zoomOnClick,
-      (newValue) => {
-        localZoomOnClick.value = newValue;
-      },
-    );
-
-    const geolocationFields = computed(() =>
-      collection.fields.value.filter(
-        (f: { meta?: { interface?: string } }) => f.meta?.interface === 'map',
-      ),
-    );
-
-    return {
-      geolocationFields,
-      title,
-      geolocation,
-      localCenterLng,
-      localCenterLat,
-      localMapZoom,
-      columnRefs,
-      localZoomOnClick,
-      emit,
-    };
-  },
-});
+const geolocationFields = computed(() =>
+  collection.fields.value.filter(
+    (f) => f.meta?.interface === 'map',
+  ),
+);
 </script>
 
 <style scoped>

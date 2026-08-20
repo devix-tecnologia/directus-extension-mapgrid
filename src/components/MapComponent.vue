@@ -8,20 +8,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, watchEffect, nextTick } from 'vue';
+import { ref, onMounted, watchEffect, nextTick } from 'vue';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { GeoItem, GeoJsonFeature } from '../types.js';
+import { serializeFieldValue } from '../types.js';
 
-interface GeoItem {
-  id: string | number;
-  [key: string]: unknown;
-}
-
-interface GeoJsonFeature {
-  type: 'Feature';
-  geometry: { type: 'Point'; coordinates: [number, number] };
-  properties: { id: string | number; formattedTitle: string };
-}
+const SOURCE_ID = 'points';
+const CLUSTER_LAYER_ID = 'clusters';
+const UNCLUSTERED_LAYER_ID = 'unclustered-point';
 
 const props = defineProps<{
   items: GeoItem[];
@@ -46,8 +41,8 @@ const MARKER_SIZE = 40;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const resolveThemePrimaryColor = (): string => {
-  const computed = getComputedStyle(document.documentElement);
-  return computed.getPropertyValue('--theme--primary').trim() || '#007bff';
+  const computedStyle = getComputedStyle(document.documentElement);
+  return computedStyle.getPropertyValue('--theme--primary').trim() || '#007bff';
 };
 
 const resolveFieldTemplate = (item: GeoItem, template: string): string => {
@@ -59,23 +54,11 @@ const resolveFieldTemplate = (item: GeoItem, template: string): string => {
   for (const match of matches) {
     const fieldName = match.slice(2, -2);
     const raw = item[fieldName];
-    const resolved = resolveFieldValue(raw);
+    const resolved = serializeFieldValue(raw);
     result = result.replace(match, resolved);
   }
 
   return result.trim() || String(item.id);
-};
-
-const resolveFieldValue = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value !== 'object') return String(value);
-  if (Array.isArray(value)) return value.join(', ');
-  if ('coordinates' in (value as Record<string, unknown>)) {
-    const geo = value as { coordinates: [number, number] };
-    return `${geo.coordinates[1]}, ${geo.coordinates[0]}`;
-  }
-  const first = Object.values(value as Record<string, unknown>)[0];
-  return first !== undefined ? String(first) : '[Object]';
 };
 
 const buildGeoJson = (): { type: 'FeatureCollection'; features: GeoJsonFeature[] } => {
@@ -145,7 +128,7 @@ const createClusterLabelElement = (count: number): HTMLDivElement => {
 const refreshClusterLabels = (): void => {
   if (!map.value || !map.value.isStyleLoaded()) return;
 
-  const source = map.value.getSource('points');
+  const source = map.value.getSource(SOURCE_ID);
   if (!source) return;
 
   source.setData(buildGeoJson());
@@ -153,7 +136,7 @@ const refreshClusterLabels = (): void => {
   for (const marker of clusterMarkers.value) marker.remove();
   clusterMarkers.value = [];
 
-  const clusters = map.value.querySourceFeatures('points', { filter: ['has', 'point_count'] });
+  const clusters = map.value.querySourceFeatures(SOURCE_ID, { filter: ['has', 'point_count'] });
 
   for (const cluster of clusters) {
     const count = cluster.properties.point_count as number;
@@ -169,7 +152,7 @@ const refreshClusterLabels = (): void => {
     clusterMarkers.value.push(marker);
   }
 
-  map.value.setPaintProperty('unclustered-point', 'circle-color', resolveThemePrimaryColor());
+  map.value.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-color', resolveThemePrimaryColor());
 };
 
 const openPopupAt = (coords: [number, number], label: string): void => {
@@ -200,9 +183,9 @@ const panToVisibleArea = (coords: [number, number]): void => {
 };
 
 const flashHighlightMarker = (): void => {
-  map.value!.setPaintProperty('unclustered-point', 'circle-stroke-width', 4);
+  map.value!.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-stroke-width', 4);
   setTimeout(() => {
-    map.value?.setPaintProperty('unclustered-point', 'circle-stroke-width', 2);
+    map.value?.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-stroke-width', 2);
   }, 1000);
 };
 
@@ -239,7 +222,7 @@ const registerMapEvents = (): void => {
   const m = map.value!;
 
   m.on('load', () => {
-    m.addSource('points', {
+    m.addSource(SOURCE_ID, {
       type: 'geojson',
       data: buildGeoJson(),
       cluster: true,
@@ -248,9 +231,9 @@ const registerMapEvents = (): void => {
     });
 
     m.addLayer({
-      id: 'clusters',
+      id: CLUSTER_LAYER_ID,
       type: 'circle',
-      source: 'points',
+      source: SOURCE_ID,
       filter: ['has', 'point_count'],
       paint: {
         'circle-color': [
@@ -267,9 +250,9 @@ const registerMapEvents = (): void => {
     });
 
     m.addLayer({
-      id: 'unclustered-point',
+      id: UNCLUSTERED_LAYER_ID,
       type: 'circle',
-      source: 'points',
+      source: SOURCE_ID,
       filter: ['!', ['has', 'point_count']],
       paint: {
         'circle-color': resolveThemePrimaryColor(),
@@ -279,7 +262,7 @@ const registerMapEvents = (): void => {
       },
     });
 
-    m.on('click', 'unclustered-point', (e) => {
+    m.on('click', UNCLUSTERED_LAYER_ID, (e) => {
       const feature = e.features![0];
       const coords = feature.geometry.coordinates.slice() as [number, number];
       const title = feature.properties.formattedTitle as string;
@@ -293,27 +276,27 @@ const registerMapEvents = (): void => {
       emit('select-item', id);
     });
 
-    m.on('mouseenter', 'unclustered-point', () => {
+    m.on('mouseenter', UNCLUSTERED_LAYER_ID, () => {
       m.getCanvas().style.cursor = 'pointer';
     });
-    m.on('mouseleave', 'unclustered-point', () => {
+    m.on('mouseleave', UNCLUSTERED_LAYER_ID, () => {
       m.getCanvas().style.cursor = '';
     });
 
-    m.on('click', 'clusters', (e) => {
-      const features = m.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+    m.on('click', CLUSTER_LAYER_ID, (e) => {
+      const features = m.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
       const clusterId = features[0].properties.cluster_id;
-      m.getSource('points')!
+      m.getSource(SOURCE_ID)!
         .getClusterExpansionZoom(clusterId)
         .then((zoom) => {
           m.easeTo({ center: features[0].geometry.coordinates, zoom });
         });
     });
 
-    m.on('mouseenter', 'clusters', () => {
+    m.on('mouseenter', CLUSTER_LAYER_ID, () => {
       m.getCanvas().style.cursor = 'pointer';
     });
-    m.on('mouseleave', 'clusters', () => {
+    m.on('mouseleave', CLUSTER_LAYER_ID, () => {
       m.getCanvas().style.cursor = '';
     });
 
@@ -325,7 +308,7 @@ const registerMapEvents = (): void => {
     refreshClusterLabels();
   });
 
-  m.on('error', () => {});
+  m.on('error', (e) => console.warn('Map error:', e));
 };
 
 const DEFAULT_CENTER: [number, number] = [-47.9292, -15.7801];
@@ -370,29 +353,14 @@ onMounted(() => {
   initializeMap();
 });
 
-let previousItemCount = 0;
-
 watchEffect(() => {
-  const currentCount = props.items.length;
-  if (map.value && currentCount > 0 && currentCount !== previousItemCount) {
-    previousItemCount = currentCount;
+  if (map.value && props.items.length > 0) {
     nextTick(() => {
       refreshClusterLabels();
       fitBoundsToItems();
     });
   }
 });
-
-watch(
-  () => props.items,
-  () => {
-    nextTick(() => {
-      refreshClusterLabels();
-      fitBoundsToItems();
-    });
-  },
-  { deep: true },
-);
 
 defineExpose({ focusOnItem });
 </script>

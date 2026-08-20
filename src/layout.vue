@@ -40,16 +40,7 @@ import { useRouter } from 'vue-router';
 import { useSync } from '@directus/extensions-sdk';
 import MapComponent from './components/MapComponent.vue';
 import TableComponent from './components/TableComponent.vue';
-
-interface RowItem {
-  id: string | number;
-  [key: string]: unknown;
-}
-
-interface Header {
-  text: string;
-  value: string;
-}
+import type { RowItem, Header } from './types.js';
 
 const props = defineProps<{
   items: RowItem[];

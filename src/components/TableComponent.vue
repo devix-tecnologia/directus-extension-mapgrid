@@ -36,16 +36,8 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
-
-interface Header {
-  text: string;
-  value: string;
-}
-
-interface RowItem {
-  id: string | number;
-  [key: string]: unknown;
-}
+import type { RowItem, Header } from '../types.js';
+import { serializeFieldValue } from '../types.js';
 
 const props = defineProps<{
   items: RowItem[];
@@ -78,21 +70,10 @@ const resolvedHeaders = computed(() => [
   { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
-const serializeValue = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value !== 'object') return String(value);
-  if (Array.isArray(value)) return value.join(', ');
-  if ('coordinates' in (value as Record<string, unknown>)) {
-    const geo = value as { coordinates: [number, number] };
-    return `${geo.coordinates[1]}, ${geo.coordinates[0]}`;
-  }
-  return JSON.stringify(value);
-};
-
 const renderCellValue = (item: RowItem, field: string): string => {
   if (!item || !field) return '';
   if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
-  return serializeValue(item[field]);
+  return serializeFieldValue(item[field]);
 };
 
 const handleRowClick = ({ item }: { item: RowItem }): void => {

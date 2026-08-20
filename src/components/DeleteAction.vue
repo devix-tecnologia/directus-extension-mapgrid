@@ -24,11 +24,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-
-interface RowItem {
-  id: string | number;
-  [key: string]: unknown;
-}
+import type { RowItem } from '../types.js';
 
 const props = defineProps<{
   selectedItems: RowItem[];
