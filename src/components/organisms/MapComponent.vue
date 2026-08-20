@@ -8,11 +8,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watchEffect, nextTick } from 'vue';
 import maplibregl from 'maplibre-gl';
+import { nextTick, onMounted, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { GeoItem, GeoJsonFeature } from '../types.js';
-import { serializeFieldValue } from '../types.js';
+import type { GeoItem, GeoJsonFeature } from '../../types.js';
+import { serializeFieldValue } from '../../types.js';
 
 const SOURCE_ID = 'points';
 const CLUSTER_LAYER_ID = 'clusters';

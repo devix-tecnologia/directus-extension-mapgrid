@@ -61,50 +61,49 @@
     "validate": "directus-extension validate",
     "link": "directus-extension link",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"src/**/*.{ts,vue}\"",
-    "lint:fix": "eslint \"src/**/*.{ts,vue}\" --fix",
-    "format": "prettier --write src/",
-    "prepare": "husky"
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/",
+    "format": "biome format --write src/",
+    "prepare": "husky",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.9",
     "@directus/extensions-sdk": "^16.0.2",
     "@directus/types": "^13.2.3",
-    "@eslint/js": "^9.36.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.6",
     "@semantic-release/npm": "^12.0.2",
-    "@typescript-eslint/eslint-plugin": "^8.45.0",
-    "@typescript-eslint/parser": "^8.45.0",
-    "@vue/eslint-config-typescript": "^14.6.0",
-    "eslint": "^9.36.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-vue": "^10.5.0",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/blocks": "^8.6.14",
+    "@storybook/vue3": "^8.6.18",
+    "@storybook/vue3-vite": "^8.6.18",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "^2.1.9",
+    "@vue/test-utils": "^2.4.11",
     "globals": "^16.4.0",
+    "happy-dom": "^20.11.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.3",
-    "prettier": "^3.6.2",
     "semantic-release": "^24.2.9",
+    "storybook": "^8.6.18",
     "storytype": "^0.2.6",
     "taskin": "^3.0.3",
     "typescript": "^5.9.3",
+    "vitest": "^2.1.9",
     "vue": "^3.5.22",
-    "vue-eslint-parser": "^10.2.0"
+    "vue-router": "4.5.1"
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",
     "maplibre-gl": "^5.8.0"
   },
-  "prettier": {
-    "singleQuote": true,
-    "trailingComma": "es5",
-    "printWidth": 100,
-    "semi": true,
-    "tabWidth": 2
-  },
   "lint-staged": {
     "*.{ts,vue}": [
-      "eslint --fix",
-      "prettier --write"
+      "biome check --write"
     ]
   },
   "release": {

@@ -1,9 +1,9 @@
-import { defineLayout, useCollection, useSync, useItems, useApi } from '@directus/extensions-sdk';
-import Layout from './layout.vue';
-import DeleteAction from './components/DeleteAction.vue';
-import { LayoutOptions, LayoutQuery } from './types.js';
+import { defineLayout, useApi, useCollection, useItems, useSync } from '@directus/extensions-sdk';
 import { computed, ref, toRefs } from 'vue';
-import Options from './options.vue';
+import DeleteAction from './components/atoms/DeleteAction.vue';
+import Options from './components/molecules/MapGridOptions.vue';
+import Layout from './components/templates/MapGridLayout.vue';
+import type { LayoutOptions, LayoutQuery } from './types.js';
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
@@ -24,8 +24,19 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { fields: fieldsInCollection } = useCollection(collection);
     const { sort, limit, page, fields } = useLayoutQuery();
 
-    const { title, geolocation, zoomOnClick, mapCenterLng, mapCenterLat, mapZoom, coluna1, coluna2, coluna3, coluna4, coluna5 } =
-      useLayoutOptions();
+    const {
+      title,
+      geolocation,
+      zoomOnClick,
+      mapCenterLng,
+      mapCenterLat,
+      mapZoom,
+      coluna1,
+      coluna2,
+      coluna3,
+      coluna4,
+      coluna5,
+    } = useLayoutOptions();
 
     const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
       sort,

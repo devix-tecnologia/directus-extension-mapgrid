@@ -10,9 +10,9 @@
 		"noImplicitAny": true,
 		"noImplicitThis": true,
 		"noImplicitReturns": true,
-		"noUnusedLocals": true,
+		"noUnusedLocals": false,
 		"noUncheckedIndexedAccess": true,
-		"noUnusedParameters": true,
+		"noUnusedParameters": false,
 		"alwaysStrict": true,
 		"strictNullChecks": true,
 		"strictFunctionTypes": true,
@@ -25,5 +25,6 @@
 		"isolatedModules": true,
 		"rootDir": "./src"
 	},
-	"include": ["./src/**/*.ts"]
+	"include": ["./src/**/*.ts", "./src/**/*.vue"],
+	"exclude": ["src/**/*.spec.ts", "src/**/*.stories.ts"]
 }

@@ -81,9 +81,9 @@
 </template>
 
 <script setup lang="ts">
-import { toRefs, computed, ref, watch, type WritableComputedRef } from 'vue';
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import type { LayoutOptions } from './types.js';
+import { computed, ref, toRefs, type WritableComputedRef, watch } from 'vue';
+import type { LayoutOptions } from '../../types.js';
 
 const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
 
@@ -129,12 +129,27 @@ const localCenterLng = ref(props.mapCenterLng);
 const localCenterLat = ref(props.mapCenterLat);
 const localMapZoom = ref(props.mapZoom);
 
-watch(() => props.mapCenterLng, (v) => { localCenterLng.value = v; });
-watch(() => props.mapCenterLat, (v) => { localCenterLat.value = v; });
-watch(() => props.mapZoom, (v) => { localMapZoom.value = v; });
+watch(
+  () => props.mapCenterLng,
+  (v) => {
+    localCenterLng.value = v;
+  }
+);
+watch(
+  () => props.mapCenterLat,
+  (v) => {
+    localCenterLat.value = v;
+  }
+);
+watch(
+  () => props.mapZoom,
+  (v) => {
+    localMapZoom.value = v;
+  }
+);
 
 const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
-  useSync(props, key, emit),
+  useSync(props, key, emit)
 );
 
 const localZoomOnClick = ref(props.zoomOnClick);
@@ -143,14 +158,15 @@ watch(
   () => props.zoomOnClick,
   (newValue) => {
     localZoomOnClick.value = newValue;
-  },
+  }
 );
 
-const geolocationFields = computed(() =>
-  collection.fields.value.filter(
-    (f) => f.meta?.interface === 'map',
-  ),
-);
+const geolocationFields = computed(() => {
+  const fields = collection.fields;
+  if (!fields) return [];
+  const fieldsArray = Array.isArray(fields) ? fields : Array.isArray(fields.value) ? fields.value : [];
+  return fieldsArray.filter((f: any) => f.meta?.interface === 'map');
+});
 </script>
 
 <style scoped>

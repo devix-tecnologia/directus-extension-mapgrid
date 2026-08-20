@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { RowItem } from '../types.js';
+import type { RowItem } from '../../types.js';
 
 const props = defineProps<{
   selectedItems: RowItem[];

@@ -35,9 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
-import type { RowItem, Header } from '../types.js';
-import { serializeFieldValue } from '../types.js';
+import { computed, nextTick, ref } from 'vue';
+import type { Header, RowItem } from '../../types.js';
+import { serializeFieldValue } from '../../types.js';
 
 const props = defineProps<{
   items: RowItem[];
@@ -72,7 +72,7 @@ const resolvedHeaders = computed(() => [
 
 const renderCellValue = (item: RowItem, field: string): string => {
   if (!item || !field) return '';
-  if (!Object.prototype.hasOwnProperty.call(item, field)) return '';
+  if (!Object.hasOwn(item, field)) return '';
   return serializeFieldValue(item[field]);
 };
 

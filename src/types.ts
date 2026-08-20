@@ -1,4 +1,4 @@
-import { Filter } from '@directus/types';
+import type { Filter } from '@directus/types';
 
 export interface RowItem {
   id: string | number;

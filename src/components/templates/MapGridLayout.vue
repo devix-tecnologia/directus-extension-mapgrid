@@ -35,12 +35,12 @@
 </template>
 
 <script setup lang="ts">
+import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSync } from '@directus/extensions-sdk';
-import MapComponent from './components/MapComponent.vue';
-import TableComponent from './components/TableComponent.vue';
-import type { RowItem, Header } from './types.js';
+import type { Header, RowItem } from '../../types.js';
+import MapComponent from '../organisms/MapComponent.vue';
+import TableComponent from '../organisms/TableComponent.vue';
 
 const props = defineProps<{
   items: RowItem[];
@@ -73,9 +73,13 @@ const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 const selectedItems = useSync(props, 'selectedItems', emit);
 
 const headers = computed<Header[]>(() => {
-  const columns = [props.coluna1, props.coluna2, props.coluna3, props.coluna4, props.coluna5].filter(
-    Boolean,
-  ) as string[];
+  const columns = [
+    props.coluna1,
+    props.coluna2,
+    props.coluna3,
+    props.coluna4,
+    props.coluna5,
+  ].filter(Boolean) as string[];
 
   return columns.map((column) => ({ text: column, value: column }));
 });
