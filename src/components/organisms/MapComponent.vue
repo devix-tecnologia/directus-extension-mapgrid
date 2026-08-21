@@ -51,7 +51,7 @@ const map = ref<maplibregl.Map | null>(null);
 const popups = ref<maplibregl.Popup[]>([]);
 const clusterMarkers = ref<maplibregl.Marker[]>([]);
 
-const getMapOrReturn = (): maplibregl.Map | null => map.value;
+const getMapOrReturn = (): maplibregl.Map | null => map.value as maplibregl.Map | null;
 
 const resolveThemePrimaryColor = (): string => {
   const computedStyle = getComputedStyle(document.documentElement);
@@ -155,7 +155,7 @@ const refreshClusterLabels = (): void => {
   const m = getMapOrReturn();
   if (!m || !m.isStyleLoaded()) return;
 
-  const source = m.getSource(SOURCE_ID);
+  const source = m.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
   if (!source) return;
 
   source.setData(buildGeoJson());
@@ -166,8 +166,8 @@ const refreshClusterLabels = (): void => {
   const clusters = m.querySourceFeatures(SOURCE_ID, { filter: ['has', 'point_count'] });
 
   for (const cluster of clusters) {
-    const count = cluster.properties.point_count as number;
-    const coords = cluster.geometry.coordinates as [number, number];
+    const count = cluster.properties?.point_count as number;
+    const coords = (cluster.geometry as GeoJSON.Point).coordinates as [number, number];
 
     const marker = new maplibregl.Marker({
       element: createClusterLabelElement(count),
@@ -176,7 +176,7 @@ const refreshClusterLabels = (): void => {
       .setLngLat(coords)
       .addTo(m);
 
-    clusterMarkers.value.push(marker);
+    clusterMarkers.value.push(marker as maplibregl.Marker);
   }
 
   m.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-color', resolveThemePrimaryColor());
@@ -309,9 +309,9 @@ const registerMapEvents = (): void => {
       const feature = e.features?.[0];
       if (!feature) return;
 
-      const coords = feature.geometry.coordinates.slice() as [number, number];
-      const title = feature.properties.formattedTitle as string;
-      const id = feature.properties.id as string | number;
+      const coords = (feature.geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+      const title = feature.properties?.formattedTitle as string;
+      const id = feature.properties?.id as string | number;
 
       while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
         coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
@@ -333,12 +333,13 @@ const registerMapEvents = (): void => {
       const clusterFeature = features[0];
       if (!clusterFeature) return;
 
-      const clusterId = clusterFeature.properties.cluster_id;
-      const source = m.getSource(SOURCE_ID);
+      const clusterId = clusterFeature.properties?.cluster_id as number;
+      const source = m.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
       if (!source) return;
 
-      source.getClusterExpansionZoom(clusterId).then((zoom) => {
-        m.easeTo({ center: clusterFeature.geometry.coordinates, zoom });
+      source.getClusterExpansionZoom(clusterId).then((zoom: number) => {
+        const coords = (clusterFeature.geometry as GeoJSON.Point).coordinates as [number, number];
+        m.easeTo({ center: coords, zoom });
       });
     });
 
@@ -420,7 +421,10 @@ defineExpose({ focusOnItem });
   height: 100%;
   width: 100%;
   border-radius: var(--theme--border-radius);
-  overflow: hidden;
+}
+
+.map-container :deep(.maplibregl-canvas) {
+  border-radius: inherit;
 }
 
 .reset-map-btn {
