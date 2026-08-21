@@ -75,7 +75,8 @@
     "@directus/constants": "^13.0.3",
     "@directus/extensions-sdk": "^16.0.2",
     "@directus/types": "^13.2.3",
-    "@eslint/js": "^9.36.0",    "@semantic-release/git": "^10.0.1",
+    "@eslint/js": "^9.36.0",
+    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.6",
     "@semantic-release/npm": "^12.0.2",
     "@storybook/addon-docs": "^10.5.10",
@@ -101,7 +102,8 @@
     "vitest": "^4.0.18",
     "vue": "^3.5.22",
     "vue-eslint-parser": "^10.2.0",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "eslint-plugin-storybook": "10.5.10"
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",
