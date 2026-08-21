@@ -1,0 +1,96 @@
+services:
+  database:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: directus-mapgrid-db-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
+    environment:
+      POSTGRES_DB: directus
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: directus
+    tmpfs:
+      - /var/lib/postgresql/data:rw,size=256M,mode=777
+    networks:
+      - mapgrid-directus-test-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U directus -d directus']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  directus:
+    image: directus/directus:${DIRECTUS_VERSION:-10.13.1}
+    container_name: directus-mapgrid-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
+    ports:
+      - '8055:8055'
+    environment:
+      DB_CLIENT: 'pg'
+      DB_HOST: 'database'
+      DB_PORT: '5432'
+      DB_DATABASE: 'directus'
+      DB_USER: 'directus'
+      DB_PASSWORD: 'directus'
+      KEY: 'test-key-that-is-at-least-32-bytes'
+      SECRET: 'test-secret-that-is-at-least-32-bytes'
+      ADMIN_EMAIL: 'admin@example.com'
+      ADMIN_PASSWORD: 'admin123'
+      STATIC_TOKEN: 'test-static-token'
+      PUBLIC_URL: 'http://directus:8055'
+      STORAGE_LOCAL_ROOT: '/directus/uploads'
+      EXTENSIONS_PATH: '/directus/extensions'
+      EXTENSIONS_AUTO_RELOAD: 'true'
+      PERMISSIONS_CACHE_TTL: '0'
+      CACHE_ENABLED: 'false'
+      ACCEPT_TERMS: 'true'
+      PROJECT_OWNER: 'admin@example.com'
+      PRESSURE_LIMITER_ENABLED: 'false'
+      LOG_LEVEL: 'warn'
+    volumes:
+      - ./dist/index.js:/directus/extensions/directus-extension-mapgrid/dist/index.js:ro
+      - ./package.json:/directus/extensions/directus-extension-mapgrid/package.json:ro
+    tmpfs:
+      - /directus/uploads:rw,noexec,nosuid,size=64M,mode=777
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - mapgrid-directus-test-network
+    healthcheck:
+      test:
+        - CMD
+        - sh
+        - -c
+        - |
+          wget --no-verbose --tries=1 --spider http://0.0.0.0:8055/server/health
+      interval: 5s
+      timeout: 10s
+      retries: 50
+      start_period: 60s
+
+  tests:
+    image: mcr.microsoft.com/playwright:v1.57.0
+    container_name: directus-mapgrid-tests-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
+    environment:
+      - CI=true
+      - DIRECTUS_URL=http://directus:8055
+    depends_on:
+      directus:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:rw
+      - /dev/shm:/dev/shm
+    networks:
+      - mapgrid-directus-test-network
+    command:
+      - bash
+      - -lc
+      - |
+        npm i -g pnpm@10.28.2 && \
+        pnpm install --frozen-lockfile && \
+        pnpm exec playwright install --with-deps && \
+        pnpm test:e2e
+
+networks:
+  mapgrid-directus-test-network:
+    driver: bridge
+    name: directus-mapgrid-test-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}

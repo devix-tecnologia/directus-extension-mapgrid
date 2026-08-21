@@ -74,6 +74,12 @@ pnpm typecheck        # Run TypeScript type checking
 # Testing
 pnpm test             # Run unit tests
 pnpm test:watch       # Run tests in watch mode
+pnpm test:integration # Run integration tests (requires Docker)
+pnpm test:e2e         # Run E2E tests (requires Docker)
+pnpm test:e2e:debug   # Run E2E tests in debug mode
+pnpm test:e2e:headed  # Run E2E tests in headed mode
+pnpm test:e2e:report  # Show E2E test report
+pnpm test:all         # Run all tests
 ```
 
 ### Project Structure
@@ -97,7 +103,50 @@ src/
 - [Directus SDK](https://docs.directus.io/) - Directus integration
 - [Biome](https://biomejs.dev/) - Linting and formatting
 - [Storybook](https://storybook.js.org/) - Component documentation
-- [Vitest](https://vitest.dev/) - Unit testing
+- [Vitest](https://vitest.dev/) - Unit and integration testing
+- [Playwright](https://playwright.dev/) - End-to-end testing
+
+## Testing
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Node.js >= 22.13.1
+- pnpm >= 10.15.0
+
+### Test Structure
+
+```
+tests/
+├── e2e/                          # E2E tests (Playwright)
+│   └── mapgrid-layout.spec.ts    # UI tests for map/grid rendering and interaction
+├── helpers/                      # Shared helpers
+├── helper-collection.ts          # Test collection creation with Map field
+├── helper-items.ts               # Test items CRUD
+├── setup.ts                      # Docker environment setup/teardown
+├── test-env.ts                   # Test environment variables
+├── test-logger.ts                # Test logger
+├── run-e2e.js                    # E2E test runner (manages Docker containers)
+└── mapgrid.spec.ts               # Integration tests (Vitest)
+```
+
+### Running Tests
+
+```bash
+# Unit tests (no Docker required)
+pnpm test
+
+# Integration tests (requires Docker)
+# Tests extension logic against a real Directus instance
+pnpm test:integration
+
+# E2E tests (requires Docker)
+# Tests the full UI in a browser via Playwright
+pnpm test:e2e
+
+# Run all tests
+pnpm test:all
+```
 
 ## Contributing
 
