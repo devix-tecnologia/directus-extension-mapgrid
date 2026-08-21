@@ -69,7 +69,7 @@
     "build-storybook": "storybook build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration": "VERBOSE=true node tests/run-integration.js",
     "test:e2e": "VERBOSE=true node tests/run-e2e.js",
     "test:e2e:ui": "VERBOSE=true node tests/run-e2e.js --ui",
     "test:e2e:debug": "playwright test --debug",
