@@ -32,8 +32,12 @@ async function getToken(): Promise<string> {
 async function setupCollection() {
   const token = await getToken();
 
-  const existing = await api('GET', `/collections/${COLLECTION}`, undefined, token);
-  if ((existing as { data?: unknown }).data) return;
+  const existing = await api('GET', `/collections/${COLLECTION}`, undefined, token).catch(() => null);
+  if (existing) {
+    const items = await api('GET', `/items/${COLLECTION}?limit=1`, undefined, token).catch(() => null);
+    const rows = (items as { data?: unknown[] })?.data;
+    if (Array.isArray(rows) && rows.length > 0) return;
+  }
 
   await api('POST', '/collections', {
     collection: COLLECTION,
@@ -45,7 +49,7 @@ async function setupCollection() {
       { field: 'location', type: 'json', meta: { interface: 'map', options: {} }, schema: { is_nullable: true } },
       { field: 'status', type: 'string', meta: { interface: 'select-dropdown', options: { choices: [{ text: 'Published', value: 'published' }, { text: 'Draft', value: 'draft' }] } }, schema: { default_value: 'draft', is_nullable: false } },
     ],
-  }, token);
+  }, token).catch(() => {});
 
   await new Promise((r) => setTimeout(r, 1000));
 
@@ -55,7 +59,11 @@ async function setupCollection() {
     }, token).catch(() => {});
   }
 
-  await api('POST', `/items/${COLLECTION}`, TEST_ITEMS, token);
+  const items = await api('GET', `/items/${COLLECTION}?limit=1`, undefined, token).catch(() => null);
+  const rows = (items as { data?: unknown[] })?.data;
+  if (Array.isArray(rows) && rows.length > 0) return;
+
+  await api('POST', `/items/${COLLECTION}`, TEST_ITEMS, token).catch(() => {});
   await new Promise((r) => setTimeout(r, 500));
 }
 
