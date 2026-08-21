@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import maplibregl from 'maplibre-gl';
-import { nextTick, onMounted, ref, watchEffect } from 'vue';
+import { nextTick, onMounted, ref, shallowRef, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoItem, GeoJsonFeature } from '../../types.js';
 import { serializeFieldValue } from '../../utils.js';
@@ -47,9 +47,9 @@ const emit = defineEmits<{
 }>();
 
 const mapContainer = ref<HTMLDivElement | null>(null);
-const map = ref<maplibregl.Map | null>(null);
-const popups = ref<maplibregl.Popup[]>([]);
-const clusterMarkers = ref<maplibregl.Marker[]>([]);
+const map = shallowRef<maplibregl.Map | null>(null);
+const popups = shallowRef<maplibregl.Popup[]>([]);
+const clusterMarkers = shallowRef<maplibregl.Marker[]>([]);
 
 const getMapOrReturn = (): maplibregl.Map | null => map.value as maplibregl.Map | null;
 
@@ -176,7 +176,7 @@ const refreshClusterLabels = (): void => {
       .setLngLat(coords)
       .addTo(m);
 
-    clusterMarkers.value.push(marker as maplibregl.Marker);
+    clusterMarkers.value = [...clusterMarkers.value, marker];
   }
 
   m.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-color', resolveThemePrimaryColor());
@@ -191,7 +191,7 @@ const openPopupAt = (coords: [number, number], label: string): void => {
     .setLngLat(coords)
     .setHTML(`<strong>${label}</strong>`)
     .addTo(m);
-  popups.value.push(popup);
+  popups.value = [...popups.value, popup];
 };
 
 const flyToItem = (coords: [number, number]): void => {
