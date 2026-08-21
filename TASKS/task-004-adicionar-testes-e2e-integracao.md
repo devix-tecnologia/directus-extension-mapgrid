@@ -1,6 +1,6 @@
 # Task 004 — adicionar testes e2e/integracao
 
-Status: in-progress
+Status: done
 Type: test
 Assignee: marcospatricio
 
@@ -22,14 +22,32 @@ escopo esperado:
 
 ## Tasks
 
-- [ ] replicar o setup de testes dos projetos de referência (playwright.config, vitest.config, docker-compose.test.yml, pasta tests/)
-- [ ] implementar no teste a criação da coleção de teste (campo de localização "Map" + itens) e a configuração do mapgrid como layout de visualização
-- [ ] escrever testes e2e (Playwright) em TypeScript para renderização do mapa/grade, interação com os controles e confirmação do funcionamento, incluindo a centralização do mapa no marker ao clicar em um registro do grid
-- [ ] escrever testes de integração (Vitest) em TypeScript para a lógica da extensão (GeoJSON e manipulação de dados)
-- [ ] adicionar scripts de teste ao package.json e documentar a execução no README
-- [ ] validar execução dos testes juntamente com lint e typecheck
+- [x] replicar o setup de testes dos projetos de referência (playwright.config, vitest.config, docker-compose.test.yml, pasta tests/)
+- [x] implementar no teste a criação da coleção de teste (campo de localização "Map" + itens) e a configuração do mapgrid como layout de visualização
+- [x] escrever testes e2e (Playwright) em TypeScript para renderização do mapa/grade, interação com os controles e confirmação do funcionamento, incluindo a centralização do mapa no marker ao clicar em um registro do grid
+- [x] escrever testes de integração (Vitest) em TypeScript para a lógica da extensão (GeoJSON e manipulação de dados)
+- [x] adicionar scripts de teste ao package.json e documentar a execução no README
+- [x] validar execução dos testes juntamente com lint e typecheck
 
 ## Notes
 
 - Referências do padrão de testes: [directus-extension-inframe](https://github.com/devix-tecnologia/directus-extension-inframe) e [directus-extension-push-notification](https://github.com/devix-tecnologia/directus-extension-push-notification)
 - Documentação de extensões do directus: https://docs.directus.io/extensions/
+
+## Parecer da revisão (2026-08-21)
+
+Revisão completa da branch `feat/task-004` com bateria final verde: **unit 13/13, integração 12/12, e2e 8/8, lint 0 erros, typecheck e build ok**, executados via runner oficial com containers Docker recém-criados. Escopo da task atendido.
+
+### Problemas encontrados na revisão e corrigidos
+
+1. **Testes de integração não testavam o código real** — reimplementavam localmente `buildGeoJson`, `resolveFieldTemplate` e resolução de coordenadas (cópia da lógica de produção). Extraídos os módulos compartilhados `src/geojson.ts` e `src/defaults.ts`, agora consumidos tanto pela extensão quanto pelos testes; um bug real foi descoberto no processo: a regex de template com flag `g` era stateful (`lastIndex`) e corrompia `matchAll`.
+2. **Bug real de UX descoberto pelo e2e** — o `watchEffect` do `MapComponent.vue` chamava `fitBoundsToItems()` em toda atualização de `items`; um refetch do `useItems` durante o `flyTo` cancelava a animação e puxava a câmera de volta ao overview (~50% de falha sob 4 workers). Corrigido com guarda `hasPerformedInitialFitBounds` (fitBounds automático apenas uma vez por montagem; botão de reset continua funcional).
+3. **Setup e2e com condição de corrida** — setup por worker (`beforeAll` com 4 workers) derrubava/recriava coleções concorrentemente (HTTP 500). Migrado para `global-setup`/`global-teardown` do Playwright com preset global criado via API (elimina também o clique frágil no seletor de layout).
+4. **Duplicação massiva na infra de teste** — runners `run-e2e.js`/`run-integration.js` (~150 linhas repetidas), helpers duplicados e credenciais espalhadas consolidados em `tests/run-docker-tests.js` + `tests/helpers/` (`directus-api`, `wait`, `mapgrid-preset`); porta dinâmica no `docker-compose.test.yml` evita conflito com stacks locais.
+5. **Código com comentários/refs frágeis** — removidos `@ts-expect-error`, `biome-ignore` e catches vazios comentados; câmera do mapa exposta via `data-center`/`data-zoom` para asserção determinística; cliques em marker via projeção Web Mercator própria (`map-projection.ts`) em vez de coordenadas fixas.
+6. **Asserções fracas substituídas** — padrão "settle-then-assert" trocado por `expect.poll` nos testes de câmera; teste tautológico de defaults removido; empty-state deixou de usar `test.skip()`.
+
+### Observações restantes (fora do escopo)
+
+- Warnings pré-existentes de `noExplicitAny` nos mocks de `.storybook/` (não relacionados à task).
+- O teste de empty-state valida apenas o `v-info` padrão do Directus; um estado vazio customizado do mapgrid exigiria mudança de comportamento no componente.
