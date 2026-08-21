@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import ValueCell from './value-cell.vue';
-import { generateMockData } from './value-cell.mock';
+import ValueCell from './ValueCell.vue';
+import { generateMockData } from './ValueCell.mock';
 
 const meta: Meta<typeof ValueCell> = {
   title: '01 - Átomos/ValueCell',

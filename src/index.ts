@@ -1,8 +1,8 @@
 import { defineLayout, useCollection, useSync, useItems } from '@directus/extensions-sdk';
-import Layout from './components/templates/mapgrid-layout/mapgrid-layout.vue';
+import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import { LayoutOptions, LayoutQuery } from './types.js';
 import { computed, toRefs } from 'vue';
-import Options from './components/templates/mapgrid-options/mapgrid-options.vue';
+import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',

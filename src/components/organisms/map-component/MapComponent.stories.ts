@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { expect } from 'storybook/test';
-import MapComponent from './map-component.vue';
-import { generateMockData } from './map-component.mock';
+import MapComponent from './MapComponent.vue';
+import { generateMockData } from './MapComponent.mock';
 
 const meta: Meta<typeof MapComponent> = {
   title: '03 - Organismos/MapComponent',

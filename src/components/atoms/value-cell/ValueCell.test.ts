@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
-import ValueCell from './value-cell.vue';
+import ValueCell from './ValueCell.vue';
 
 describe('ValueCell', () => {
   it('renders a serialized string value', () => {

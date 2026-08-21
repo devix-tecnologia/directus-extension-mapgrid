@@ -36,7 +36,7 @@ import { ref, computed, nextTick } from 'vue';
 import { ValueCell } from '../../atoms/value-cell/index.js';
 import type { GeoItem } from '../../../services/geo/index.js';
 import type { Header, ResolvedHeader } from '../../../services/table/index.js';
-import type { TableComponentEmits, TableComponentProps } from './table-component.types';
+import type { TableComponentEmits, TableComponentProps } from './TableComponent.types';
 
 const props = defineProps<TableComponentProps>();
 

@@ -1,3 +1,3 @@
-export * from './map-component.types';
-export * from './map-component.mock';
-export { default as MapComponent } from './map-component.vue';
+export * from './MapComponent.types';
+export * from './MapComponent.mock';
+export { default as MapComponent } from './MapComponent.vue';

@@ -1,3 +1,3 @@
-export * from './value-cell.types';
-export * from './value-cell.mock';
-export { default as ValueCell } from './value-cell.vue';
+export * from './ValueCell.types';
+export * from './ValueCell.mock';
+export { default as ValueCell } from './ValueCell.vue';

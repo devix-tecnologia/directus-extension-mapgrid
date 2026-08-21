@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
-import MapToolbar from './map-toolbar.vue';
+import MapToolbar from './MapToolbar.vue';
 
 describe('MapToolbar', () => {
   it('emits reset when button is clicked', async () => {

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { expect } from 'storybook/test';
-import MapgridLayout from './mapgrid-layout.vue';
-import { generateMockData } from './mapgrid-layout.mock';
+import MapgridLayout from './MapgridLayout.vue';
+import { generateMockData } from './MapgridLayout.mock';
 
 const meta: Meta<typeof MapgridLayout> = {
   title: '04 - Templates/MapgridLayout',

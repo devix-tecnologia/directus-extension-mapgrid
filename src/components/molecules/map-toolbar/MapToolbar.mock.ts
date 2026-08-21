@@ -1,4 +1,4 @@
-import type { MapToolbarType } from './map-toolbar.types';
+import type { MapToolbarType } from './MapToolbar.types';
 
 export const generateMockData = (): MapToolbarType => {
   const props: MapToolbarType['props'] = {};

@@ -1,3 +1,3 @@
-export * from './mapgrid-options.types';
-export * from './mapgrid-options.mock';
-export { default as MapgridOptions } from './mapgrid-options.vue';
+export * from './MapgridOptions.types';
+export * from './MapgridOptions.mock';
+export { default as MapgridOptions } from './MapgridOptions.vue';

@@ -22,7 +22,7 @@ import {
   type GeoJsonFeatureCollection,
 } from '../../../services/geo/index.js';
 import { resolveFieldTemplate } from '../../../services/value-formatter/index.js';
-import type { MapComponentEmits, MapComponentProps } from './map-component.types';
+import type { MapComponentEmits, MapComponentProps } from './MapComponent.types';
 
 const props = defineProps<MapComponentProps>();
 

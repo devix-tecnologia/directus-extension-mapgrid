@@ -1,4 +1,4 @@
-import type { ValueCellType } from './value-cell.types';
+import type { ValueCellType } from './ValueCell.types';
 
 export const generateMockData = (): ValueCellType => {
   const props: ValueCellType['props'] = {

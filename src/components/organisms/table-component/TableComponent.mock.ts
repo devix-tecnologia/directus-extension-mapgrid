@@ -1,6 +1,6 @@
 import type { GeoItem } from '../../../services/geo/geo.types.js';
 import type { Header } from '../../../services/table/table.types.js';
-import type { TableComponentType } from './table-component.types';
+import type { TableComponentType } from './TableComponent.types';
 
 export const mockTableItems: GeoItem[] = [
   { id: 1, nome: 'Praça São Paulo', localizacao: { type: 'Point', coordinates: [-46.6333, -23.5505] } },

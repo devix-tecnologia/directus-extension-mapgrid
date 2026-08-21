@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MapToolbarEmits } from './map-toolbar.types';
+import type { MapToolbarEmits } from './MapToolbar.types';
 
 const emit = defineEmits<MapToolbarEmits>();
 </script>

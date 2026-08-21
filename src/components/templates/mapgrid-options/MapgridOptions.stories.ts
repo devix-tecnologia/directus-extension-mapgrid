@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import MapgridOptions from './mapgrid-options.vue';
-import { generateMockData } from './mapgrid-options.mock';
+import MapgridOptions from './MapgridOptions.vue';
+import { generateMockData } from './MapgridOptions.mock';
 
 const meta: Meta<typeof MapgridOptions> = {
   title: '04 - Templates/MapgridOptions',

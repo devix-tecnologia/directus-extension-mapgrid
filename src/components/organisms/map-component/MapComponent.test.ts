@@ -76,9 +76,9 @@ vi.mock('maplibre-gl', () => ({
   },
 }));
 
-import MapComponent from './map-component.vue';
+import MapComponent from './MapComponent.vue';
 import { DirectusMockComponents } from '../../../mocks/directus-mocks.js';
-import { mockGeoItems } from './map-component.mock';
+import { mockGeoItems } from './MapComponent.mock';
 
 describe('MapComponent', () => {
   it('instantiates the map on mount', () => {

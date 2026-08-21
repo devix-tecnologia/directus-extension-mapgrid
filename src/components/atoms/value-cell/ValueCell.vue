@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { serializeValue } from '../../../services/value-formatter/index.js';
-import type { ValueCellProps } from './value-cell.types';
+import type { ValueCellProps } from './ValueCell.types';
 
 const props = defineProps<ValueCellProps>();
 

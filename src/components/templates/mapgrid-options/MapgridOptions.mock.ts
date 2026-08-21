@@ -1,4 +1,4 @@
-import type { MapgridOptionsType } from './mapgrid-options.types';
+import type { MapgridOptionsType } from './MapgridOptions.types';
 
 export const generateMockData = (): MapgridOptionsType => {
   const props: MapgridOptionsType['props'] = {

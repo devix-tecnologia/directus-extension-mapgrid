@@ -1,5 +1,5 @@
 import type { GeoItem } from '../../../services/geo/geo.types.js';
-import type { MapComponentType } from './map-component.types';
+import type { MapComponentType } from './MapComponent.types';
 
 export const mockGeoItems: GeoItem[] = [
   {

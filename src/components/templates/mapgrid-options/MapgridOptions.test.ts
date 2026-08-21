@@ -26,7 +26,7 @@ vi.mock('@directus/extensions-sdk', () => ({
     }),
 }));
 
-import MapgridOptions from './mapgrid-options.vue';
+import MapgridOptions from './MapgridOptions.vue';
 
 describe('MapgridOptions', () => {
   const stubs = {

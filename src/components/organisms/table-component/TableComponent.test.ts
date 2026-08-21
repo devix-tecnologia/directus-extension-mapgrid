@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { DirectusMockComponents } from '../../../mocks/directus-mocks.js';
-import TableComponent from './table-component.vue';
-import { mockTableHeaders, mockTableItems } from './table-component.mock';
+import TableComponent from './TableComponent.vue';
+import { mockTableHeaders, mockTableItems } from './TableComponent.mock';
 
 describe('TableComponent', () => {
   const global = { stubs: DirectusMockComponents };

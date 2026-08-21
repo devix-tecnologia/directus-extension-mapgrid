@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { DirectusMockComponents } from '../../../mocks/directus-mocks.js';
-import MapgridLayout from './mapgrid-layout.vue';
-import { mockLayoutItems } from './mapgrid-layout.mock';
+import MapgridLayout from './MapgridLayout.vue';
+import { mockLayoutItems } from './MapgridLayout.mock';
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),

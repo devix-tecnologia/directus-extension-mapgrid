@@ -1,5 +1,5 @@
 import type { GeoItem } from '../../../services/geo/geo.types.js';
-import type { MapgridLayoutType } from './mapgrid-layout.types';
+import type { MapgridLayoutType } from './MapgridLayout.types';
 
 export const mockLayoutItems: GeoItem[] = [
   { id: 1, nome: 'Praça São Paulo', localizacao: { type: 'Point', coordinates: [-46.6333, -23.5505] } },

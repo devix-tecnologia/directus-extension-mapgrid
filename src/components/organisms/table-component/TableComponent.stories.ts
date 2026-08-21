@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { userEvent } from 'storybook/test';
 import { expect } from 'storybook/test';
-import TableComponent from './table-component.vue';
-import { generateMockData } from './table-component.mock';
+import TableComponent from './TableComponent.vue';
+import { generateMockData } from './TableComponent.mock';
 
 const meta: Meta<typeof TableComponent> = {
   title: '03 - Organismos/TableComponent',

@@ -36,7 +36,7 @@ import { MapComponent } from '../../organisms/map-component/index.js';
 import { TableComponent } from '../../organisms/table-component/index.js';
 import type { Header } from '../../../services/table/index.js';
 import type { GeoItem } from '../../../services/geo/index.js';
-import type { MapgridLayoutProps } from './mapgrid-layout.types';
+import type { MapgridLayoutProps } from './MapgridLayout.types';
 
 const props = defineProps<MapgridLayoutProps>();
 
