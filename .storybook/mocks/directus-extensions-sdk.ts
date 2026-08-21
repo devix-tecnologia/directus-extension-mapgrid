@@ -1,4 +1,4 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue';
+import { computed, type Ref, ref } from 'vue';
 
 function useCollection() {
   return {
@@ -6,7 +6,11 @@ function useCollection() {
   };
 }
 
-function useSync(props: Record<string, any>, key: string, emit: (event: string, ...args: any[]) => void) {
+function useSync(
+  props: Record<string, any>,
+  key: string,
+  emit: (event: string, ...args: any[]) => void
+) {
   return computed({
     get: () => props[key],
     set: (val: any) => emit(`update:${key}`, val),
@@ -37,4 +41,4 @@ function useApi() {
   };
 }
 
-export { useCollection, useSync, defineLayout, useItems, useApi };
+export { defineLayout, useApi, useCollection, useItems, useSync };

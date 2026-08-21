@@ -1,142 +1,131 @@
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestEnvironment, teardownTestEnvironment, apiRequest } from './setup.js';
-import { createTestCollection, populateTestItems, deleteTestCollection, COLLECTION_NAME } from './helper-collection.js';
-import { getTestItems, deleteTestItems } from './helper-items.js';
-import { logger } from './test-logger.js';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../src/defaults.js';
+import {
+  buildPointFeatureCollection,
+  resolveItemCoordinates,
+  resolveTitleFromTemplate,
+} from '../src/geojson.js';
+import type { RowItem } from '../src/types.js';
 import { serializeFieldValue, serializeItemRow } from '../src/utils.js';
-import type { RowItem, GeoJsonFeature } from '../src/types.js';
-
-const DEFAULT_LAYOUT_OPTIONS = {
-  mapCenterLng: -47.9292,
-  mapCenterLat: -15.7801,
-  mapZoom: 4,
-};
+import {
+  COLLECTION_NAME,
+  deleteTestCollection,
+  deleteTestItems,
+  ensureTestCollection,
+  getTestItems,
+  populateTestItems,
+  TEST_ITEMS,
+  type TestItem,
+} from './helper-collection.js';
+import {
+  apiRequest,
+  type DirectusCollectionResponse,
+  type DirectusSingleResponse,
+  getAccessToken,
+  unwrapItems,
+} from './helpers/directus-api.js';
+import { setupTestEnvironment } from './setup.js';
 
 describe('MapGrid Extension - Integration Tests', () => {
   beforeAll(async () => {
-    process.env.DIRECTUS_VERSION = process.env.DIRECTUS_VERSION || '10.13.1';
-    await setupTestEnvironment('integration');
-    await createTestCollection();
+    await setupTestEnvironment();
+    await ensureTestCollection();
     await populateTestItems();
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }, 300000);
+  }, 300_000);
 
   afterAll(async () => {
     await deleteTestItems();
     await deleteTestCollection();
-    await teardownTestEnvironment('integration');
   });
 
-  beforeEach(() => {
-    logger.setCurrentTest('Integration');
-  });
-
-  test('Test collection should exist with correct fields', async () => {
-    const response = await apiRequest(
+  test('Test collection should exist with the expected fields', async () => {
+    const response = await apiRequest<DirectusCollectionResponse<{ field: string }>>(
       'GET',
-      `/fields/${COLLECTION_NAME}`,
-      undefined,
-      String(process.env.DIRECTUS_ACCESS_TOKEN),
+      `/fields/${COLLECTION_NAME}`
+    );
+    const fieldNames = unwrapItems(response).map((field) => field.field);
+
+    expect(fieldNames).toEqual(expect.arrayContaining(['name', 'location', 'status']));
+  });
+
+  test('Location field should be stored as json', async () => {
+    const response = await apiRequest<DirectusSingleResponse<{ type: string }>>(
+      'GET',
+      `/fields/${COLLECTION_NAME}/location`
     );
 
-    const fields = (response.data as Record<string, unknown>)?.data || response.data || response;
-    expect(Array.isArray(fields)).toBe(true);
-
-    const fieldNames = (fields as Array<{ field: string }>).map((f) => f.field);
-    expect(fieldNames).toContain('name');
-    expect(fieldNames).toContain('location');
-    expect(fieldNames).toContain('status');
+    expect(response.data.type).toBe('json');
   });
 
-  test('Location field should be configured as json type', async () => {
-    const response = await apiRequest(
-      'GET',
-      `/fields/${COLLECTION_NAME}/location`,
-      undefined,
-      String(process.env.DIRECTUS_ACCESS_TOKEN),
-    );
-
-    const field = (response.data as Record<string, unknown>)?.data || response.data || response;
-    expect(field).toBeDefined();
-    expect((field as Record<string, unknown>).type).toBe('json');
-  });
-
-  test('Test items should have valid geolocation data', async () => {
+  test('Stored items should expose valid point geolocation data', async () => {
     const items = await getTestItems();
-    expect(Array.isArray(items)).toBe(true);
-    expect(items.length).toBeGreaterThanOrEqual(5);
 
-    for (const item of items as Array<RowItem>) {
-      const location = item.location as { type?: string; coordinates?: [number, number] } | undefined;
-      if (location) {
-        expect(location.type).toBe('Point');
-        expect(Array.isArray(location.coordinates)).toBe(true);
-        expect(location.coordinates).toHaveLength(2);
-      }
+    expect(items.length).toBeGreaterThanOrEqual(TEST_ITEMS.length);
+
+    for (const item of items) {
+      expect(item.location?.type).toBe('Point');
+      expect(item.location?.coordinates).toHaveLength(2);
+      expect(resolveItemCoordinates(item, 'location')).toHaveLength(2);
     }
   });
 
   test('Published and draft items should coexist', async () => {
     const items = await getTestItems();
-    const published = items.filter((item: RowItem) => item.status === 'published');
-    const draft = items.filter((item: RowItem) => item.status === 'draft');
 
-    expect(published.length).toBeGreaterThanOrEqual(4);
-    expect(draft.length).toBeGreaterThanOrEqual(1);
+    expect(items.filter((item) => item.status === 'published').length).toBeGreaterThanOrEqual(4);
+    expect(items.filter((item) => item.status === 'draft').length).toBeGreaterThanOrEqual(1);
   });
 
-  test('GeoJSON construction should produce valid FeatureCollection', () => {
+  test('buildPointFeatureCollection should produce a valid FeatureCollection from live items', async () => {
+    const items: RowItem[] = await getTestItems();
+    const geojson = buildPointFeatureCollection({
+      items,
+      geolocationField: 'location',
+      titleTemplate: '{{name}}',
+    });
+
+    const locatedItems = items.filter((item) => item.location !== undefined);
+
+    expect(geojson.type).toBe('FeatureCollection');
+    expect(geojson.features).toHaveLength(locatedItems.length);
+
+    for (const [index, feature] of geojson.features.entries()) {
+      expect(feature.type).toBe('Feature');
+      expect(feature.geometry.type).toBe('Point');
+      expect(feature.geometry.coordinates).toEqual(locatedItems[index].location?.coordinates);
+      expect(feature.properties.formattedTitle).toBe(locatedItems[index].name);
+    }
+  });
+
+  test('buildPointFeatureCollection should skip items without coordinates', () => {
     const items: RowItem[] = [
       { id: 1, name: 'Brasilia', location: { type: 'Point', coordinates: [-47.9292, -15.7801] } },
-      { id: 2, name: 'Sao Paulo', location: { type: 'Point', coordinates: [-46.6333, -23.5505] } },
-      { id: 3, name: 'Sem localizacao' },
+      { id: 2, name: 'Sem localizacao' },
+      {
+        id: 3,
+        name: 'Coordenadas incompletas',
+        location: { type: 'Point', coordinates: [-47.9292] },
+      },
     ];
 
-    const geoItemKey = 'location';
-    const titleTemplate = '{{name}}';
+    const geojson = buildPointFeatureCollection({
+      items,
+      geolocationField: 'location',
+      titleTemplate: '{{name}}',
+    });
 
-    const resolveItemCoords = (item: RowItem): [number, number] | undefined => {
-      const coords = (item[geoItemKey] as { coordinates?: [number, number] } | undefined)?.coordinates;
-      return coords && coords.length === 2 ? [coords[0], coords[1]] : undefined;
-    };
+    expect(geojson.features.map((feature) => feature.properties.formattedTitle)).toEqual([
+      'Brasilia',
+    ]);
+  });
 
-    const resolveFieldTemplate = (item: RowItem, template: string): string => {
-      if (!template) return String(item.id);
-      let result = template;
-      const fieldPattern = /\{\{([^}]+)\}\}/g;
-      const matches = result.match(fieldPattern) || [];
-      for (const match of matches) {
-        const fieldName = match.slice(2, -2);
-        const raw = item[fieldName];
-        const resolved = serializeFieldValue(raw);
-        result = result.replace(match, resolved);
-      }
-      return result.trim() || String(item.id);
-    };
+  test('resolveTitleFromTemplate should resolve placeholders and raw field names', () => {
+    const item: RowItem = { id: 7, name: 'Curitiba', status: 'published' };
 
-    const buildGeoJson = (): { type: string; features: GeoJsonFeature[] } => {
-      const features: GeoJsonFeature[] = [];
-      for (const item of items) {
-        const coords = resolveItemCoords(item);
-        if (!coords) continue;
-        features.push({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: coords },
-          properties: { id: item.id, formattedTitle: resolveFieldTemplate(item, titleTemplate) },
-        });
-      }
-      return { type: 'FeatureCollection', features };
-    };
-
-    const geojson = buildGeoJson();
-    expect(geojson.type).toBe('FeatureCollection');
-    expect(geojson.features).toHaveLength(2);
-
-    expect(geojson.features[0].properties.formattedTitle).toBe('Brasilia');
-    expect(geojson.features[0].geometry.coordinates).toEqual([-47.9292, -15.7801]);
-
-    expect(geojson.features[1].properties.formattedTitle).toBe('Sao Paulo');
-    expect(geojson.features[1].geometry.coordinates).toEqual([-46.6333, -23.5505]);
+    expect(resolveTitleFromTemplate(item, '{{name}}')).toBe('Curitiba');
+    expect(resolveTitleFromTemplate(item, '{{status}} / {{name}}')).toBe('published / Curitiba');
+    expect(resolveTitleFromTemplate(item, 'name')).toBe('Curitiba');
+    expect(resolveTitleFromTemplate(item, '')).toBe('7');
   });
 
   test('serializeFieldValue should handle all field types', () => {
@@ -159,42 +148,32 @@ describe('MapGrid Extension - Integration Tests', () => {
     expect(serializeItemRow(undefined as unknown as RowItem, 'name')).toBe('');
   });
 
-  test('Layout options should have correct defaults', () => {
-    expect(DEFAULT_LAYOUT_OPTIONS.mapCenterLng).toBe(-47.9292);
-    expect(DEFAULT_LAYOUT_OPTIONS.mapCenterLat).toBe(-15.7801);
-    expect(DEFAULT_LAYOUT_OPTIONS.mapZoom).toBe(4);
+  test('Default map options should stay pinned to the published contract', () => {
+    expect(DEFAULT_MAP_CENTER).toEqual([-47.9292, -15.7801]);
+    expect(DEFAULT_MAP_ZOOM).toBe(4);
   });
 
   test('Items should be sortable via API', async () => {
-    const responseAsc = await apiRequest(
-      'GET',
-      `/items/${COLLECTION_NAME}?sort=name&limit=3`,
-      undefined,
-      String(process.env.DIRECTUS_ACCESS_TOKEN),
-    );
+    const items = await getTestItems('?sort=name&limit=3');
 
-    const items = (responseAsc.data as Record<string, unknown>)?.data || responseAsc.data || responseAsc;
-    expect(Array.isArray(items)).toBe(true);
     expect(items.length).toBeGreaterThanOrEqual(3);
 
-    const names = (items as Array<RowItem>).map((i) => i.name as string);
-    const sorted = [...names].sort((a, b) => a.localeCompare(b));
-    expect(names).toEqual(sorted);
+    const names = items.map((item) => item.name);
+    expect(names).toEqual([...names].sort((first, second) => first.localeCompare(second)));
   });
 
   test('Items should be filterable via API', async () => {
-    const response = await apiRequest(
+    const response = await apiRequest<DirectusCollectionResponse<TestItem>>(
       'GET',
-      `/items/${COLLECTION_NAME}?filter[status][_eq]=draft`,
+      `/items/${COLLECTION_NAME}?filter[status][_eq]=draft&limit=-1`,
       undefined,
-      String(process.env.DIRECTUS_ACCESS_TOKEN),
+      getAccessToken()
     );
 
-    const items = (response.data as Record<string, unknown>)?.data || response.data || response;
-    expect(Array.isArray(items)).toBe(true);
-    expect(items.length).toBeGreaterThanOrEqual(1);
+    const drafts = unwrapItems(response);
+    expect(drafts.length).toBeGreaterThanOrEqual(1);
 
-    for (const item of items as Array<RowItem>) {
+    for (const item of drafts) {
       expect(item.status).toBe('draft');
     }
   });

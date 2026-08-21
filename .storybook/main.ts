@@ -1,6 +1,6 @@
+import { resolve } from 'node:path';
 import type { StorybookConfig } from '@storybook/vue3-vite';
 import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|ts|tsx|vue)'],
@@ -21,7 +21,7 @@ const config: StorybookConfig = {
     const hasVuePlugin = config.plugins.some(
       (p: any) =>
         (typeof p === 'object' && p?.name === 'vite:vue') ||
-        (typeof p === 'function' && p?.name === 'vite:vue'),
+        (typeof p === 'function' && p?.name === 'vite:vue')
     );
     if (!hasVuePlugin) {
       config.plugins.push(vue());
