@@ -1,6 +1,6 @@
 # Task 004 — adicionar testes e2e/integracao
 
-Status: pending
+Status: in-progress
 Type: test
 Assignee: marcospatricio
 
