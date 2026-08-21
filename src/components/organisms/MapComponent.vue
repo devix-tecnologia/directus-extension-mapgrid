@@ -109,6 +109,12 @@ const fitBoundsToItems = (): void => {
   }
 };
 
+const performInitialFitBoundsOnce = (): void => {
+  if (hasPerformedInitialFitBounds) return;
+  hasPerformedInitialFitBounds = true;
+  fitBoundsToItems();
+};
+
 const dismissAllPopups = (): void => {
   for (const popup of activePopups) popup.remove();
   activePopups = [];
@@ -337,10 +343,7 @@ const registerMapEvents = (): void => {
     });
 
     refreshClusterLabels();
-    if (!hasPerformedInitialFitBounds) {
-      hasPerformedInitialFitBounds = true;
-      fitBoundsToItems();
-    }
+    performInitialFitBoundsOnce();
   });
 
   instance.on('moveend', () => {
@@ -390,10 +393,7 @@ watchEffect(() => {
   if (map.value && props.items.length > 0) {
     nextTick(() => {
       refreshClusterLabels();
-      if (!hasPerformedInitialFitBounds) {
-        hasPerformedInitialFitBounds = true;
-        fitBoundsToItems();
-      }
+      performInitialFitBoundsOnce();
     });
   }
 });

@@ -1,12 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
-import { COLLECTION_NAME } from '../helper-collection.js';
+import { COLLECTION_NAME, EMPTY_COLLECTION_NAME } from '../helper-collection.js';
 import { testEnv } from '../test-env.js';
 import { type CameraState, projectToScreenPoint } from './helpers/map-projection.js';
 
-const EMPTY_COLLECTION_NAME = 'test_mapgrid_empty';
 const FOCUSED_ZOOM_THRESHOLD = 10;
 const OVERVIEW_ZOOM_THRESHOLD = 8;
 const CAMERA_SETTLE_POLL_MS = 700;
+const CAMERA_SETTLE_TIMEOUT_MS = 30_000;
 const BRASILIA: [number, number] = [-47.9292, -15.7801];
 
 async function login(page: Page): Promise<void> {
@@ -33,9 +33,10 @@ async function readCamera(page: Page): Promise<CameraState> {
 }
 
 async function waitForCameraToSettle(page: Page): Promise<CameraState> {
+  const deadline = Date.now() + CAMERA_SETTLE_TIMEOUT_MS;
   let previousCamera = await readCamera(page);
 
-  for (;;) {
+  while (Date.now() < deadline) {
     await page.waitForTimeout(CAMERA_SETTLE_POLL_MS);
     const currentCamera = await readCamera(page);
     const cameraIsStable =
@@ -44,6 +45,8 @@ async function waitForCameraToSettle(page: Page): Promise<CameraState> {
     if (cameraIsStable) return currentCamera;
     previousCamera = currentCamera;
   }
+
+  throw new Error(`Map camera did not stabilize within ${CAMERA_SETTLE_TIMEOUT_MS}ms`);
 }
 
 async function openMapGridCollection(page: Page, collection = COLLECTION_NAME): Promise<void> {

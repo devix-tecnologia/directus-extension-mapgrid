@@ -1,3 +1,5 @@
+import type { Directive } from 'vue';
+
 export const createStub = (name: string, props: string[] = []) => ({
   template: `<div class="${name}"><slot /></div>`,
   props,
@@ -47,4 +49,4 @@ export const directusComponentStubs = {
   'v-progress-circular': createStub('v-progress-circular', ['indeterminate']),
 };
 
-export const tooltipDirective = { vTooltip: () => {} };
+export const tooltipDirective: Directive = () => {};

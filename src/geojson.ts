@@ -26,13 +26,13 @@ export const resolveItemCoordinates = (
 };
 
 export const resolveTitleFromTemplate = (item: GeoItem, template: string): string => {
+  const templateContainsPlaceholders = new RegExp(PLACEHOLDER_PATTERN_SOURCE).test(template);
+  if (!templateContainsPlaceholders && template in item) return serializeFieldValue(item[template]);
+
   const resolvedTemplate = template.replace(
     new RegExp(PLACEHOLDER_PATTERN_SOURCE, 'g'),
     (_placeholder, fieldName: string) => serializeFieldValue(item[fieldName])
   );
-  const containsPlaceholders = resolvedTemplate !== template;
-  if (!containsPlaceholders && template in item) return serializeFieldValue(item[template]);
-
   return resolvedTemplate.trim() || String(item.id);
 };
 

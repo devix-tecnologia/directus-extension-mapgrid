@@ -1,31 +1,19 @@
 export const logger = {
-  currentTest: '',
-
-  setCurrentTest(test: string) {
-    this.currentTest = test;
-  },
-
   info(message: string, ...args: unknown[]) {
-    console.log(`[INFO] ${this.currentTest ? `[${this.currentTest}] ` : ''}${message}`, ...args);
+    console.log(`[INFO] ${message}`, ...args);
   },
 
   debug(message: string, ...args: unknown[]) {
     if (process.env.DEBUG_TESTS) {
-      console.log(`[DEBUG] ${this.currentTest ? `[${this.currentTest}] ` : ''}${message}`, ...args);
+      console.log(`[DEBUG] ${message}`, ...args);
     }
   },
 
   warn(message: string, ...args: unknown[]) {
-    console.warn(`[WARN] ${this.currentTest ? `[${this.currentTest}] ` : ''}${message}`, ...args);
+    console.warn(`[WARN] ${message}`, ...args);
   },
 
   error(message: string, ...args: unknown[]) {
-    console.error(`[ERROR] ${this.currentTest ? `[${this.currentTest}] ` : ''}${message}`, ...args);
-  },
-
-  dockerProgress(message: string) {
-    if (process.env.DEBUG_TESTS) {
-      console.log(`[DOCKER] ${message.replace(/\n$/, '')}`);
-    }
+    console.error(`[ERROR] ${message}`, ...args);
   },
 };

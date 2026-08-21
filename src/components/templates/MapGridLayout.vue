@@ -57,9 +57,7 @@ const props = defineProps<{
   coluna4?: string;
   coluna5?: string;
   zoomOnClick?: boolean;
-  deleteItems?: (ids: (string | number)[]) => Promise<void>;
   selectedItems: RowItem[];
-  deleteSelectedItems?: () => Promise<void>;
 }>();
 
 const emit = defineEmits<{

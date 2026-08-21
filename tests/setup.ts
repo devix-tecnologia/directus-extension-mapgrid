@@ -5,7 +5,7 @@ import {
   isDirectusHealthy,
   setAccessToken,
 } from './helpers/directus-api.js';
-import { sleep, waitForCondition } from './helpers/wait.js';
+import { waitForCondition } from './helpers/wait.js';
 import { testEnv } from './test-env.js';
 import { logger } from './test-logger.js';
 
@@ -37,5 +37,3 @@ export async function setupTestEnvironment(): Promise<string> {
     throw error;
   }
 }
-
-export { sleep };

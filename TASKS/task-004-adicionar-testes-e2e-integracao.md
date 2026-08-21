@@ -51,3 +51,23 @@ Revisão completa da branch `feat/task-004` com bateria final verde: **unit 13/1
 
 - Warnings pré-existentes de `noExplicitAny` nos mocks de `.storybook/` (não relacionados à task).
 - O teste de empty-state valida apenas o `v-info` padrão do Directus; um estado vazio customizado do mapgrid exigiria mudança de comportamento no componente.
+
+## Segunda rodada de revisão — princípios Total TypeScript (2026-08-21)
+
+Revisão independente focada em tipos honestos, nomes autoexplicativos e ausência de comentários. Onze pontos identificados (P1–P11), todos corrigidos e validados com bateria completa verde: **unit 13/13, integração 12/12, e2e 8/8, lint 0 erros, typecheck (main + testes) ok, build ok**.
+
+### Correções aplicadas
+
+1. **Testes TypeScript não eram verificados pelo compilador** — `tsconfig.json` limitava `include` a `src/` com `rootDir`; ~800 linhas em `tests/` só eram checadas sintaticamente pelo Biome. Criado `tsconfig.tests.json` (inclui `src/**/*.ts`, `tests/**/*.ts` e configs de teste) e script `typecheck` encadeia ambos.
+2. **Divergências de dependência expostas pelo novo typecheck** — duas cópias de vue (3.5.18 via extensions-sdk vs 3.5.22 raiz) deduplicadas via override pnpm; `@vitejs/plugin-vue` 6→5.2.4 e `vite` ^5 fixado na raiz para coincidir com o vite do vitest (o SDK preserva seu vite aninhado); `@types/node` adicionado.
+3. **Erros reais revelados nos testes** — `maxThreads`/`minThreads` fora do lugar em `vitest.integration.config.ts` (movidos para `poolOptions.threads`), diretiva `tooltipDirective` sem tipo (`Directive` do vue), `TestItem` sem index signature (incompatível com `RowItem`).
+4. **Assinaturas que mentiam** — `serializeItemRow` declarava `item: RowItem` mas tratava null/undefined no corpo, forçando casts `as unknown as` no teste; assinatura alargada e casts removidos.
+5. **Duplo cast eliminado** — type guard `hasPointCoordinates` substitui `'coordinates' in (value as Record<...>)` + recast em `serializeFieldValue`.
+6. **Guard caseiro substituído por API idiomática** — duck-typing `'value' in candidate` trocado por `toValue()` + `MaybeRefOrGetter` em `src/index.ts`.
+7. **Detecção de placeholder stateless** — comparação de strings (`resolvedTemplate !== template`) substituída por regex não-global com `.test()`; imune ao bug histórico de `lastIndex`.
+8. **Fonte única de verdade** — `EMPTY_COLLECTION_NAME` centralizada em `tests/helper-collection.ts` (antes duplicada em global-setup e spec); teardown explícito com `COLLECTION_NAME`.
+9. **Código morto removido** — re-export `sleep` sem consumidores; `setCurrentTest`, `dockerProgress` e propriedade `currentTest` nunca chamados; props `deleteItems`/`deleteSelectedItems` não usadas em `MapGridLayout.vue`.
+10. **Guarda duplicada extraída** — `performInitialFitBoundsOnce()` unifica lógica repetida no handler `load` e no `watchEffect` do `MapComponent.vue`.
+11. **Robustez e reuso** — `waitForCameraToSettle` ganhou deadline de 30s (antes pendurava até o timeout global de 180s); `resourceExists` reimplementado sobre `apiRequest` (elimina duplicação de axios config).
+
+Resultado líquido: -111 linhas. Nenhum comentário adicionado; nenhum commit realizado (alterações na árvore de trabalho, aguardando decisão de commit).

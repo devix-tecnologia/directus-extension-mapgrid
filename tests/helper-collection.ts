@@ -8,6 +8,7 @@ import { waitForCondition } from './helpers/wait.js';
 import { logger } from './test-logger.js';
 
 const COLLECTION_NAME = 'test_mapgrid_items';
+export const EMPTY_COLLECTION_NAME = 'test_mapgrid_empty';
 
 export interface TestItemLocation {
   type: 'Point';
@@ -19,6 +20,7 @@ export interface TestItem {
   name: string;
   location?: TestItemLocation;
   status: 'published' | 'draft';
+  [key: string]: unknown;
 }
 
 export type NewTestItem = Omit<TestItem, 'id'>;

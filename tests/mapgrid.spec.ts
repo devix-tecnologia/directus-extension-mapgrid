@@ -77,7 +77,7 @@ describe('MapGrid Extension - Integration Tests', () => {
   });
 
   test('buildPointFeatureCollection should produce a valid FeatureCollection from live items', async () => {
-    const items: RowItem[] = await getTestItems();
+    const items = await getTestItems();
     const geojson = buildPointFeatureCollection({
       items,
       geolocationField: 'location',
@@ -89,11 +89,15 @@ describe('MapGrid Extension - Integration Tests', () => {
     expect(geojson.type).toBe('FeatureCollection');
     expect(geojson.features).toHaveLength(locatedItems.length);
 
-    for (const [index, feature] of geojson.features.entries()) {
-      expect(feature.type).toBe('Feature');
-      expect(feature.geometry.type).toBe('Point');
-      expect(feature.geometry.coordinates).toEqual(locatedItems[index].location?.coordinates);
-      expect(feature.properties.formattedTitle).toBe(locatedItems[index].name);
+    for (const locatedItem of locatedItems) {
+      const feature = geojson.features.find(
+        (candidate) => candidate.properties.id === locatedItem.id
+      );
+      expect(feature).toBeDefined();
+      expect(feature?.type).toBe('Feature');
+      expect(feature?.geometry.type).toBe('Point');
+      expect(feature?.geometry.coordinates).toEqual(locatedItem.location?.coordinates);
+      expect(feature?.properties.formattedTitle).toBe(locatedItem.name);
     }
   });
 
@@ -144,8 +148,8 @@ describe('MapGrid Extension - Integration Tests', () => {
     expect(serializeItemRow(item, 'name')).toBe('Test');
     expect(serializeItemRow(item, 'nonexistent')).toBe('');
     expect(serializeItemRow(item, '')).toBe('');
-    expect(serializeItemRow(null as unknown as RowItem, 'name')).toBe('');
-    expect(serializeItemRow(undefined as unknown as RowItem, 'name')).toBe('');
+    expect(serializeItemRow(null, 'name')).toBe('');
+    expect(serializeItemRow(undefined, 'name')).toBe('');
   });
 
   test('Default map options should stay pinned to the published contract', () => {

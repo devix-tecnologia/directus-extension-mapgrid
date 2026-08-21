@@ -86,12 +86,12 @@ export async function apiRequest<Response>(
 }
 
 export const resourceExists = async (path: string): Promise<boolean> => {
-  const response = await axios.get(`${DIRECTUS_URL}${path}`, {
-    headers: authorizedHeaders(),
-    timeout: 30_000,
-    validateStatus: () => true,
-  });
-  return response.status === 200;
+  try {
+    await apiRequest('GET', path);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const isDirectusHealthy = async (): Promise<boolean> => {

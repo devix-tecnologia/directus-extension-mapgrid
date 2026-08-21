@@ -1,6 +1,7 @@
 import { defineLayout, useApi, useCollection, useItems, useSync } from '@directus/extensions-sdk';
 import type { Field } from '@directus/types';
-import { type ComputedRef, computed, ref, toRefs } from 'vue';
+import type { MaybeRefOrGetter } from 'vue';
+import { computed, ref, toRefs, toValue } from 'vue';
 import DeleteAction from './components/atoms/DeleteAction.vue';
 import Options from './components/molecules/MapGridOptions.vue';
 import Layout from './components/templates/MapGridLayout.vue';
@@ -138,21 +139,15 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         coluna5,
       };
 
-      function isComputedRef<Value>(candidate: unknown): candidate is ComputedRef<Value> {
-        return typeof candidate === 'object' && candidate !== null && 'value' in candidate;
-      }
-
       function createViewOption<Key extends keyof LayoutOptions>(
         key: Key,
-        defaultValue?: LayoutOptions[Key] | ComputedRef<LayoutOptions[Key]>
+        defaultValue?: MaybeRefOrGetter<LayoutOptions[Key] | undefined>
       ) {
-        return computed<LayoutOptions[Key]>({
+        return computed<LayoutOptions[Key] | undefined>({
           get() {
             const configuredValue = layoutOptions.value?.[key];
             if (configuredValue !== undefined) return configuredValue;
-            return isComputedRef<LayoutOptions[Key]>(defaultValue)
-              ? defaultValue.value
-              : defaultValue;
+            return toValue(defaultValue);
           },
           set(newValue: LayoutOptions[Key]) {
             layoutOptions.value = { ...layoutOptions.value, [key]: newValue };
