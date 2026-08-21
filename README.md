@@ -119,14 +119,16 @@ src/
 ```
 tests/
 ├── e2e/                          # E2E tests (Playwright)
-│   └── mapgrid-layout.spec.ts    # UI tests for map/grid rendering and interaction
-├── helpers/                      # Shared helpers
+│   ├── mapgrid-layout.spec.ts    # UI tests for map/grid rendering and interaction
+│   ├── global-setup.ts           # Seeds the global MapGrid preset before the suite
+│   └── helpers/
+│       └── map-projection.ts     # Web Mercator projection for canvas clicks
+├── helpers/                      # Shared API/wait/preset helpers
 ├── helper-collection.ts          # Test collection creation with Map field
-├── helper-items.ts               # Test items CRUD
 ├── setup.ts                      # Docker environment setup/teardown
 ├── test-env.ts                   # Test environment variables
 ├── test-logger.ts                # Test logger
-├── run-e2e.js                    # E2E test runner (manages Docker containers)
+├── run-docker-tests.js           # Docker test runner (integration + e2e suites)
 └── mapgrid.spec.ts               # Integration tests (Vitest)
 ```
 
