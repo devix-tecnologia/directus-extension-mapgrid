@@ -1,31 +1,57 @@
 import { defineLayout, useApi, useCollection, useItems, useSync } from '@directus/extensions-sdk';
-import { computed, ref, toRefs } from 'vue';
+import type { Field } from '@directus/types';
+import { type ComputedRef, computed, ref, toRefs } from 'vue';
 import DeleteAction from './components/atoms/DeleteAction.vue';
 import Options from './components/molecules/MapGridOptions.vue';
 import Layout from './components/templates/MapGridLayout.vue';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './defaults.js';
 import type { LayoutOptions, LayoutQuery, RowItem } from './types.js';
 
-const EXCLUDED_FIELDS = ['id', 'sort', 'status', 'user_created', 'date_created', 'user_updated', 'date_updated'];
+const EXCLUDED_FIELDS = [
+  'id',
+  'sort',
+  'status',
+  'user_created',
+  'date_created',
+  'user_updated',
+  'date_updated',
+];
 
-interface FieldMeta {
+interface DetectedField {
   field: string;
   type?: string;
   name?: string;
   meta?: { interface?: string; hidden?: boolean };
 }
 
-function detectGeolocationField(fields: FieldMeta[]): string | undefined {
-  const mapField = fields.find((f) => f.meta?.interface === 'map');
-  if (mapField) return mapField.field;
-  const jsonField = fields.find((f) => f.type === 'json' && !EXCLUDED_FIELDS.includes(f.field));
-  return jsonField?.field;
-}
+const toDetectedField = (field: Field): DetectedField => ({
+  field: field.field,
+  type: field.type,
+  name: field.name ?? field.field,
+  meta: field.meta
+    ? {
+        interface: field.meta.interface ?? undefined,
+        hidden: field.meta.hidden ?? undefined,
+      }
+    : undefined,
+});
 
-function detectStringFields(fields: FieldMeta[]): string[] {
-  return fields
-    .filter((f) => f.type === 'string' && !EXCLUDED_FIELDS.includes(f.field) && !f.meta?.hidden)
-    .map((f) => f.field);
-}
+const detectGeolocationField = (fields: DetectedField[]): string | undefined => {
+  const mapField = fields.find((field) => field.meta?.interface === 'map');
+  if (mapField) return mapField.field;
+  const jsonField = fields.find(
+    (field) => field.type === 'json' && !EXCLUDED_FIELDS.includes(field.field)
+  );
+  return jsonField?.field;
+};
+
+const detectStringFields = (fields: DetectedField[]): string[] =>
+  fields
+    .filter(
+      (field) =>
+        field.type === 'string' && !EXCLUDED_FIELDS.includes(field.field) && !field.meta?.hidden
+    )
+    .map((field) => field.field);
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
@@ -46,15 +72,9 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { fields: fieldsInCollection } = useCollection(collection);
     const { sort, limit, page, fields } = useLayoutQuery();
 
-    const detectedFields = computed(() => {
-      if (!fieldsInCollection.value) return [] as FieldMeta[];
-      return fieldsInCollection.value.map((f: Record<string, unknown>) => ({
-        field: f.field as string,
-        type: f.type as string | undefined,
-        name: (f.name ?? f.field) as string | undefined,
-        meta: f.meta as { interface?: string; hidden?: boolean } | undefined,
-      }));
-    });
+    const detectedFields = computed<DetectedField[]>(() =>
+      (fieldsInCollection.value ?? []).map(toDetectedField)
+    );
 
     const detectedGeo = computed(() => detectGeolocationField(detectedFields.value));
     const detectedStringFields = computed(() => detectStringFields(detectedFields.value));
@@ -63,19 +83,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       return first ? `{{${first}}}` : undefined;
     });
 
-    const {
-      title,
-      geolocation,
-      zoomOnClick,
-      mapCenterLng,
-      mapCenterLat,
-      mapZoom,
-      coluna1,
-      coluna2,
-      coluna3,
-      coluna4,
-      coluna5,
-    } = createLayoutOptions();
+    const layoutOptionBindings = createLayoutOptions();
 
     const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
       sort,
@@ -101,22 +109,25 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     };
 
     function createLayoutOptions() {
-      const title = createViewOption('title', computed(() => detectedTitle.value));
-      const zoomOnClick = createViewOption('zoomOnClick', undefined);
-      const geolocation = createViewOption('geolocation', computed(() => detectedGeo.value));
-      const mapCenterLng = createViewOption('mapCenterLng', -47.9292);
-      const mapCenterLat = createViewOption('mapCenterLat', -15.7801);
-      const mapZoom = createViewOption('mapZoom', 4);
-      const coluna1 = createViewOption('coluna1', computed(() => detectedStringFields.value[0]));
-      const coluna2 = createViewOption('coluna2', computed(() => detectedStringFields.value[1]));
-      const coluna3 = createViewOption('coluna3', computed(() => detectedStringFields.value[2]));
-      const coluna4 = createViewOption('coluna4', computed(() => detectedStringFields.value[3]));
-      const coluna5 = createViewOption('coluna5', computed(() => detectedStringFields.value[4]));
+      const title = createViewOption('title', detectedTitle);
+      const zoomOnClick = createViewOption('zoomOnClick');
+      const geolocation = createViewOption('geolocation', detectedGeo);
+      const [defaultLng, defaultLat] = DEFAULT_MAP_CENTER;
+      const mapCenterLng = createViewOption('mapCenterLng', defaultLng);
+      const mapCenterLat = createViewOption('mapCenterLat', defaultLat);
+      const mapZoom = createViewOption('mapZoom', DEFAULT_MAP_ZOOM);
+      const columnKeys = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
+      const [coluna1, coluna2, coluna3, coluna4, coluna5] = columnKeys.map((key, index) =>
+        createViewOption(
+          key,
+          computed(() => detectedStringFields.value[index])
+        )
+      );
 
       return {
         title,
-        geolocation,
         zoomOnClick,
+        geolocation,
         mapCenterLng,
         mapCenterLat,
         mapZoom,
@@ -127,24 +138,24 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         coluna5,
       };
 
-      function createViewOption<K extends keyof LayoutOptions>(
-        key: K,
-        defaultValue: LayoutOptions[K] | import('vue').ComputedRef<LayoutOptions[K]>
+      function isComputedRef<Value>(candidate: unknown): candidate is ComputedRef<Value> {
+        return typeof candidate === 'object' && candidate !== null && 'value' in candidate;
+      }
+
+      function createViewOption<Key extends keyof LayoutOptions>(
+        key: Key,
+        defaultValue?: LayoutOptions[Key] | ComputedRef<LayoutOptions[Key]>
       ) {
-        return computed<LayoutOptions[K]>({
+        return computed<LayoutOptions[Key]>({
           get() {
-            if (layoutOptions.value?.[key] !== undefined) {
-              return layoutOptions.value[key];
-            }
-            return defaultValue && typeof defaultValue === 'object' && 'value' in defaultValue
+            const configuredValue = layoutOptions.value?.[key];
+            if (configuredValue !== undefined) return configuredValue;
+            return isComputedRef<LayoutOptions[Key]>(defaultValue)
               ? defaultValue.value
-              : (defaultValue as LayoutOptions[K]);
+              : defaultValue;
           },
-          set(newValue: LayoutOptions[K]) {
-            layoutOptions.value = {
-              ...layoutOptions.value,
-              [key]: newValue,
-            };
+          set(newValue: LayoutOptions[Key]) {
+            layoutOptions.value = { ...layoutOptions.value, [key]: newValue };
           },
         });
       }
@@ -155,9 +166,9 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       const limit = computed(() => layoutQuery.value?.limit || 25);
       const sort = computed(() => layoutQuery.value?.sort || []);
 
-      const fields = computed(() => {
-        return fieldsInCollection.value ? fieldsInCollection.value.map((field) => field.field) : [];
-      });
+      const fields = computed(() =>
+        fieldsInCollection.value ? fieldsInCollection.value.map((field) => field.field) : []
+      );
 
       return { sort, limit, page, fields };
     }
@@ -173,21 +184,9 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       limit,
       fields,
       fieldsInCollection,
-
-      title,
-      geolocation,
-      zoomOnClick,
-      mapCenterLng,
-      mapCenterLat,
-      mapZoom,
-      coluna1,
-      coluna2,
-      coluna3,
-      coluna4,
-      coluna5,
-
       selectedItems,
       deleteSelectedItems,
+      ...layoutOptionBindings,
     };
   },
 });

@@ -12,10 +12,27 @@ export interface Header {
   value: string;
 }
 
+export type PointCoordinates = [number, number];
+
+export interface PointGeometry {
+  type: 'Point';
+  coordinates: PointCoordinates;
+}
+
 export interface GeoJsonFeature {
   type: 'Feature';
-  geometry: { type: 'Point'; coordinates: [number, number] };
+  geometry: PointGeometry;
   properties: { id: string | number; formattedTitle: string };
+}
+
+export interface GeoJsonFeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJsonFeature[];
+}
+
+export interface GeolocationData {
+  type?: string;
+  coordinates?: PointCoordinates;
 }
 
 export interface LayoutOptions {

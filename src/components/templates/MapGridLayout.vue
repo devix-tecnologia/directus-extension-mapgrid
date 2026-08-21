@@ -39,9 +39,7 @@ import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Header, RowItem } from '../../types.js';
-// biome-ignore lint/style/useImportType: component imports are used in template
 import MapComponent from '../organisms/MapComponent.vue';
-// biome-ignore lint/style/useImportType: component imports are used in template
 import TableComponent from '../organisms/TableComponent.vue';
 
 const props = defineProps<{

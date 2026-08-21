@@ -11,18 +11,22 @@
 import maplibregl from 'maplibre-gl';
 import { nextTick, onMounted, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { GeoItem, GeoJsonFeature } from '../../types.js';
-import { serializeFieldValue } from '../../utils.js';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../../defaults.js';
+import {
+  buildPointFeatureCollection,
+  resolveItemCoordinates,
+  resolveTitleFromTemplate,
+} from '../../geojson.js';
+import type { GeoItem, PointCoordinates } from '../../types.js';
 
 const SOURCE_ID = 'points';
 const CLUSTER_LAYER_ID = 'clusters';
 const UNCLUSTERED_LAYER_ID = 'unclustered-point';
 const MARKER_SIZE = 40;
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const DEFAULT_CENTER: [number, number] = [-47.9292, -15.7801];
-const DEFAULT_ZOOM = 4;
 const FIT_BOUNDS_PADDING = 50;
 const FIT_BOUNDS_MAX_ZOOM = 15;
+const FOCUS_ZOOM = 15;
 const ANIMATION_DURATION_MS = 1000;
 const CLUSTER_MAX_ZOOM = 14;
 const CLUSTER_RADIUS = 20;
@@ -31,6 +35,11 @@ const DEFAULT_STROKE_WIDTH = 2;
 const CURSOR_POINTER = 'pointer';
 const CURSOR_RESET = '';
 const FLASH_HIGHLIGHT_DURATION_MS = 1000;
+
+interface CameraState {
+  center: PointCoordinates;
+  zoom: number;
+}
 
 const props = defineProps<{
   items: GeoItem[];
@@ -48,73 +57,51 @@ const emit = defineEmits<{
 
 const mapContainer = ref<HTMLDivElement | null>(null);
 const map = ref<maplibregl.Map | null>(null);
-const popups = ref<maplibregl.Popup[]>([]);
-const clusterMarkers = ref<maplibregl.Marker[]>([]);
+let activePopups: maplibregl.Popup[] = [];
+let clusterMarkers: maplibregl.Marker[] = [];
+let hasPerformedInitialFitBounds = false;
 
-const getMapOrReturn = (): maplibregl.Map | null => map.value as maplibregl.Map | null;
+const getMap = (): maplibregl.Map | null => map.value;
 
 const resolveThemePrimaryColor = (): string => {
   const computedStyle = getComputedStyle(document.documentElement);
   return computedStyle.getPropertyValue('--theme--primary').trim() || '#007bff';
 };
 
-const resolveFieldTemplate = (item: GeoItem, template: string): string => {
-  if (!template) return String(item.id);
-  let result = template;
-  const fieldPattern = /\{\{([^}]+)\}\}/g;
-  const matches = result.match(fieldPattern) || [];
+const buildFeatureCollection = () =>
+  buildPointFeatureCollection({
+    items: props.items,
+    geolocationField: props.geolocation,
+    titleTemplate: props.title,
+  });
 
-  if (matches.length === 0 && template in item) {
-    return serializeFieldValue(item[template]);
-  }
-
-  for (const match of matches) {
-    const fieldName = match.slice(2, -2);
-    const raw = item[fieldName];
-    const resolved = serializeFieldValue(raw);
-    result = result.replace(match, resolved);
-  }
-
-  return result.trim() || String(item.id);
+const getCameraState = (): CameraState | null => {
+  const instance = getMap();
+  if (!instance) return null;
+  return { center: instance.getCenter().toArray() as PointCoordinates, zoom: instance.getZoom() };
 };
 
-const resolveItemCoords = (item: GeoItem): [number, number] | undefined => {
-  const coords = (item[props.geolocation] as { coordinates?: [number, number] } | undefined)
-    ?.coordinates;
-  return coords && coords.length === 2 ? [coords[0], coords[1]] : undefined;
-};
-
-const buildGeoJson = (): { type: 'FeatureCollection'; features: GeoJsonFeature[] } => {
-  const features: GeoJsonFeature[] = [];
-
-  for (const item of props.items) {
-    const coords = resolveItemCoords(item);
-    if (!coords) continue;
-
-    features.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: coords },
-      properties: { id: item.id, formattedTitle: resolveFieldTemplate(item, props.title) },
-    });
-  }
-
-  return { type: 'FeatureCollection', features };
+const syncCameraMetadata = (instance: maplibregl.Map): void => {
+  if (!mapContainer.value) return;
+  const center = instance.getCenter().toArray() as PointCoordinates;
+  mapContainer.value.dataset.center = center.join(',');
+  mapContainer.value.dataset.zoom = String(instance.getZoom());
 };
 
 const fitBoundsToItems = (): void => {
-  const m = getMapOrReturn();
-  if (!m || props.items.length === 0) return;
+  const instance = getMap();
+  if (!instance || props.items.length === 0) return;
 
   const bounds = new maplibregl.LngLatBounds();
   for (const item of props.items) {
-    const coords = resolveItemCoords(item);
+    const coords = resolveItemCoordinates(item, props.geolocation);
     if (coords) {
       bounds.extend(coords);
     }
   }
 
   if (!bounds.isEmpty()) {
-    m.fitBounds(bounds, {
+    instance.fitBounds(bounds, {
       padding: FIT_BOUNDS_PADDING,
       maxZoom: FIT_BOUNDS_MAX_ZOOM,
       duration: ANIMATION_DURATION_MS,
@@ -123,8 +110,8 @@ const fitBoundsToItems = (): void => {
 };
 
 const dismissAllPopups = (): void => {
-  for (const popup of popups.value) popup.remove();
-  popups.value = [];
+  for (const popup of activePopups) popup.remove();
+  activePopups = [];
 };
 
 const createClusterLabelElement = (count: number): HTMLDivElement => {
@@ -152,61 +139,61 @@ const createClusterLabelElement = (count: number): HTMLDivElement => {
 };
 
 const refreshClusterLabels = (): void => {
-  const m = getMapOrReturn();
-  if (!m || !m.isStyleLoaded()) return;
+  const instance = getMap();
+  if (!instance?.isStyleLoaded()) return;
 
-  const source = m.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+  const source = instance.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
   if (!source) return;
 
-  source.setData(buildGeoJson());
+  source.setData(buildFeatureCollection());
 
-  for (const marker of clusterMarkers.value) marker.remove();
-  clusterMarkers.value = [];
+  for (const marker of clusterMarkers) marker.remove();
+  clusterMarkers = [];
 
-  const clusters = m.querySourceFeatures(SOURCE_ID, { filter: ['has', 'point_count'] });
+  const clusters = instance.querySourceFeatures(SOURCE_ID, { filter: ['has', 'point_count'] });
 
   for (const cluster of clusters) {
     const count = cluster.properties?.point_count as number;
-    const coords = (cluster.geometry as GeoJSON.Point).coordinates as [number, number];
+    const coords = (cluster.geometry as GeoJSON.Point).coordinates as PointCoordinates;
 
     const marker = new maplibregl.Marker({
       element: createClusterLabelElement(count),
       offset: [0, 0],
     })
       .setLngLat(coords)
-      .addTo(m);
+      .addTo(instance);
 
-    // @ts-expect-error maplibre-gl Marker types cause deep instantiation with Vue ref
-    clusterMarkers.value.push(marker);
+    clusterMarkers.push(marker);
   }
 
-  m.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-color', resolveThemePrimaryColor());
+  instance.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-color', resolveThemePrimaryColor());
+  syncCameraMetadata(instance);
 };
 
-const openPopupAt = (coords: [number, number], label: string): void => {
-  const m = getMapOrReturn();
-  if (!m) return;
+const openPopupAt = (coords: PointCoordinates, label: string): void => {
+  const instance = getMap();
+  if (!instance) return;
 
   dismissAllPopups();
   const popup = new maplibregl.Popup()
     .setLngLat(coords)
     .setHTML(`<strong>${label}</strong>`)
-    .addTo(m);
-  popups.value.push(popup);
+    .addTo(instance);
+  activePopups.push(popup);
 };
 
-const flyToItem = (coords: [number, number]): void => {
-  const m = getMapOrReturn();
-  if (!m) return;
+const flyToItem = (coords: PointCoordinates): void => {
+  const instance = getMap();
+  if (!instance) return;
 
-  m.flyTo({ center: coords, zoom: 15, duration: ANIMATION_DURATION_MS });
+  instance.flyTo({ center: coords, zoom: FOCUS_ZOOM, duration: ANIMATION_DURATION_MS });
 };
 
-const panToVisibleArea = (coords: [number, number]): void => {
-  const m = getMapOrReturn();
-  if (!m) return;
+const panToVisibleArea = (coords: PointCoordinates): void => {
+  const instance = getMap();
+  if (!instance) return;
 
-  const bounds = m.getBounds();
+  const bounds = instance.getBounds();
   const [lng, lat] = coords;
   const isOutside =
     lng < bounds.getWest() ||
@@ -215,28 +202,26 @@ const panToVisibleArea = (coords: [number, number]): void => {
     lat > bounds.getNorth();
 
   if (isOutside) {
-    m.easeTo({ center: coords, duration: ANIMATION_DURATION_MS });
+    instance.easeTo({ center: coords, duration: ANIMATION_DURATION_MS });
   }
 };
 
 const flashHighlightMarker = (): void => {
-  const m = getMapOrReturn();
-  if (!m) return;
+  const instance = getMap();
+  if (!instance) return;
 
-  m.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-stroke-width', HIGHLIGHT_STROKE_WIDTH);
+  instance.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-stroke-width', HIGHLIGHT_STROKE_WIDTH);
   setTimeout(() => {
-    m.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-stroke-width', DEFAULT_STROKE_WIDTH);
+    instance.setPaintProperty(UNCLUSTERED_LAYER_ID, 'circle-stroke-width', DEFAULT_STROKE_WIDTH);
   }, FLASH_HIGHLIGHT_DURATION_MS);
 };
 
 const focusOnItem = (item: GeoItem): void => {
-  const m = getMapOrReturn();
-  if (!m || !item || !item[props.geolocation]) return;
+  const instance = getMap();
+  const coords = resolveItemCoordinates(item, props.geolocation);
+  if (!instance || !item || !coords) return;
 
-  const coords = (item[props.geolocation] as { coordinates: [number, number] }).coordinates;
-  if (!coords) return;
-
-  const label = resolveFieldTemplate(item, props.title);
+  const label = resolveTitleFromTemplate(item, props.title);
   openPopupAt(coords, label);
 
   if (props.zoomOnClick) {
@@ -250,31 +235,31 @@ const focusOnItem = (item: GeoItem): void => {
 };
 
 const resetMap = (): void => {
-  const m = getMapOrReturn();
-  if (!m) return;
+  const instance = getMap();
+  if (!instance) return;
 
   if (props.items.length > 0) {
     fitBoundsToItems();
   } else {
-    m.setCenter(resolveMapCenter());
-    m.setZoom(props.initialZoom ?? DEFAULT_ZOOM);
+    instance.setCenter(resolveMapCenter());
+    instance.setZoom(props.initialZoom ?? DEFAULT_MAP_ZOOM);
   }
 };
 
 const registerMapEvents = (): void => {
-  const m = getMapOrReturn();
-  if (!m) return;
+  const instance = getMap();
+  if (!instance) return;
 
-  m.on('load', () => {
-    m.addSource(SOURCE_ID, {
+  instance.on('load', () => {
+    instance.addSource(SOURCE_ID, {
       type: 'geojson',
-      data: buildGeoJson(),
+      data: buildFeatureCollection(),
       cluster: true,
       clusterMaxZoom: CLUSTER_MAX_ZOOM,
       clusterRadius: CLUSTER_RADIUS,
     });
 
-    m.addLayer({
+    instance.addLayer({
       id: CLUSTER_LAYER_ID,
       type: 'circle',
       source: SOURCE_ID,
@@ -293,7 +278,7 @@ const registerMapEvents = (): void => {
       },
     });
 
-    m.addLayer({
+    instance.addLayer({
       id: UNCLUSTERED_LAYER_ID,
       type: 'circle',
       source: SOURCE_ID,
@@ -306,65 +291,68 @@ const registerMapEvents = (): void => {
       },
     });
 
-    m.on('click', UNCLUSTERED_LAYER_ID, (e) => {
-      const feature = e.features?.[0];
+    instance.on('click', UNCLUSTERED_LAYER_ID, (event) => {
+      const feature = event.features?.[0];
       if (!feature) return;
 
-      const coords = (feature.geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+      const coords = (feature.geometry as GeoJSON.Point).coordinates.slice() as PointCoordinates;
       const title = feature.properties?.formattedTitle as string;
       const id = feature.properties?.id as string | number;
 
-      while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
-        coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
+      while (Math.abs(event.lngLat.lng - coords[0]) > 180) {
+        coords[0] += event.lngLat.lng > coords[0] ? 360 : -360;
       }
 
       openPopupAt(coords, title);
       emit('select-item', id);
     });
 
-    m.on('mouseenter', UNCLUSTERED_LAYER_ID, () => {
-      m.getCanvas().style.cursor = CURSOR_POINTER;
+    instance.on('mouseenter', UNCLUSTERED_LAYER_ID, () => {
+      instance.getCanvas().style.cursor = CURSOR_POINTER;
     });
-    m.on('mouseleave', UNCLUSTERED_LAYER_ID, () => {
-      m.getCanvas().style.cursor = CURSOR_RESET;
+    instance.on('mouseleave', UNCLUSTERED_LAYER_ID, () => {
+      instance.getCanvas().style.cursor = CURSOR_RESET;
     });
 
-    m.on('click', CLUSTER_LAYER_ID, (e) => {
-      const features = m.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
+    instance.on('click', CLUSTER_LAYER_ID, (event) => {
+      const features = instance.queryRenderedFeatures(event.point, { layers: [CLUSTER_LAYER_ID] });
       const clusterFeature = features[0];
       if (!clusterFeature) return;
 
       const clusterId = clusterFeature.properties?.cluster_id as number;
-      const source = m.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      const source = instance.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
       if (!source) return;
 
       source.getClusterExpansionZoom(clusterId).then((zoom: number) => {
-        const coords = (clusterFeature.geometry as GeoJSON.Point).coordinates as [number, number];
-        m.easeTo({ center: coords, zoom });
+        const coords = (clusterFeature.geometry as GeoJSON.Point).coordinates as PointCoordinates;
+        instance.easeTo({ center: coords, zoom });
       });
     });
 
-    m.on('mouseenter', CLUSTER_LAYER_ID, () => {
-      m.getCanvas().style.cursor = CURSOR_POINTER;
+    instance.on('mouseenter', CLUSTER_LAYER_ID, () => {
+      instance.getCanvas().style.cursor = CURSOR_POINTER;
     });
-    m.on('mouseleave', CLUSTER_LAYER_ID, () => {
-      m.getCanvas().style.cursor = CURSOR_RESET;
+    instance.on('mouseleave', CLUSTER_LAYER_ID, () => {
+      instance.getCanvas().style.cursor = CURSOR_RESET;
     });
 
     refreshClusterLabels();
-    fitBoundsToItems();
+    if (!hasPerformedInitialFitBounds) {
+      hasPerformedInitialFitBounds = true;
+      fitBoundsToItems();
+    }
   });
 
-  m.on('moveend', () => {
+  instance.on('moveend', () => {
+    syncCameraMetadata(instance);
     refreshClusterLabels();
   });
+
+  syncCameraMetadata(instance);
 };
 
-const resolveMapCenter = (): [number, number] => {
-  const lng = props.centerLng ?? DEFAULT_CENTER[0];
-  const lat = props.centerLat ?? DEFAULT_CENTER[1];
-  return [lng, lat];
-};
+const resolveMapCenter = (): PointCoordinates =>
+  props.centerLng && props.centerLat ? [props.centerLng, props.centerLat] : [...DEFAULT_MAP_CENTER];
 
 const initializeMap = (): void => {
   if (!mapContainer.value) return;
@@ -389,12 +377,11 @@ const initializeMap = (): void => {
       layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
     },
     center: resolveMapCenter(),
-    zoom: props.initialZoom ?? DEFAULT_ZOOM,
+    zoom: props.initialZoom ?? DEFAULT_MAP_ZOOM,
   });
 
   registerMapEvents();
 };
-
 onMounted(() => {
   initializeMap();
 });
@@ -403,12 +390,15 @@ watchEffect(() => {
   if (map.value && props.items.length > 0) {
     nextTick(() => {
       refreshClusterLabels();
-      fitBoundsToItems();
+      if (!hasPerformedInitialFitBounds) {
+        hasPerformedInitialFitBounds = true;
+        fitBoundsToItems();
+      }
     });
   }
 });
 
-defineExpose({ focusOnItem });
+defineExpose({ focusOnItem, resetMap, getCameraState });
 </script>
 
 <style scoped>

@@ -9,6 +9,8 @@ vi.mock('maplibre-gl', () => {
     addLayer = vi.fn();
     getSource = vi.fn();
     getCanvas = vi.fn(() => ({ style: { cursor: '' } }));
+    getCenter = vi.fn(() => ({ toArray: () => [-47.9292, -15.7801] }));
+    getZoom = vi.fn(() => 4);
     getBounds = vi.fn(() => ({
       getWest: () => -180,
       getEast: () => 180,
