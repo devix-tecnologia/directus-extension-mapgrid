@@ -5,6 +5,28 @@ import Options from './components/molecules/MapGridOptions.vue';
 import Layout from './components/templates/MapGridLayout.vue';
 import type { LayoutOptions, LayoutQuery, RowItem } from './types.js';
 
+const EXCLUDED_FIELDS = ['id', 'sort', 'status', 'user_created', 'date_created', 'user_updated', 'date_updated'];
+
+interface FieldMeta {
+  field: string;
+  type?: string;
+  name?: string;
+  meta?: { interface?: string; hidden?: boolean };
+}
+
+function detectGeolocationField(fields: FieldMeta[]): string | undefined {
+  const mapField = fields.find((f) => f.meta?.interface === 'map');
+  if (mapField) return mapField.field;
+  const jsonField = fields.find((f) => f.type === 'json' && !EXCLUDED_FIELDS.includes(f.field));
+  return jsonField?.field;
+}
+
+function detectStringFields(fields: FieldMeta[]): string[] {
+  return fields
+    .filter((f) => f.type === 'string' && !EXCLUDED_FIELDS.includes(f.field) && !f.meta?.hidden)
+    .map((f) => f.field);
+}
+
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
   name: 'MapGrid',
@@ -23,6 +45,20 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection } = useCollection(collection);
     const { sort, limit, page, fields } = useLayoutQuery();
+
+    const detectedFields = computed(() => {
+      if (!fieldsInCollection.value) return [] as FieldMeta[];
+      return fieldsInCollection.value.map((f: Record<string, unknown>) => ({
+        field: f.field as string,
+        type: f.type as string | undefined,
+        name: (f.name ?? f.field) as string | undefined,
+        meta: f.meta as { interface?: string; hidden?: boolean } | undefined,
+      }));
+    });
+
+    const detectedGeo = computed(() => detectGeolocationField(detectedFields.value));
+    const detectedStringFields = computed(() => detectStringFields(detectedFields.value));
+    const detectedTitle = computed(() => detectedStringFields.value[0]);
 
     const {
       title,
@@ -62,17 +98,17 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     };
 
     function createLayoutOptions() {
-      const title = createViewOption('title', undefined);
+      const title = createViewOption('title', computed(() => detectedTitle.value));
       const zoomOnClick = createViewOption('zoomOnClick', undefined);
-      const geolocation = createViewOption('geolocation', undefined);
+      const geolocation = createViewOption('geolocation', computed(() => detectedGeo.value));
       const mapCenterLng = createViewOption('mapCenterLng', -47.9292);
       const mapCenterLat = createViewOption('mapCenterLat', -15.7801);
       const mapZoom = createViewOption('mapZoom', 4);
-      const coluna1 = createViewOption('coluna1', undefined);
-      const coluna2 = createViewOption('coluna2', undefined);
-      const coluna3 = createViewOption('coluna3', undefined);
-      const coluna4 = createViewOption('coluna4', undefined);
-      const coluna5 = createViewOption('coluna5', undefined);
+      const coluna1 = createViewOption('coluna1', computed(() => detectedStringFields.value[0]));
+      const coluna2 = createViewOption('coluna2', computed(() => detectedStringFields.value[1]));
+      const coluna3 = createViewOption('coluna3', computed(() => detectedStringFields.value[2]));
+      const coluna4 = createViewOption('coluna4', computed(() => detectedStringFields.value[3]));
+      const coluna5 = createViewOption('coluna5', computed(() => detectedStringFields.value[4]));
 
       return {
         title,
@@ -90,13 +126,16 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
       function createViewOption<K extends keyof LayoutOptions>(
         key: K,
-        defaultValue: LayoutOptions[K]
+        defaultValue: LayoutOptions[K] | import('vue').ComputedRef<LayoutOptions[K]>
       ) {
         return computed<LayoutOptions[K]>({
           get() {
-            return layoutOptions.value?.[key] !== undefined
-              ? layoutOptions.value[key]
-              : defaultValue;
+            if (layoutOptions.value?.[key] !== undefined) {
+              return layoutOptions.value[key];
+            }
+            return defaultValue && typeof defaultValue === 'object' && 'value' in defaultValue
+              ? defaultValue.value
+              : (defaultValue as LayoutOptions[K]);
           },
           set(newValue: LayoutOptions[K]) {
             layoutOptions.value = {
