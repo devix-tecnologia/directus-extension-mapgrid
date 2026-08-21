@@ -58,7 +58,10 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
     const detectedGeo = computed(() => detectGeolocationField(detectedFields.value));
     const detectedStringFields = computed(() => detectStringFields(detectedFields.value));
-    const detectedTitle = computed(() => detectedStringFields.value[0]);
+    const detectedTitle = computed(() => {
+      const first = detectedStringFields.value[0];
+      return first ? `{{${first}}}` : undefined;
+    });
 
     const {
       title,

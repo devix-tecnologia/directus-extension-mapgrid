@@ -64,6 +64,10 @@ const resolveFieldTemplate = (item: GeoItem, template: string): string => {
   const fieldPattern = /\{\{([^}]+)\}\}/g;
   const matches = result.match(fieldPattern) || [];
 
+  if (matches.length === 0 && template in item) {
+    return serializeFieldValue(item[template]);
+  }
+
   for (const match of matches) {
     const fieldName = match.slice(2, -2);
     const raw = item[fieldName];
