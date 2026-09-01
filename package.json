@@ -72,6 +72,8 @@
     "test:integration": "VERBOSE=true node tests/run-docker-tests.js integration",
     "test:e2e": "VERBOSE=true node tests/run-docker-tests.js e2e",
     "test:e2e:ui": "VERBOSE=true node tests/run-docker-tests.js e2e -- --ui",
+    "test:e2e:record": "VERBOSE=true node tests/run-docker-tests.js e2e -- --config=playwright.record.config.ts",
+    "test:e2e:record:head": "VERBOSE=true node tests/run-docker-tests.js e2e -- --config=playwright.record.config.ts && pnpm exec playwright show-report playwright-report",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
@@ -117,11 +119,6 @@
     "*.{ts,vue}": [
       "biome check --write"
     ]
-  },
-  "pnpm": {
-    "overrides": {
-      "vue": "^3.5.22"
-    }
   },
   "release": {
     "branches": [

@@ -23,34 +23,34 @@ importers:
         version: 2.5.9
       '@directus/extensions-sdk':
         specifier: ^16.0.2
-        version: 16.0.2(@types/node@26.2.0)(@unhead/vue@1.11.20(vue@3.5.22(typescript@5.9.3)))(express@5.2.1)(knex@3.1.0)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3)))(terser@5.44.0)(typescript@5.9.3)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(yaml@2.9.0)
+        version: 16.0.2(@types/node@26.2.0)(@unhead/vue@1.11.20(vue@3.5.22(typescript@5.9.3)))(debug@4.4.3(supports-color@7.2.0))(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(pinia@2.3.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3)))(supports-color@7.2.0)(terser@5.44.0)(typescript@5.9.3)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(yaml@2.9.0)
       '@directus/types':
         specifier: ^13.2.3
-        version: 13.2.3(express@5.2.1)(knex@3.1.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
+        version: 13.2.3(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(supports-color@7.2.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
       '@semantic-release/git':
         specifier: ^10.0.1
-        version: 10.0.1(semantic-release@24.2.9(typescript@5.9.3))
+        version: 10.0.1(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)
       '@semantic-release/github':
         specifier: ^11.0.6
-        version: 11.0.6(semantic-release@24.2.9(typescript@5.9.3))
+        version: 11.0.6(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)
       '@semantic-release/npm':
         specifier: ^12.0.2
-        version: 12.0.2(semantic-release@24.2.9(typescript@5.9.3))
+        version: 12.0.2(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))
       '@storybook/addon-essentials':
         specifier: ^8.6.14
-        version: 8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2))
+        version: 8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       '@storybook/blocks':
         specifier: ^8.6.14
-        version: 8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2))
+        version: 8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       '@storybook/vue3':
         specifier: ^8.6.18
-        version: 8.6.18(storybook@8.6.18(prettier@3.6.2))(vue@3.5.22(typescript@5.9.3))
+        version: 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vue@3.5.22(typescript@5.9.3))
       '@storybook/vue3-vite':
         specifier: ^8.6.18
-        version: 8.6.18(storybook@8.6.18(prettier@3.6.2))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))(vue@3.5.22(typescript@5.9.3))
+        version: 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))(vue@3.5.22(typescript@5.9.3))
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
@@ -59,13 +59,13 @@ importers:
         version: 5.2.4(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))(vue@3.5.22(typescript@5.9.3))
       '@vitest/coverage-v8':
         specifier: ^2.1.9
-        version: 2.1.9(vitest@2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(terser@5.44.0))
+        version: 2.1.9(supports-color@7.2.0)(vitest@2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(supports-color@7.2.0)(terser@5.44.0))
       '@vue/test-utils':
         specifier: ^2.4.11
         version: 2.4.11(@vue/compiler-dom@3.5.22)(@vue/server-renderer@3.5.22(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
       axios:
         specifier: ^1.19.0
-        version: 1.19.0
+        version: 1.19.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       globals:
         specifier: ^16.4.0
         version: 16.4.0
@@ -83,16 +83,16 @@ importers:
         version: 1.62.1
       semantic-release:
         specifier: ^24.2.9
-        version: 24.2.9(typescript@5.9.3)
+        version: 24.2.9(supports-color@7.2.0)(typescript@5.9.3)
       storybook:
         specifier: ^8.6.18
-        version: 8.6.18(prettier@3.6.2)
+        version: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       storytype:
         specifier: ^0.2.6
         version: 0.2.6
       taskin:
         specifier: ^3.0.3
-        version: 3.0.3(@types/node@26.2.0)
+        version: 3.0.3(@types/node@26.2.0)(supports-color@7.2.0)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -101,7 +101,7 @@ importers:
         version: 5.4.21(@types/node@26.2.0)(terser@5.44.0)
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(terser@5.44.0)
+        version: 2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(supports-color@7.2.0)(terser@5.44.0)
       vue:
         specifier: ^3.5.22
         version: 3.5.22(typescript@5.9.3)
@@ -1579,6 +1579,11 @@ packages:
 
   '@volar/typescript@2.4.15':
     resolution: {integrity: sha512-2aZ8i0cqPGjXb4BhkMsPYDkkuc2ZQ6yOpqwAuNwUoncELqoy5fRgOQtLR9gB0g902iS0NAkvpIzs27geVyVdPg==}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   '@vue/compiler-core@3.5.22':
     resolution: {integrity: sha512-jQ0pFPmZwTEiRNSb+i9Ow/I/cHv2tXYqsnHKKyCQ08irI2kdF5qmYedmF8si8mA7zepUFmJ2hqzS8CQmNOWOkQ==}
@@ -4813,11 +4818,11 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@directus/composables@11.2.3(vue@3.5.22(typescript@5.9.3))':
+  '@directus/composables@11.2.3(debug@4.4.3(supports-color@7.2.0))(vue@3.5.22(typescript@5.9.3))':
     dependencies:
       '@directus/constants': 13.0.3
       '@directus/utils': 13.0.10(vue@3.5.22(typescript@5.9.3))
-      axios: 1.11.0
+      axios: 1.11.0(debug@4.4.3(supports-color@7.2.0))
       lodash-es: 4.17.21
       nanoid: 5.1.5
       vue: 3.5.22(typescript@5.9.3)
@@ -4826,13 +4831,13 @@ snapshots:
 
   '@directus/constants@13.0.3': {}
 
-  '@directus/extensions-sdk@16.0.2(@types/node@26.2.0)(@unhead/vue@1.11.20(vue@3.5.22(typescript@5.9.3)))(express@5.2.1)(knex@3.1.0)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3)))(terser@5.44.0)(typescript@5.9.3)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(yaml@2.9.0)':
+  '@directus/extensions-sdk@16.0.2(@types/node@26.2.0)(@unhead/vue@1.11.20(vue@3.5.22(typescript@5.9.3)))(debug@4.4.3(supports-color@7.2.0))(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(pinia@2.3.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3)))(supports-color@7.2.0)(terser@5.44.0)(typescript@5.9.3)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(yaml@2.9.0)':
     dependencies:
-      '@directus/composables': 11.2.3(vue@3.5.22(typescript@5.9.3))
+      '@directus/composables': 11.2.3(debug@4.4.3(supports-color@7.2.0))(vue@3.5.22(typescript@5.9.3))
       '@directus/constants': 13.0.3
-      '@directus/extensions': 3.0.11(express@5.2.1)(knex@3.1.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
+      '@directus/extensions': 3.0.11(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(supports-color@7.2.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
       '@directus/themes': 1.1.5(@unhead/vue@1.11.20(vue@3.5.22(typescript@5.9.3)))(pinia@2.3.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
-      '@directus/types': 13.2.3(express@5.2.1)(knex@3.1.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
+      '@directus/types': 13.2.3(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(supports-color@7.2.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
       '@directus/utils': 13.0.10(vue@3.5.22(typescript@5.9.3))
       '@rollup/plugin-commonjs': 28.0.6(rollup@4.46.2)
       '@rollup/plugin-json': 6.1.0(rollup@4.46.2)
@@ -4849,7 +4854,7 @@ snapshots:
       inquirer: 12.9.0(@types/node@26.2.0)
       ora: 8.2.0
       rollup: 4.46.2
-      rollup-plugin-esbuild: 6.2.1(esbuild@0.25.9)(rollup@4.46.2)
+      rollup-plugin-esbuild: 6.2.1(esbuild@0.25.9)(rollup@4.46.2)(supports-color@7.2.0)
       rollup-plugin-styler: 2.0.0(rollup@4.46.2)(typescript@5.9.3)
       semver: 7.7.2
       vite: 7.1.3(@types/node@26.2.0)(terser@5.44.0)(yaml@2.9.0)
@@ -4889,17 +4894,17 @@ snapshots:
       - ws
       - yaml
 
-  '@directus/extensions@3.0.11(express@5.2.1)(knex@3.1.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))':
+  '@directus/extensions@3.0.11(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(supports-color@7.2.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))':
     dependencies:
       '@directus/constants': 13.0.3
-      '@directus/types': 13.2.3(express@5.2.1)(knex@3.1.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
+      '@directus/types': 13.2.3(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(supports-color@7.2.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))
       '@directus/utils': 13.0.10(vue@3.5.22(typescript@5.9.3))
       '@types/express': 4.17.21
       fs-extra: 11.3.0
       lodash-es: 4.17.21
       zod: 4.0.14
     optionalDependencies:
-      knex: 3.1.0
+      knex: 3.1.0(supports-color@7.2.0)
       vue: 3.5.22(typescript@5.9.3)
       vue-router: 4.5.1(vue@3.5.22(typescript@5.9.3))
     transitivePeerDependencies:
@@ -4919,9 +4924,9 @@ snapshots:
       - tedious
       - ws
 
-  '@directus/schema@13.0.3':
+  '@directus/schema@13.0.3(supports-color@7.2.0)':
     dependencies:
-      knex: 3.1.0
+      knex: 3.1.0(supports-color@7.2.0)
     transitivePeerDependencies:
       - better-sqlite3
       - mysql
@@ -4944,18 +4949,18 @@ snapshots:
       pinia: 2.3.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3))
       vue: 3.5.22(typescript@5.9.3)
 
-  '@directus/types@13.2.3(express@5.2.1)(knex@3.1.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))':
+  '@directus/types@13.2.3(express@5.2.1(supports-color@7.2.0))(knex@3.1.0(supports-color@7.2.0))(supports-color@7.2.0)(vue-router@4.5.1(vue@3.5.22(typescript@5.9.3)))(vue@3.5.22(typescript@5.9.3))':
     dependencies:
       '@directus/constants': 13.0.3
-      '@directus/schema': 13.0.3
+      '@directus/schema': 13.0.3(supports-color@7.2.0)
       '@sinclair/typebox': 0.34.38
       '@types/express': 4.17.21
       '@types/geojson': 7946.0.16
       '@types/nodemailer': 6.4.17
       '@types/ws': 8.18.1
     optionalDependencies:
-      express: 5.2.1
-      knex: 3.1.0
+      express: 5.2.1(supports-color@7.2.0)
+      knex: 3.1.0(supports-color@7.2.0)
       vue: 3.5.22(typescript@5.9.3)
       vue-router: 4.5.1(vue@3.5.22(typescript@5.9.3))
     transitivePeerDependencies:
@@ -5475,7 +5480,7 @@ snapshots:
       '@types/react': 19.2.18
       react: 19.2.8
 
-  '@modelcontextprotocol/sdk@1.30.0(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.2)
       ajv: 8.20.0
@@ -5485,8 +5490,8 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
-      express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
+      express: 5.2.1(supports-color@7.2.0)
+      express-rate-limit: 8.6.2(express@5.2.1(supports-color@7.2.0))(supports-color@7.2.0)
       hono: 4.13.2
       jose: 6.2.9
       json-schema-typed: 8.0.2
@@ -5573,9 +5578,9 @@ snapshots:
     dependencies:
       '@opentask/taskin-types': 1.1.1
 
-  '@opentask/taskin-task-server-mcp@0.1.9(zod@3.25.76)':
+  '@opentask/taskin-task-server-mcp@0.1.9(supports-color@7.2.0)(zod@3.25.76)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@3.25.76)
       '@opentask/taskin-file-system-provider': 3.0.2
       '@opentask/taskin-task-manager': 2.0.1
       '@opentask/taskin-types': 1.1.1
@@ -5740,17 +5745,17 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
-  '@semantic-release/commit-analyzer@13.0.1(semantic-release@24.2.9(typescript@5.9.3))':
+  '@semantic-release/commit-analyzer@13.0.1(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)':
     dependencies:
       conventional-changelog-angular: 8.0.0
       conventional-changelog-writer: 8.2.0
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.2.0
-      debug: 4.4.3
-      import-from-esm: 2.0.0
+      debug: 4.4.3(supports-color@7.2.0)
+      import-from-esm: 2.0.0(supports-color@7.2.0)
       lodash-es: 4.17.21
       micromatch: 4.0.8
-      semantic-release: 24.2.9(typescript@5.9.3)
+      semantic-release: 24.2.9(supports-color@7.2.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -5758,21 +5763,21 @@ snapshots:
 
   '@semantic-release/error@4.0.0': {}
 
-  '@semantic-release/git@10.0.1(semantic-release@24.2.9(typescript@5.9.3))':
+  '@semantic-release/git@10.0.1(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)':
     dependencies:
       '@semantic-release/error': 3.0.0
       aggregate-error: 3.1.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       dir-glob: 3.0.1
       execa: 5.1.1
       lodash: 4.17.21
       micromatch: 4.0.8
       p-reduce: 2.1.0
-      semantic-release: 24.2.9(typescript@5.9.3)
+      semantic-release: 24.2.9(supports-color@7.2.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - supports-color
 
-  '@semantic-release/github@11.0.6(semantic-release@24.2.9(typescript@5.9.3))':
+  '@semantic-release/github@11.0.6(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)':
     dependencies:
       '@octokit/core': 7.0.5
       '@octokit/plugin-paginate-rest': 13.2.0(@octokit/core@7.0.5)
@@ -5780,21 +5785,21 @@ snapshots:
       '@octokit/plugin-throttling': 11.0.2(@octokit/core@7.0.5)
       '@semantic-release/error': 4.0.0
       aggregate-error: 5.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       dir-glob: 3.0.1
-      http-proxy-agent: 7.0.2
-      https-proxy-agent: 7.0.6
+      http-proxy-agent: 7.0.2(supports-color@7.2.0)
+      https-proxy-agent: 7.0.6(supports-color@7.2.0)
       issue-parser: 7.0.1
       lodash-es: 4.17.21
       mime: 4.1.0
       p-filter: 4.1.0
-      semantic-release: 24.2.9(typescript@5.9.3)
+      semantic-release: 24.2.9(supports-color@7.2.0)(typescript@5.9.3)
       tinyglobby: 0.2.15
       url-join: 5.0.0
     transitivePeerDependencies:
       - supports-color
 
-  '@semantic-release/npm@12.0.2(semantic-release@24.2.9(typescript@5.9.3))':
+  '@semantic-release/npm@12.0.2(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))':
     dependencies:
       '@semantic-release/error': 4.0.0
       aggregate-error: 5.0.0
@@ -5807,23 +5812,23 @@ snapshots:
       rc: 1.2.8
       read-pkg: 9.0.1
       registry-auth-token: 5.1.0
-      semantic-release: 24.2.9(typescript@5.9.3)
+      semantic-release: 24.2.9(supports-color@7.2.0)(typescript@5.9.3)
       semver: 7.7.2
       tempy: 3.1.0
 
-  '@semantic-release/release-notes-generator@14.1.0(semantic-release@24.2.9(typescript@5.9.3))':
+  '@semantic-release/release-notes-generator@14.1.0(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)':
     dependencies:
       conventional-changelog-angular: 8.0.0
       conventional-changelog-writer: 8.2.0
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.2.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       get-stream: 7.0.1
-      import-from-esm: 2.0.0
+      import-from-esm: 2.0.0(supports-color@7.2.0)
       into-stream: 7.0.0
       lodash-es: 4.17.21
       read-package-up: 11.0.0
-      semantic-release: 24.2.9(typescript@5.9.3)
+      semantic-release: 24.2.9(supports-color@7.2.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -5835,112 +5840,112 @@ snapshots:
 
   '@standard-schema/spec@1.0.0': {}
 
-  '@storybook/addon-actions@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-actions@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
       '@types/uuid': 9.0.8
       dequal: 2.0.3
       polished: 4.3.1
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       uuid: 9.0.1
 
-  '@storybook/addon-backgrounds@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-backgrounds@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
       memoizerific: 1.11.3
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
 
-  '@storybook/addon-controls@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-controls@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
       dequal: 2.0.3
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
 
-  '@storybook/addon-docs@8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-docs@8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@mdx-js/react': 3.1.1(@types/react@19.2.18)(react@19.2.8)
-      '@storybook/blocks': 8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/csf-plugin': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/react-dom-shim': 8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2))
+      '@storybook/blocks': 8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/csf-plugin': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/react-dom-shim': 8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
     transitivePeerDependencies:
       - '@types/react'
 
-  '@storybook/addon-essentials@8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-essentials@8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      '@storybook/addon-actions': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-backgrounds': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-controls': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-docs': 8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-highlight': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-measure': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-outline': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-toolbars': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/addon-viewport': 8.6.14(storybook@8.6.18(prettier@3.6.2))
-      storybook: 8.6.18(prettier@3.6.2)
+      '@storybook/addon-actions': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-backgrounds': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-controls': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-docs': 8.6.14(@types/react@19.2.18)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-highlight': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-measure': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-outline': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-toolbars': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/addon-viewport': 8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
     transitivePeerDependencies:
       - '@types/react'
 
-  '@storybook/addon-highlight@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-highlight@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/addon-measure@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-measure@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       tiny-invariant: 1.3.3
 
-  '@storybook/addon-outline@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-outline@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
 
-  '@storybook/addon-toolbars@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-toolbars@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/addon-viewport@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/addon-viewport@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       memoizerific: 1.11.3
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/blocks@8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/blocks@8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       '@storybook/icons': 1.6.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
     optionalDependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  '@storybook/builder-vite@8.6.18(storybook@8.6.18(prettier@3.6.2))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))':
+  '@storybook/builder-vite@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))':
     dependencies:
-      '@storybook/csf-plugin': 8.6.18(storybook@8.6.18(prettier@3.6.2))
+      '@storybook/csf-plugin': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       browser-assert: 1.2.1
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
       vite: 5.4.21(@types/node@26.2.0)(terser@5.44.0)
 
-  '@storybook/components@8.6.18(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/components@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/core@8.6.18(prettier@3.6.2)(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/core@8.6.18(prettier@3.6.2)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@storybook/theming': 8.6.18(storybook@8.6.18(prettier@3.6.2))
+      '@storybook/theming': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       better-opn: 3.0.2
       browser-assert: 1.2.1
       esbuild: 0.25.9
-      esbuild-register: 3.6.0(esbuild@0.25.9)
+      esbuild-register: 3.6.0(esbuild@0.25.9)(supports-color@7.2.0)
       jsdoc-type-pratt-parser: 4.8.0
       process: 0.11.10
       recast: 0.23.21
@@ -5955,14 +5960,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@storybook/csf-plugin@8.6.14(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/csf-plugin@8.6.14(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       unplugin: 1.16.1
 
-  '@storybook/csf-plugin@8.6.18(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/csf-plugin@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       unplugin: 1.16.1
 
   '@storybook/global@5.0.0': {}
@@ -5972,31 +5977,31 @@ snapshots:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  '@storybook/manager-api@8.6.18(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/manager-api@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/preview-api@8.6.18(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/preview-api@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/react-dom-shim@8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/react-dom-shim@8.6.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/theming@8.6.18(storybook@8.6.18(prettier@3.6.2))':
+  '@storybook/theming@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))':
     dependencies:
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
 
-  '@storybook/vue3-vite@8.6.18(storybook@8.6.18(prettier@3.6.2))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))(vue@3.5.22(typescript@5.9.3))':
+  '@storybook/vue3-vite@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))(vue@3.5.22(typescript@5.9.3))':
     dependencies:
-      '@storybook/builder-vite': 8.6.18(storybook@8.6.18(prettier@3.6.2))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))
-      '@storybook/vue3': 8.6.18(storybook@8.6.18(prettier@3.6.2))(vue@3.5.22(typescript@5.9.3))
+      '@storybook/builder-vite': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))
+      '@storybook/vue3': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vue@3.5.22(typescript@5.9.3))
       find-package-json: 1.2.0
       magic-string: 0.30.21
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       typescript: 5.9.3
       vite: 5.4.21(@types/node@26.2.0)(terser@5.44.0)
       vue-component-meta: 2.2.12(typescript@5.9.3)
@@ -6004,15 +6009,15 @@ snapshots:
     transitivePeerDependencies:
       - vue
 
-  '@storybook/vue3@8.6.18(storybook@8.6.18(prettier@3.6.2))(vue@3.5.22(typescript@5.9.3))':
+  '@storybook/vue3@8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(vue@3.5.22(typescript@5.9.3))':
     dependencies:
-      '@storybook/components': 8.6.18(storybook@8.6.18(prettier@3.6.2))
+      '@storybook/components': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.6.18(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/preview-api': 8.6.18(storybook@8.6.18(prettier@3.6.2))
-      '@storybook/theming': 8.6.18(storybook@8.6.18(prettier@3.6.2))
+      '@storybook/manager-api': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/preview-api': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
+      '@storybook/theming': 8.6.18(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))
       '@vue/compiler-core': 3.5.22
-      storybook: 8.6.18(prettier@3.6.2)
+      storybook: 8.6.18(prettier@3.6.2)(supports-color@7.2.0)
       ts-dedent: 2.3.0
       type-fest: 2.19.0
       vue: 3.5.22(typescript@5.9.3)
@@ -6172,21 +6177,21 @@ snapshots:
       vite: 7.1.3(@types/node@26.2.0)(terser@5.44.0)(yaml@2.9.0)
       vue: 3.5.22(typescript@5.9.3)
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(terser@5.44.0))':
+  '@vitest/coverage-v8@2.1.9(supports-color@7.2.0)(vitest@2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(supports-color@7.2.0)(terser@5.44.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       istanbul-lib-coverage: 3.2.2
       istanbul-lib-report: 3.0.1
-      istanbul-lib-source-maps: 5.0.6
+      istanbul-lib-source-maps: 5.0.6(supports-color@7.2.0)
       istanbul-reports: 3.2.0
       magic-string: 0.30.21
       magicast: 0.3.5
       std-env: 3.10.0
       test-exclude: 7.0.2
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(terser@5.44.0)
+      vitest: 2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(supports-color@7.2.0)(terser@5.44.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6236,11 +6241,13 @@ snapshots:
 
   '@volar/source-map@2.4.15': {}
 
-  '@volar/typescript@2.4.15':
+  '@volar/typescript@2.4.15(typescript@5.9.3)':
     dependencies:
       '@volar/language-core': 2.4.15
       path-browserify: 1.0.1
       vscode-uri: 3.1.0
+    optionalDependencies:
+      typescript: 5.9.3
 
   '@vue/compiler-core@3.5.22':
     dependencies:
@@ -6341,9 +6348,9 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  agent-base@6.0.2:
+  agent-base@6.0.2(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6420,19 +6427,19 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.11.0:
+  axios@1.11.0(debug@4.4.3(supports-color@7.2.0)):
     dependencies:
-      follow-redirects: 1.15.11
+      follow-redirects: 1.15.11(debug@4.4.3(supports-color@7.2.0))
       form-data: 4.0.4
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
 
-  axios@1.19.0:
+  axios@1.19.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0):
     dependencies:
-      follow-redirects: 1.16.0
+      follow-redirects: 1.16.0(debug@4.4.3(supports-color@7.2.0))
       form-data: 4.0.6
-      https-proxy-agent: 5.0.1
+      https-proxy-agent: 5.0.1(supports-color@7.2.0)
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
       - debug
@@ -6454,11 +6461,11 @@ snapshots:
     dependencies:
       open: 8.4.2
 
-  body-parser@1.20.6:
+  body-parser@1.20.6(supports-color@7.2.0):
     dependencies:
       bytes: 3.1.2
       content-type: 1.0.5
-      debug: 2.6.9
+      debug: 2.6.9(supports-color@7.2.0)
       depd: 2.0.0
       destroy: 1.2.0
       http-errors: 2.0.1
@@ -6471,11 +6478,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  body-parser@2.3.0:
+  body-parser@2.3.0(supports-color@7.2.0):
     dependencies:
       bytes: 3.1.2
       content-type: 2.1.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       http-errors: 2.0.1
       iconv-lite: 0.7.3
       on-finished: 2.4.1
@@ -6833,17 +6840,23 @@ snapshots:
 
   de-indent@1.0.2: {}
 
-  debug@2.6.9:
+  debug@2.6.9(supports-color@7.2.0):
     dependencies:
       ms: 2.0.0
+    optionalDependencies:
+      supports-color: 7.2.0
 
-  debug@4.3.4:
+  debug@4.3.4(supports-color@7.2.0):
     dependencies:
       ms: 2.1.2
+    optionalDependencies:
+      supports-color: 7.2.0
 
-  debug@4.4.3:
+  debug@4.4.3(supports-color@7.2.0):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 7.2.0
 
   decamelize@6.0.0: {}
 
@@ -6968,9 +6981,9 @@ snapshots:
       has-tostringtag: 1.0.2
       hasown: 2.0.2
 
-  esbuild-register@3.6.0(esbuild@0.25.9):
+  esbuild-register@3.6.0(esbuild@0.25.9)(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       esbuild: 0.25.9
     transitivePeerDependencies:
       - supports-color
@@ -7101,29 +7114,29 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.6.2(express@5.2.1):
+  express-rate-limit@8.6.2(express@5.2.1(supports-color@7.2.0))(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
-      express: 5.2.1
+      debug: 4.4.3(supports-color@7.2.0)
+      express: 5.2.1(supports-color@7.2.0)
       ip-address: 10.5.0
     transitivePeerDependencies:
       - supports-color
 
-  express@4.22.2:
+  express@4.22.2(supports-color@7.2.0):
     dependencies:
       accepts: 1.3.8
       array-flatten: 1.1.1
-      body-parser: 1.20.6
+      body-parser: 1.20.6(supports-color@7.2.0)
       content-disposition: 0.5.4
       content-type: 1.0.5
       cookie: 0.7.2
       cookie-signature: 1.0.7
-      debug: 2.6.9
+      debug: 2.6.9(supports-color@7.2.0)
       depd: 2.0.0
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
-      finalhandler: 1.3.2
+      finalhandler: 1.3.2(supports-color@7.2.0)
       fresh: 0.5.2
       http-errors: 2.0.1
       merge-descriptors: 1.0.3
@@ -7135,8 +7148,8 @@ snapshots:
       qs: 6.15.3
       range-parser: 1.2.1
       safe-buffer: 5.2.1
-      send: 0.19.2
-      serve-static: 1.16.3
+      send: 0.19.2(supports-color@7.2.0)
+      serve-static: 1.16.3(supports-color@7.2.0)
       setprototypeof: 1.2.0
       statuses: 2.0.2
       type-is: 1.6.18
@@ -7145,20 +7158,20 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  express@5.2.1:
+  express@5.2.1(supports-color@7.2.0):
     dependencies:
       accepts: 2.0.0
-      body-parser: 2.3.0
+      body-parser: 2.3.0(supports-color@7.2.0)
       content-disposition: 1.1.0
       content-type: 1.0.5
       cookie: 0.7.2
       cookie-signature: 1.2.2
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       depd: 2.0.0
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
-      finalhandler: 2.1.1
+      finalhandler: 2.1.1(supports-color@7.2.0)
       fresh: 2.0.0
       http-errors: 2.0.1
       merge-descriptors: 2.0.0
@@ -7169,9 +7182,9 @@ snapshots:
       proxy-addr: 2.0.7
       qs: 6.15.3
       range-parser: 1.3.0
-      router: 2.2.0
-      send: 1.2.1
-      serve-static: 2.2.1
+      router: 2.2.0(supports-color@7.2.0)
+      send: 1.2.1(supports-color@7.2.0)
+      serve-static: 2.2.1(supports-color@7.2.0)
       statuses: 2.0.2
       type-is: 2.1.0
       vary: 1.1.2
@@ -7202,9 +7215,9 @@ snapshots:
 
   filter-obj@5.1.0: {}
 
-  finalhandler@1.3.2:
+  finalhandler@1.3.2(supports-color@7.2.0):
     dependencies:
-      debug: 2.6.9
+      debug: 2.6.9(supports-color@7.2.0)
       encodeurl: 2.0.0
       escape-html: 1.0.3
       on-finished: 2.4.1
@@ -7214,9 +7227,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  finalhandler@2.1.1:
+  finalhandler@2.1.1(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       encodeurl: 2.0.0
       escape-html: 1.0.3
       on-finished: 2.4.1
@@ -7244,9 +7257,13 @@ snapshots:
 
   flat@6.0.1: {}
 
-  follow-redirects@1.15.11: {}
+  follow-redirects@1.15.11(debug@4.4.3(supports-color@7.2.0)):
+    optionalDependencies:
+      debug: 4.4.3(supports-color@7.2.0)
 
-  follow-redirects@1.16.0: {}
+  follow-redirects@1.16.0(debug@4.4.3(supports-color@7.2.0)):
+    optionalDependencies:
+      debug: 4.4.3(supports-color@7.2.0)
 
   for-each@0.3.5:
     dependencies:
@@ -7453,24 +7470,24 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@7.0.2:
+  http-proxy-agent@7.0.2(supports-color@7.2.0):
     dependencies:
       agent-base: 7.1.4
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@5.0.1:
+  https-proxy-agent@5.0.1(supports-color@7.2.0):
     dependencies:
-      agent-base: 6.0.2
-      debug: 4.4.3
+      agent-base: 6.0.2(supports-color@7.2.0)
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@7.0.6:
+  https-proxy-agent@7.0.6(supports-color@7.2.0):
     dependencies:
       agent-base: 7.1.4
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -7503,9 +7520,9 @@ snapshots:
       parent-module: 1.0.1
       resolve-from: 4.0.0
 
-  import-from-esm@2.0.0:
+  import-from-esm@2.0.0(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       import-meta-resolve: 4.2.0
     transitivePeerDependencies:
       - supports-color
@@ -7654,10 +7671,10 @@ snapshots:
       make-dir: 4.0.0
       supports-color: 7.2.0
 
-  istanbul-lib-source-maps@5.0.6:
+  istanbul-lib-source-maps@5.0.6(supports-color@7.2.0):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       istanbul-lib-coverage: 3.2.2
     transitivePeerDependencies:
       - supports-color
@@ -7732,11 +7749,11 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  knex@3.1.0:
+  knex@3.1.0(supports-color@7.2.0):
     dependencies:
       colorette: 2.0.19
       commander: 10.0.1
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@7.2.0)
       escalade: 3.2.0
       esm: 3.2.25
       get-package-type: 0.1.0
@@ -8610,9 +8627,9 @@ snapshots:
 
   rfdc@1.4.1: {}
 
-  rollup-plugin-esbuild@6.2.1(esbuild@0.25.9)(rollup@4.46.2):
+  rollup-plugin-esbuild@6.2.1(esbuild@0.25.9)(rollup@4.46.2)(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       es-module-lexer: 1.7.0
       esbuild: 0.25.9
       get-tsconfig: 4.10.1
@@ -8671,9 +8688,9 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.46.2
       fsevents: 2.3.3
 
-  router@2.2.0:
+  router@2.2.0(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       depd: 2.0.0
       is-promise: 4.0.0
       parseurl: 1.3.3
@@ -8705,16 +8722,16 @@ snapshots:
 
   scheduler@0.27.0: {}
 
-  semantic-release@24.2.9(typescript@5.9.3):
+  semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3):
     dependencies:
-      '@semantic-release/commit-analyzer': 13.0.1(semantic-release@24.2.9(typescript@5.9.3))
+      '@semantic-release/commit-analyzer': 13.0.1(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)
       '@semantic-release/error': 4.0.0
-      '@semantic-release/github': 11.0.6(semantic-release@24.2.9(typescript@5.9.3))
-      '@semantic-release/npm': 12.0.2(semantic-release@24.2.9(typescript@5.9.3))
-      '@semantic-release/release-notes-generator': 14.1.0(semantic-release@24.2.9(typescript@5.9.3))
+      '@semantic-release/github': 11.0.6(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)
+      '@semantic-release/npm': 12.0.2(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))
+      '@semantic-release/release-notes-generator': 14.1.0(semantic-release@24.2.9(supports-color@7.2.0)(typescript@5.9.3))(supports-color@7.2.0)
       aggregate-error: 5.0.0
       cosmiconfig: 9.0.0(typescript@5.9.3)
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       env-ci: 11.2.0
       execa: 9.6.0
       figures: 6.1.0
@@ -8723,7 +8740,7 @@ snapshots:
       git-log-parser: 1.2.1
       hook-std: 4.0.0
       hosted-git-info: 8.1.0
-      import-from-esm: 2.0.0
+      import-from-esm: 2.0.0(supports-color@7.2.0)
       lodash-es: 4.17.21
       marked: 15.0.12
       marked-terminal: 7.3.0(marked@15.0.12)
@@ -8748,9 +8765,9 @@ snapshots:
 
   semver@7.7.2: {}
 
-  send@0.19.2:
+  send@0.19.2(supports-color@7.2.0):
     dependencies:
-      debug: 2.6.9
+      debug: 2.6.9(supports-color@7.2.0)
       depd: 2.0.0
       destroy: 1.2.0
       encodeurl: 2.0.0
@@ -8766,9 +8783,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  send@1.2.1:
+  send@1.2.1(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
@@ -8786,21 +8803,21 @@ snapshots:
     dependencies:
       randombytes: 2.1.0
 
-  serve-static@1.16.3:
+  serve-static@1.16.3(supports-color@7.2.0):
     dependencies:
       encodeurl: 2.0.0
       escape-html: 1.0.3
       parseurl: 1.3.3
-      send: 0.19.2
+      send: 0.19.2(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  serve-static@2.2.1:
+  serve-static@2.2.1(supports-color@7.2.0):
     dependencies:
       encodeurl: 2.0.0
       escape-html: 1.0.3
       parseurl: 1.3.3
-      send: 1.2.1
+      send: 1.2.1(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -8915,9 +8932,9 @@ snapshots:
 
   stdin-discarder@0.2.2: {}
 
-  storybook@8.6.18(prettier@3.6.2):
+  storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0):
     dependencies:
-      '@storybook/core': 8.6.18(prettier@3.6.2)(storybook@8.6.18(prettier@3.6.2))
+      '@storybook/core': 8.6.18(prettier@3.6.2)(storybook@8.6.18(prettier@3.6.2)(supports-color@7.2.0))(supports-color@7.2.0)
     optionalDependencies:
       prettier: 3.6.2
     transitivePeerDependencies:
@@ -9023,13 +9040,13 @@ snapshots:
 
   tarn@3.0.2: {}
 
-  taskin@3.0.3(@types/node@26.2.0):
+  taskin@3.0.3(@types/node@26.2.0)(supports-color@7.2.0):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@3.25.76)
       '@opentask/taskin-file-system-provider': 3.0.2
       '@opentask/taskin-git-utils': 2.1.3
       '@opentask/taskin-task-manager': 2.0.1
-      '@opentask/taskin-task-server-mcp': 0.1.9(zod@3.25.76)
+      '@opentask/taskin-task-server-mcp': 0.1.9(supports-color@7.2.0)(zod@3.25.76)
       '@opentask/taskin-task-server-ws': 0.2.1
       '@opentask/taskin-types': 1.1.1
       '@opentask/taskin-utils': 1.1.1
@@ -9038,7 +9055,7 @@ snapshots:
       '@types/play-sound': 1.1.2
       chalk: 5.6.2
       commander: 12.1.0
-      express: 4.22.2
+      express: 4.22.2(supports-color@7.2.0)
       inquirer: 12.11.1(@types/node@26.2.0)
       play-sound: 1.1.6
       ws: 8.21.3
@@ -9214,10 +9231,10 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-node@2.1.9(@types/node@26.2.0)(terser@5.44.0):
+  vite-node@2.1.9(@types/node@26.2.0)(supports-color@7.2.0)(terser@5.44.0):
     dependencies:
       cac: 6.7.14
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       es-module-lexer: 1.7.0
       pathe: 1.1.2
       vite: 5.4.21(@types/node@26.2.0)(terser@5.44.0)
@@ -9256,7 +9273,7 @@ snapshots:
       terser: 5.44.0
       yaml: 2.9.0
 
-  vitest@2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(terser@5.44.0):
+  vitest@2.1.9(@types/node@26.2.0)(happy-dom@20.11.6)(supports-color@7.2.0)(terser@5.44.0):
     dependencies:
       '@vitest/expect': 2.1.9
       '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.2.0)(terser@5.44.0))
@@ -9266,7 +9283,7 @@ snapshots:
       '@vitest/spy': 2.1.9
       '@vitest/utils': 2.1.9
       chai: 5.3.3
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       expect-type: 1.4.0
       magic-string: 0.30.21
       pathe: 1.1.2
@@ -9276,7 +9293,7 @@ snapshots:
       tinypool: 1.1.1
       tinyrainbow: 1.2.0
       vite: 5.4.21(@types/node@26.2.0)(terser@5.44.0)
-      vite-node: 2.1.9(@types/node@26.2.0)(terser@5.44.0)
+      vite-node: 2.1.9(@types/node@26.2.0)(supports-color@7.2.0)(terser@5.44.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.2.0
@@ -9298,7 +9315,7 @@ snapshots:
 
   vue-component-meta@2.2.12(typescript@5.9.3):
     dependencies:
-      '@volar/typescript': 2.4.15
+      '@volar/typescript': 2.4.15(typescript@5.9.3)
       '@vue/language-core': 2.2.12(typescript@5.9.3)
       path-browserify: 1.0.1
       vue-component-type-helpers: 2.2.12

@@ -71,3 +71,88 @@ Revisão independente focada em tipos honestos, nomes autoexplicativos e ausênc
 11. **Robustez e reuso** — `waitForCameraToSettle` ganhou deadline de 30s (antes pendurava até o timeout global de 180s); `resourceExists` reimplementado sobre `apiRequest` (elimina duplicação de axios config).
 
 Resultado líquido: -111 linhas. Nenhum comentário adicionado; nenhum commit realizado (alterações na árvore de trabalho, aguardando decisão de commit).
+
+## Ajustes Storybook aplicados — lista de commit/push (2026-08-31)
+
+Ajustes aplicados na branch `feat/task-004` para alinhar o Storybook ao comportamento do branch
+de referência `feat/task-002-sidarta` (grid, mapa, opções e tema). **Nenhum commit realizado** —
+alterações na árvore de trabalho, aguardando decisão de commit.
+
+### Root cause geral
+
+O `preview.ts` do `feat/task-004` estava vazio (sem `setup()`), portanto os componentes
+`v-*` do Directus usados nas stories não eram registrados como componentes Vue no Storybook —
+ficavam como custom elements nativos não instanciados. Além disso, os stubs de `src/mocks/directus-mocks.ts`
+eram genéricos (`<div><slot /></div>`), o que impedia a renderização visual de grid, mapa, opções e botões.
+
+### Correções aplicadas
+
+1. **`v-table` rico (grid)** — `src/mocks/directus-mocks.ts`: substituído o stub genérico por
+   `vTableStub` que renderiza um `<table>` real (`thead` com headers, `tbody` com linhas
+   `:data-id`, slots `item.*` e emit `click:row`). Antes renderizava um `<div>` vazio, por isso
+   o grid não aparecia nos cenários TableComponent e MapgridLayout.
+2. **`preview.ts` registra componentes** — `.storybook/preview.ts`: adicionado
+   `setup((app) => { registerDirectusMockComponents(app); ... })` para registrar os mocks como
+   componentes Vue antes de montar as stories.
+3. **Stories TableComponent** — `TableComponent.stories.ts`: passou a usar `generateMockData()`
+   (headers reais ID/Nome/Localização + itens GeoItem), alinhando ao sidarta; a coluna
+   "Actions" é adicionada pelo `resolvedHeaders` do componente.
+4. **Stories MapgridLayout** — `MapgridLayout.stories.ts`: `WithData` renomeado para `Default`,
+   usando `generateMockData()` com itens `GeoItem` válidos (`nome`/`localizacao` com
+   `{ type: 'Point', coordinates }`). O shape errado anterior (`name`/`position`) fazia o mapa
+   não renderizar os markers. Agora mapa (MapLibre) + grid aparecem juntos.
+5. **Alinhamento do grid** — adicionado ao `mockComponentsStyles`:
+   `table { width: 100%; table-layout: fixed; border-collapse: collapse }`, `th` sticky com
+   fundo, bordas e `tbody tr:hover` — eliminando o desalinhamento entre header e células.
+6. **Loading/Empty visíveis** — `vInfoStub` (renderiza título via `{{ title }}` + slot `#append`)
+   e `vProgressCircularStub` (renderiza spinner). Antes os cenários Loading e Empty apareciam vazios.
+7. **MapgridOptions completo** — `vDetailStub` (`<details><summary>{{ header }}</summary><slot /></details>`),
+   `vSelectStub` (`<select>` com options), `vCheckboxStub`, `vCollectionFieldTemplateStub` e
+   `vInputStub`. Antes os headers das seções e os controles não apareciam.
+8. **Botão MapToolbar no padrão Directus** — `vButtonStub` replicando a estrutura real do
+   `v-button.vue` do Directus (wrapper `.v-button` + `<button class="button">` com `.content`,
+   props `icon`/`rounded`/`secondary`/`danger`/`warning`/`outlined`/sizes) e `vIconStub`
+   (renderiza `{{ name }}`). Validado: botão circular 40x40px, fundo branco, ícone primário
+   `#6644ff` ("zoom_out_map").
+9. **Tema Directus no Storybook** — criado `.storybook/directus-theme.css`
+   (importado no `preview.ts`) com as CSS variables do tema claro do Directus
+   (`--theme--primary: #6644ff`, `--theme--background`, `--theme--foreground`, `--theme--border-*`,
+   `--form-vertical-gap`, `--content-padding`, etc.). Sem elas, as `var(--theme--*)` não resolviam
+   no Storybook (ex.: o botão ficava com fundo roxo em vez de branco).
+10. **Story do DeleteAction (completa o storytype)** — criado `DeleteAction.stories.ts` (o único
+    componente que ainda não tinha story). Usa args inline com `deleteSelectedItems` como função
+    `async` **plain** em vez de `generateMockData()` do mock — pois o mock usa `vi.fn()` do Vitest,
+    que quebra no contexto do Storybook ("Vitest failed to access its internal state"). Cenários:
+    `Default` (2 itens selecionados → botão circular 40x40px com ícone "delete") e `NoItems`
+    (nenhum item → botão ausente). Isso fecha o checklist item 1 (subtipo com storytype completo).
+
+### Validação
+
+| Comando | Resultado |
+|---|---|
+| `pnpm test` | 18/18 ✔ |
+| `pnpm lint` | 0 erros (6 warnings pré-existentes em `.storybook/`) ✔ |
+| `pnpm typecheck` | apenas o erro pré-existente de `@vue/reactivity` em `src/index.ts` (não relacionado) |
+| `pnpm build` | ✔ |
+| `pnpm build-storybook` | ✔ |
+
+Verificação headless via Playwright no dev server :6006 confirma o render dos cenários:
+TableComponent (grid com 4 linhas, header ID/Nome/Localização/Actions), MapgridLayout/Default
+(mapa MapLibre + grid), MapgridOptions (5 seções com headers + 6 selects + 5 inputs + 1 checkbox),
+MapToolbar (botão circular com ícone), DeleteAction (Default → botão circular 40x40px com ícone
+"delete"; NoItems → sem botão) e Loading/Empty (título + spinner).
+
+### Observação
+
+A seção "Map Center" do MapgridOptions é uma feature adicional legítima do `feat/task-004`
+(o layout suporta `mapCenterLng`/`mapCenterLat`/`mapZoom`) que não existe no
+`feat/task-002-sidarta`. Foi mantida — removê-la desabilitaria o ajuste do centro do mapa.
+
+### Arquivos alterados
+
+- `.storybook/preview.ts`
+- `.storybook/directus-theme.css` (novo)
+- `src/mocks/directus-mocks.ts`
+- `src/components/organisms/table-component/TableComponent.stories.ts`
+- `src/components/templates/mapgrid-layout/MapgridLayout.stories.ts`
+- `src/components/atoms/delete-action/DeleteAction.stories.ts` (novo)
