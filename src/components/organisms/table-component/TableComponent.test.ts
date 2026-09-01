@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { directusComponentStubs } from '../../test-utils';
+import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
 
 vi.mock('@directus/extensions-sdk', () => ({
   useCollection: vi.fn(),

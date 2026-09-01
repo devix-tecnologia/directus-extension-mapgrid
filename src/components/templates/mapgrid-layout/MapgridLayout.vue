@@ -38,31 +38,15 @@
 import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type { Header, RowItem } from '../../types.js';
-import MapComponent from '../organisms/MapComponent.vue';
-import TableComponent from '../organisms/TableComponent.vue';
+import type { GeoItem } from '../../../services/geo/index.js';
+import type { Header } from '../../../services/table/index.js';
+import MapComponent from '../../organisms/map-component/MapComponent.vue';
+import TableComponent from '../../organisms/table-component/TableComponent.vue';
+import type { MapgridLayoutEmits, MapgridLayoutProps } from './MapgridLayout.types';
 
-const props = defineProps<{
-  items: RowItem[];
-  loading?: boolean;
-  collection: string;
-  title?: string;
-  geolocation?: string;
-  mapCenterLng?: number;
-  mapCenterLat?: number;
-  mapZoom?: number;
-  coluna1?: string;
-  coluna2?: string;
-  coluna3?: string;
-  coluna4?: string;
-  coluna5?: string;
-  zoomOnClick?: boolean;
-  selectedItems: RowItem[];
-}>();
+const props = defineProps<MapgridLayoutProps>();
 
-const emit = defineEmits<{
-  'update:selectedItems': [items: RowItem[]];
-}>();
+const emit = defineEmits<MapgridLayoutEmits>();
 
 const router = useRouter();
 const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
@@ -82,7 +66,7 @@ const headers = computed<Header[]>(() => {
   return columns.map((column) => ({ text: column, value: column }));
 });
 
-const handleFocusOnItem = (item: RowItem): void => {
+const handleFocusOnItem = (item: GeoItem): void => {
   mapComponent.value?.focusOnItem(item);
 };
 
@@ -90,7 +74,7 @@ const handleSelectItem = (id: string | number): void => {
   tableComponent.value?.selectItem(id);
 };
 
-const editItem = (item: RowItem): void => {
+const editItem = (item: GeoItem): void => {
   router.push(`/content/${props.collection}/${item.id}`);
 };
 </script>
@@ -115,5 +99,15 @@ const editItem = (item: RowItem): void => {
   border: 1px solid var(--theme--border-color-subdued);
   border-radius: var(--theme--border-radius);
   overflow: hidden;
+}
+
+.mapgrid-container :deep(.map-wrapper) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mapgrid-container :deep(.table-container) {
+  flex: 0 0 40%;
+  min-height: 0;
 }
 </style>

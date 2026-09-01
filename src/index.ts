@@ -2,11 +2,12 @@ import { defineLayout, useApi, useCollection, useItems, useSync } from '@directu
 import type { Field } from '@directus/types';
 import type { MaybeRefOrGetter } from 'vue';
 import { computed, ref, toRefs, toValue } from 'vue';
-import DeleteAction from './components/atoms/DeleteAction.vue';
-import Options from './components/molecules/MapGridOptions.vue';
-import Layout from './components/templates/MapGridLayout.vue';
-import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './defaults.js';
-import type { LayoutOptions, LayoutQuery, RowItem } from './types.js';
+import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
+import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
+import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
+import type { GeoItem } from './services/geo/index.js';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index.js';
+import type { LayoutOptions, LayoutQuery } from './types.js';
 
 const EXCLUDED_FIELDS = [
   'id',
@@ -95,7 +96,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       search,
     });
 
-    const selectedItems = ref<RowItem[]>([]);
+    const selectedItems = ref<GeoItem[]>([]);
 
     const deleteItems = async (ids: (string | number)[]) => {
       await api.delete(`/items/${collection.value}`, { data: ids });

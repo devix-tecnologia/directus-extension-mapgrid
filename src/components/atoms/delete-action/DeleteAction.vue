@@ -24,10 +24,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { RowItem } from '../../types.js';
+import type { GeoItem } from '../../../services/geo/geo.types.js';
 
 const props = defineProps<{
-  selectedItems: RowItem[];
+  selectedItems: GeoItem[];
   deleteSelectedItems: () => Promise<void>;
 }>();
 

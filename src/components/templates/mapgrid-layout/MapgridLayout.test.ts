@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { directusComponentStubs } from '../../test-utils';
-import MapGridLayout from './MapGridLayout.vue';
+import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
+import MapgridLayout from './MapgridLayout.vue';
 
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({
@@ -15,7 +15,7 @@ vi.mock('@directus/extensions-sdk', () => ({
 
 describe('MapGridLayout', () => {
   it('should render loading state', () => {
-    const wrapper = mount(MapGridLayout, {
+    const wrapper = mount(MapgridLayout, {
       props: {
         items: [],
         loading: true,
@@ -28,7 +28,7 @@ describe('MapGridLayout', () => {
   });
 
   it('should render empty state', () => {
-    const wrapper = mount(MapGridLayout, {
+    const wrapper = mount(MapgridLayout, {
       props: {
         items: [],
         loading: false,

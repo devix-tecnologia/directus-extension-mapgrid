@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { directusComponentStubs, tooltipDirective } from '../../test-utils';
+import { directusComponentStubs, tooltipDirective } from '../../../mocks/directus-mocks.js';
 
 vi.mock('maplibre-gl', () => {
   class MockMap {

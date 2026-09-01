@@ -83,41 +83,13 @@
 <script setup lang="ts">
 import { useCollection, useSync } from '@directus/extensions-sdk';
 import { computed, ref, toRefs, type WritableComputedRef, watch } from 'vue';
-import type { LayoutOptions } from '../../types.js';
+import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
 
-const props = defineProps<{
-  collection: string;
-  layoutOptions: LayoutOptions;
-  fieldsInCollection: Array<{ name: string; field: string; meta?: { interface?: string } }>;
-  title?: string;
-  geolocation?: string;
-  mapCenterLng?: number;
-  mapCenterLat?: number;
-  mapZoom?: number;
-  coluna1?: string;
-  coluna2?: string;
-  coluna3?: string;
-  coluna4?: string;
-  coluna5?: string;
-  zoomOnClick?: boolean;
-}>();
+const props = defineProps<MapgridOptionsProps>();
 
-const emit = defineEmits<{
-  'update:layoutOptions': [value: LayoutOptions];
-  'update:geolocation': [value: string | null];
-  'update:title': [value: string];
-  'update:mapCenterLng': [value: number];
-  'update:mapCenterLat': [value: number];
-  'update:mapZoom': [value: number];
-  'update:coluna1': [value: string | null];
-  'update:coluna2': [value: string | null];
-  'update:coluna3': [value: string | null];
-  'update:coluna4': [value: string | null];
-  'update:coluna5': [value: string | null];
-  'update:zoomOnClick': [value: boolean];
-}>();
+const emit = defineEmits<MapgridOptionsEmits>();
 
 const { collection: collectionKey } = toRefs(props);
 const collection = useCollection(collectionKey);

@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { directusComponentStubs } from '../../test-utils';
+import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
 import DeleteAction from './DeleteAction.vue';
 
 describe('DeleteAction', () => {

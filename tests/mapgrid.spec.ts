@@ -1,12 +1,16 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../src/defaults.js';
 import {
   buildPointFeatureCollection,
-  resolveItemCoordinates,
-  resolveTitleFromTemplate,
-} from '../src/geojson.js';
-import type { RowItem } from '../src/types.js';
-import { serializeFieldValue, serializeItemRow } from '../src/utils.js';
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  type GeoItem,
+  getItemCoordinates,
+} from '../src/services/geo/index.js';
+import {
+  resolveFieldTemplate,
+  serializeItemRow,
+  serializeValue,
+} from '../src/services/value-formatter/index.js';
 import {
   COLLECTION_NAME,
   deleteTestCollection,
@@ -65,7 +69,7 @@ describe('MapGrid Extension - Integration Tests', () => {
     for (const item of items) {
       expect(item.location?.type).toBe('Point');
       expect(item.location?.coordinates).toHaveLength(2);
-      expect(resolveItemCoordinates(item, 'location')).toHaveLength(2);
+      expect(getItemCoordinates(item, 'location')).toHaveLength(2);
     }
   });
 
@@ -102,7 +106,7 @@ describe('MapGrid Extension - Integration Tests', () => {
   });
 
   test('buildPointFeatureCollection should skip items without coordinates', () => {
-    const items: RowItem[] = [
+    const items: GeoItem[] = [
       { id: 1, name: 'Brasilia', location: { type: 'Point', coordinates: [-47.9292, -15.7801] } },
       { id: 2, name: 'Sem localizacao' },
       {
@@ -123,27 +127,27 @@ describe('MapGrid Extension - Integration Tests', () => {
     ]);
   });
 
-  test('resolveTitleFromTemplate should resolve placeholders and raw field names', () => {
-    const item: RowItem = { id: 7, name: 'Curitiba', status: 'published' };
+  test('resolveFieldTemplate should resolve placeholders and raw field names', () => {
+    const item: GeoItem = { id: 7, name: 'Curitiba', status: 'published' };
 
-    expect(resolveTitleFromTemplate(item, '{{name}}')).toBe('Curitiba');
-    expect(resolveTitleFromTemplate(item, '{{status}} / {{name}}')).toBe('published / Curitiba');
-    expect(resolveTitleFromTemplate(item, 'name')).toBe('Curitiba');
-    expect(resolveTitleFromTemplate(item, '')).toBe('7');
+    expect(resolveFieldTemplate(item, '{{name}}')).toBe('Curitiba');
+    expect(resolveFieldTemplate(item, '{{status}} / {{name}}')).toBe('published / Curitiba');
+    expect(resolveFieldTemplate(item, 'name')).toBe('Curitiba');
+    expect(resolveFieldTemplate(item, '')).toBe('7');
   });
 
-  test('serializeFieldValue should handle all field types', () => {
-    expect(serializeFieldValue(null)).toBe('');
-    expect(serializeFieldValue(undefined)).toBe('');
-    expect(serializeFieldValue('hello')).toBe('hello');
-    expect(serializeFieldValue(42)).toBe('42');
-    expect(serializeFieldValue([1, 2, 3])).toBe('1, 2, 3');
-    expect(serializeFieldValue({ coordinates: [-47.9292, -15.7801] })).toBe('-15.7801, -47.9292');
-    expect(serializeFieldValue({ key: 'value' })).toBe('{"key":"value"}');
+  test('serializeValue should handle all field types', () => {
+    expect(serializeValue(null)).toBe('');
+    expect(serializeValue(undefined)).toBe('');
+    expect(serializeValue('hello')).toBe('hello');
+    expect(serializeValue(42)).toBe('42');
+    expect(serializeValue([1, 2, 3])).toBe('1, 2, 3');
+    expect(serializeValue({ coordinates: [-47.9292, -15.7801] })).toBe('-15.7801, -47.9292');
+    expect(serializeValue({ key: 'value' })).toBe('{"key":"value"}');
   });
 
   test('serializeItemRow should handle missing fields', () => {
-    const item: RowItem = { id: 1, name: 'Test' };
+    const item: GeoItem = { id: 1, name: 'Test' };
 
     expect(serializeItemRow(item, 'name')).toBe('Test');
     expect(serializeItemRow(item, 'nonexistent')).toBe('');

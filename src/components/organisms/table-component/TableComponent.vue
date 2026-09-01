@@ -25,7 +25,7 @@
 
       <template v-for="header in headers" :key="header.value" #[`item.${header.value}`]="{ item }">
         <span :class="{ 'selected-row': selectedItemId === item.id }">
-          {{ renderCellValue(item, header.value) }}
+          <ValueCell :value="item[header.value]" />
         </span>
       </template>
     </v-table>
@@ -36,21 +36,14 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import type { Header, RowItem } from '../../types.js';
-import { serializeItemRow } from '../../utils.js';
+import type { GeoItem } from '../../../services/geo/index.js';
+import type { ResolvedHeader } from '../../../services/table/index.js';
+import { ValueCell } from '../../atoms/value-cell/index.js';
+import type { TableComponentEmits, TableComponentProps } from './TableComponent.types';
 
-const props = defineProps<{
-  items: RowItem[];
-  headers: Header[];
-  collection: string;
-  selectedItems: RowItem[];
-}>();
+const props = defineProps<TableComponentProps>();
 
-const emit = defineEmits<{
-  'focus-on-item': [item: RowItem];
-  'edit-item': [item: RowItem];
-  'update:selectedItems': [items: RowItem[]];
-}>();
+const emit = defineEmits<TableComponentEmits>();
 
 const selectedItemId = ref<string | number | null>(null);
 const tableContainer = ref<HTMLDivElement | null>(null);
@@ -58,10 +51,10 @@ const SCROLL_DELAY_MS = 50;
 
 const selectedItems = computed({
   get: () => props.selectedItems,
-  set: (value: RowItem[]) => emit('update:selectedItems', value),
+  set: (value: GeoItem[]) => emit('update:selectedItems', value),
 });
 
-const resolvedHeaders = computed(() => [
+const resolvedHeaders = computed<ResolvedHeader[]>(() => [
   ...props.headers.map((header) => ({
     text: header.text,
     value: header.value,
@@ -71,9 +64,7 @@ const resolvedHeaders = computed(() => [
   { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
-const renderCellValue = (item: RowItem, field: string): string => serializeItemRow(item, field);
-
-const handleRowClick = ({ item }: { item: RowItem }): void => {
+const handleRowClick = ({ item }: { item: GeoItem }): void => {
   emit('focus-on-item', item);
   selectedItemId.value = item.id;
 };

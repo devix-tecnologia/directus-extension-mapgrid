@@ -20,10 +20,10 @@ vi.mock('@directus/extensions-sdk', () => ({
 }));
 
 import { mount } from '@vue/test-utils';
-import { directusComponentStubs } from '../../test-utils';
-import MapGridOptions from './MapGridOptions.vue';
+import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
+import MapgridOptions from './MapgridOptions.vue';
 
-describe('MapGridOptions', () => {
+describe('MapgridOptions', () => {
   const defaultProps = {
     collection: 'test_collection',
     layoutOptions: {},
@@ -39,7 +39,7 @@ describe('MapGridOptions', () => {
   });
 
   it('should render options container', () => {
-    const wrapper = mount(MapGridOptions, {
+    const wrapper = mount(MapgridOptions, {
       props: defaultProps,
       global: { stubs: directusComponentStubs },
     });
@@ -47,7 +47,7 @@ describe('MapGridOptions', () => {
   });
 
   it('should render multiple option sections', () => {
-    const wrapper = mount(MapGridOptions, {
+    const wrapper = mount(MapgridOptions, {
       props: defaultProps,
       global: { stubs: directusComponentStubs },
     });
