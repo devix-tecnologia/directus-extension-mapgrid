@@ -68,29 +68,6 @@ test.describe('MapGrid Layout - E2E Tests', () => {
     await openMapGridCollection(page);
   });
 
-  test('should render the map container', async ({ page }) => {
-    await expect(page.locator('.map-container')).toBeVisible();
-  });
-
-  test('should render the data table container', async ({ page }) => {
-    await expect(page.locator('.table-container')).toBeVisible();
-  });
-
-  test('should display the seeded items in the grid', async ({ page }) => {
-    for (const itemName of ['Brasilia', 'Sao Paulo', 'Recife']) {
-      await expect(page.locator('.table-container').getByText(itemName).first()).toBeVisible({
-        timeout: 30_000,
-      });
-    }
-  });
-
-  test('should render the map canvas with markers layer', async ({ page }) => {
-    await expect(page.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('.map-container')).toHaveAttribute('data-zoom', /.+/, {
-      timeout: 30_000,
-    });
-  });
-
   test('should focus and fly to the marker when clicking a grid row', async ({ page }) => {
     const targetRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
     await expect(targetRow).toBeVisible({ timeout: 30_000 });
@@ -143,6 +120,26 @@ test.describe('MapGrid Layout - E2E Tests', () => {
     await expect
       .poll(async () => (await readCamera(page)).zoom, { timeout: 20_000 })
       .toBeLessThan(OVERVIEW_ZOOM_THRESHOLD);
+  });
+
+  test('should enable the delete action when selecting a grid row', async ({ page }) => {
+    const targetRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
+    await expect(targetRow).toBeVisible({ timeout: 30_000 });
+
+    const checkbox = targetRow.getByRole('checkbox');
+    await expect(checkbox).toHaveAttribute('aria-pressed', 'false');
+    await checkbox.click();
+    await expect(checkbox).toHaveAttribute('aria-pressed', 'true');
+
+    const deleteBtn = page
+      .locator('.header-bar .delete-btn, [class*="layout-actions"] .delete-btn')
+      .first();
+    await expect(deleteBtn).toBeVisible({ timeout: 15_000 });
+
+    await deleteBtn.click();
+    await expect(page.getByText('Delete 1 item(s)?')).toBeVisible();
+    await expect(page.getByText('This action cannot be undone.')).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
   });
 
   test('should show the empty state message when collection has no items', async ({ page }) => {

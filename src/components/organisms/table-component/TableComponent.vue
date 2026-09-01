@@ -93,7 +93,6 @@ defineExpose({ selectItem });
 
 <style scoped>
 .table-container {
-  height: 40%;
   overflow-y: auto;
   position: relative;
 }

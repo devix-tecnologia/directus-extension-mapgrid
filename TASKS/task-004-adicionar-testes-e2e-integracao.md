@@ -1,6 +1,6 @@
 # Task 004 — adicionar testes e2e/integracao
 
-Status: done
+Status: in-progress
 Type: test
 Assignee: marcospatricio
 
@@ -156,3 +156,37 @@ A seção "Map Center" do MapgridOptions é uma feature adicional legítima do `
 - `src/components/organisms/table-component/TableComponent.stories.ts`
 - `src/components/templates/mapgrid-layout/MapgridLayout.stories.ts`
 - `src/components/atoms/delete-action/DeleteAction.stories.ts` (novo)
+
+## Teste e2e adicional — seleção de linha × delete habilitado (2026-09-01)
+
+Cenário adicionado ao e2e para cobrir comportamento que existia no `feat/task-002`: ao marcar o
+checkbox de uma linha no grid (`v-table` com `show-select`), o botão delete no header do layout
+(`DeleteAction` no slot `actions`) fica visível e abre o diálogo de confirmação. O cenário clica
+Cancel para preservar os dados dos testes paralelos.
+
+### Fix técnica
+
+O `v-checkbox` do Directus renderiza como `<button role="checkbox" aria-pressed="false">`,
+não como `<input type="checkbox">`. O botão delete do `DeleteAction` usa a classe `delete-btn`
+dentro do wrapper `.header-bar` do layout. O diálogo de confirmação do Directus não usa
+`role="dialog"` — a assersão usa `getByText` em vez de `getByRole`.
+
+Validação: `pnpm test:e2e` 9/9 ✔, `pnpm lint` 0 erros (6 warnings pré-existentes) ✔,
+`pnpm typecheck` ✔.
+
+## Commits agrupados e push (2026-09-01)
+
+O stash de backup dos arquivos de Storybook foi restaurado e o trabalho foi commitado e enviado
+para `origin/feat/task-004` em **3 commits separados por domínio**, conforme orientação do gerente
+de projeto. Working tree limpo após o push.
+
+| Hash | Commit | Domínio | Conteúdo |
+|---|---|---|---|
+| `e0a92f8` | `refactor(task-004): reestruturar componentes em Atomic Design com storytype` | Atomic Design | Componentes em subdiretórios kebab-case com storytype completo (.mock/.types/.test/.vue/index), services layer (`geo/`, `table/`, `value-formatter/`), mocks centralizados (`src/mocks/directus-mocks.ts`), nível `pages/`, remoção dos arquivos flat antigos e utilitários soltos, barrels (`src/index.ts`, `components/index.ts`, `types.ts`), `vitest.config.ts` (inclui `*.test.ts`) e `biome.json` (noUnusedImports) |
+| `bc2298f` | `test(e2e): adicionar gravação de evidências com report HTML` | e2e/Playwright | `playwright.record.config.ts` (video/screenshot `on`), scripts `test:e2e:record` e `test:e2e:record:head` (abre o report), override pnpm movido para `pnpm-workspace.yaml` (remove warning do pnpm 11), doc da tarefa |
+| `99a51c9` | `feat(storybook): alinhar stories com tema Directus e storytype completo` | Storybook | 7 `.stories.ts` atuais movidos para subdiretórios kebab-case, 4 `.stories.ts` antigos removidos, `.storybook/preview.ts` com `setup()` de registro dos mocks, `.storybook/directus-theme.css` (tema claro Directus), `DeleteAction.stories.ts` (completa o storytype), plano de storytype |
+
+Validação antes do push: `pnpm test` 18/18 ✔, `pnpm lint` 0 erros (6 warnings pré-existentes em
+`.storybook/`) ✔, `pnpm typecheck` ✔, `pnpm build` ✔.
+
+Push: `25e123a..99a51c9 feat/task-004 -> feat/task-004` ✔
