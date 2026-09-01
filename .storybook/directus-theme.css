@@ -1,0 +1,30 @@
+:root {
+  --theme--primary: #6644ff;
+  --theme--primary-accent: #5433ff;
+  --theme--primary-background: #ece9fc;
+  --theme--background: #ffffff;
+  --theme--background-normal: #f4f4f4;
+  --theme--background-accent: #ececec;
+  --theme--background-subdued: #f8f8f8;
+  --theme--foreground: #212222;
+  --theme--foreground-normal: #212222;
+  --theme--foreground-subdued: #737373;
+  --theme--border-color: #d9d9d9;
+  --theme--border-color-subdued: #e6e6e6;
+  --theme--border-normal: #d9d9d9;
+  --theme--border-width: 1px;
+  --theme--border-radius: 6px;
+  --theme--danger: #c6230e;
+  --theme--warning: #ffa600;
+  --theme--success: #66c700;
+  --theme--elevation-2xl: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --theme--module-background: #ffffff;
+  --form-vertical-gap: 8px;
+  --form-horizontal-gap: 8px;
+  --content-padding: 12px;
+  --content-padding-bottom: 12px;
+  --transition: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 120ms;
+  --card-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+  --fast: 120ms;
+}

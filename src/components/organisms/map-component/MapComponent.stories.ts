@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import MapComponent from './MapComponent.vue';
 
 const meta: Meta<typeof MapComponent> = {
-  title: 'Organisms/MapComponent',
+  title: '03 - Organismos/MapComponent',
   component: MapComponent,
   tags: ['autodocs'],
   argTypes: {
@@ -41,6 +41,15 @@ export const Default: Story = {
     centerLat: -15.7801,
     initialZoom: 4,
   },
+  render: (args) => ({
+    components: { MapComponent },
+    setup: () => ({ args }),
+    template: `
+      <div style="width: 800px; height: 500px;">
+        <MapComponent v-bind="args" />
+      </div>
+    `,
+  }),
 };
 
 export const EmptyState: Story = {
@@ -53,6 +62,15 @@ export const EmptyState: Story = {
     centerLat: -15.7801,
     initialZoom: 4,
   },
+  render: (args) => ({
+    components: { MapComponent },
+    setup: () => ({ args }),
+    template: `
+      <div style="width: 800px; height: 500px;">
+        <MapComponent v-bind="args" />
+      </div>
+    `,
+  }),
 };
 
 export const WithZoomOnClick: Story = {
@@ -65,4 +83,13 @@ export const WithZoomOnClick: Story = {
     centerLat: -15.7801,
     initialZoom: 4,
   },
+  render: (args) => ({
+    components: { MapComponent },
+    setup: () => ({ args }),
+    template: `
+      <div style="width: 800px; height: 500px;">
+        <MapComponent v-bind="args" />
+      </div>
+    `,
+  }),
 };
