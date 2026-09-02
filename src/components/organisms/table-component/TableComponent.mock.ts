@@ -14,6 +14,8 @@ export const generateMockData = (): TableComponentType => {
     headers: mockHeaders,
     collection: 'mapgrid',
     selectedItems: [firstItem],
+    canEdit: true,
+    canDelete: true,
   };
 
   const models: TableComponentType['models'] = {};

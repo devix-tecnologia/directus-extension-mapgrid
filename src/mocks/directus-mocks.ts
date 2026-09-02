@@ -45,13 +45,55 @@ export const vTableStub: Component = {
     showResize: { type: Boolean, default: false },
     fixedHeader: { type: Boolean, default: false },
     modelValue: { default: () => [] },
+    canDelete: { type: Boolean, default: true },
   },
   emits: ['click:row', 'update:modelValue'],
+  data() {
+    return {
+      localSelected: Object.assign([], this.modelValue ?? []),
+    };
+  },
+  computed: {
+    normalizedItems(): { id: string | number }[] {
+      return this.items ?? [];
+    },
+    selectedIds(): (string | number)[] {
+      const source =
+        (this.localSelected ?? []).length > 0 ? this.localSelected : (this.modelValue ?? []);
+      return source.map((item: { id: string | number }) => item.id);
+    },
+    isAllSelected(): boolean {
+      return (
+        this.normalizedItems.length > 0 && this.selectedIds.length === this.normalizedItems.length
+      );
+    },
+  },
+  watch: {
+    modelValue: {
+      handler(value: unknown[]): void {
+        this.localSelected = [...(value ?? [])];
+      },
+      deep: true,
+    },
+  },
   template: `
     <div class="v-table v-table-mock">
       <table>
         <thead>
           <tr>
+            <th
+              v-if="showSelect"
+              class="v-table-mock__select"
+              style="width: 48px;"
+            >
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                :disabled="!canDelete"
+                @click.stop
+                @change="canDelete && onSelectAll"
+              />
+            </th>
             <th v-for="h in headers" :key="h.value">{{ h.text }}</th>
           </tr>
         </thead>
@@ -62,6 +104,18 @@ export const vTableStub: Component = {
             :data-id="item.id"
             @click="$emit('click:row', { item })"
           >
+            <td
+              v-if="showSelect"
+              class="v-table-mock__select"
+              @click.stop
+            >
+              <input
+                type="checkbox"
+                :checked="selectedIds.includes(item.id)"
+                :disabled="!canDelete"
+                @change="canDelete && toggleItem(item)"
+              />
+            </td>
             <td v-for="h in headers" :key="h.value">
               <slot :name="'item.' + h.value" :item="item">{{ item[h.value] }}</slot>
             </td>
@@ -70,6 +124,20 @@ export const vTableStub: Component = {
       </table>
     </div>
   `,
+  methods: {
+    onSelectAll(event: Event): void {
+      const target = event.target as HTMLInputElement;
+      this.localSelected = target.checked ? [...this.items] : [];
+      this.$emit('update:modelValue', this.localSelected);
+    },
+    toggleItem(item: { id: string | number }): void {
+      const current = [...this.selectedIds];
+      this.localSelected = current.includes(item.id)
+        ? this.localSelected.filter((el: { id: string | number }) => el.id !== item.id)
+        : [...this.localSelected, item];
+      this.$emit('update:modelValue', this.localSelected);
+    },
+  },
 };
 
 const vInfoStub: Component = {
@@ -93,7 +161,8 @@ const vProgressCircularStub: Component = {
   props: {
     indeterminate: { type: Boolean, default: false },
   },
-  template: '<div class="v-progress-circular">⏳</div>',
+  template:
+    '<div class="v-progress-circular"><span class="v-progress-circular__ring"></span></div>',
 };
 
 const vButtonStub: Component = {
@@ -161,12 +230,32 @@ const vIconStub: Component = {
     small: { type: Boolean, default: false },
     large: { type: Boolean, default: false },
   },
+  computed: {
+    isEdit(): boolean {
+      return this.name === 'edit';
+    },
+    sizeClass(): string {
+      if (this.small) return 'v-icon-mock--small';
+      if (this.large) return 'v-icon-mock--large';
+      return '';
+    },
+  },
   template: `
     <span
       class="v-icon v-icon-mock"
-      :class="{ 'v-icon-mock--small': small, 'v-icon-mock--large': large }"
+      :class="sizeClass"
     >
-      {{ name }}
+      <svg
+        v-if="isEdit"
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+      <template v-else>{{ name }}</template>
     </span>
   `,
 };
@@ -406,6 +495,25 @@ const mockComponentsStyles = `
   font-size: 20px;
   line-height: 1;
   color: var(--v-icon-color, var(--theme--primary, var(--theme--primary, #6644ff)));
+}
+.v-progress-circular {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 24px;
+  block-size: 24px;
+  color: var(--theme--primary, #6644ff);
+}
+.v-progress-circular__ring {
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--theme--primary, #6644ff);
+  border-top-color: transparent;
+  animation: v-progress-circular-spin 0.8s linear infinite;
+}
+@keyframes v-progress-circular-spin {
+  to { transform: rotate(360deg); }
 }
 .v-info {
   display: flex;

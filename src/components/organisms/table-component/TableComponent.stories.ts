@@ -1,3 +1,4 @@
+import { expect, userEvent } from '@storybook/test';
 import type { Meta, StoryObj } from '@storybook/vue3';
 import { generateMockData } from './TableComponent.mock';
 import TableComponent from './TableComponent.vue';
@@ -32,6 +33,11 @@ export const Default: Story = {
     selectedItems: [],
   },
   render: tableFrame,
+  play: async ({ canvasElement }) => {
+    const rows = canvasElement.querySelectorAll('tbody tr');
+    expect(rows.length).toBeGreaterThan(0);
+    await userEvent.click(rows[0] as HTMLTableRowElement);
+  },
 };
 
 export const WithSelection: Story = {
@@ -48,6 +54,34 @@ export const EmptyState: Story = {
     headers: mockData.props.headers,
     collection: mockData.props.collection,
     selectedItems: [],
+  },
+  render: tableFrame,
+};
+
+export const EditDisabled: Story = {
+  name: 'Permissão: sem edição',
+  args: {
+    ...mockData.props,
+    canEdit: false,
+  },
+  render: tableFrame,
+};
+
+export const DeleteDisabled: Story = {
+  name: 'Permissão: sem deleção',
+  args: {
+    ...mockData.props,
+    canDelete: false,
+  },
+  render: tableFrame,
+};
+
+export const EditDeleteDisabled: Story = {
+  name: 'Permissão: sem edição e sem deleção',
+  args: {
+    ...mockData.props,
+    canEdit: false,
+    canDelete: false,
   },
   render: tableFrame,
 };

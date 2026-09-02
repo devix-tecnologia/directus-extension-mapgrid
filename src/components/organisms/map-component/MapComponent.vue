@@ -1,7 +1,6 @@
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="map-container"></div>
-    <MapToolbar @reset="resetMap" />
   </div>
 </template>
 
@@ -25,7 +24,6 @@ import {
   type PointCoordinates,
 } from '../../../services/geo/index.js';
 import { resolveFieldTemplate } from '../../../services/value-formatter/index.js';
-import { MapToolbar } from '../../molecules/map-toolbar/index.js';
 import type { MapComponentEmits, MapComponentProps } from './MapComponent.types';
 
 const props = defineProps<MapComponentProps>();
@@ -234,18 +232,6 @@ const focusOnItem = (item: GeoItem): void => {
   emit('select-item', item.id);
 };
 
-const resetMap = (): void => {
-  const instance = getMap();
-  if (!instance) return;
-
-  if (props.items.length > 0) {
-    fitBoundsToItems();
-  } else {
-    instance.setCenter(resolveMapCenter());
-    instance.setZoom(props.initialZoom ?? DEFAULT_MAP_ZOOM);
-  }
-};
-
 const registerMapEvents = (): void => {
   const instance = getMap();
   if (!instance) return;
@@ -396,13 +382,14 @@ watchEffect(() => {
   }
 });
 
-defineExpose({ focusOnItem, resetMap, getCameraState });
+defineExpose({ focusOnItem, getCameraState });
 </script>
 
 <style scoped>
 .map-wrapper {
   position: relative;
   width: 100%;
+  height: 100%;
   min-height: 0;
 }
 

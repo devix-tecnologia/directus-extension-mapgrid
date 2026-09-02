@@ -1,4 +1,5 @@
 import { mockGeoItems } from '../../../mocks/directus-mocks.js';
+import type { GeoItem } from '../../../services/geo/index.js';
 import type { MapgridLayoutType } from './MapgridLayout.types';
 
 export const generateMockData = (): MapgridLayoutType => {
@@ -16,12 +17,15 @@ export const generateMockData = (): MapgridLayoutType => {
     coluna3: 'localizacao',
     zoomOnClick: true,
     selectedItems: mockGeoItems.slice(0, 1),
+    canEdit: true,
+    canDelete: true,
   };
 
   const models: MapgridLayoutType['models'] = {};
 
   const emits: MapgridLayoutType['emits'] = {
     'update:selectedItems': [mockGeoItems],
+    'edit-item': [mockGeoItems[0] as GeoItem],
   };
 
   return {

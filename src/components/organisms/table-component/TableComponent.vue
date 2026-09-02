@@ -7,12 +7,14 @@
       :items="items"
       :show-select="true"
       :show-resize="true"
+      :can-delete="canDelete"
       fixed-header
       @click:row="handleRowClick"
     >
       <template #[`item.actions`]="{ item }">
         <div class="actions">
           <v-icon
+            v-if="canEdit"
             v-tooltip="'Edit'"
             class="action-icon"
             name="edit"
@@ -41,7 +43,10 @@ import type { ResolvedHeader } from '../../../services/table/index.js';
 import { ValueCell } from '../../atoms/value-cell/index.js';
 import type { TableComponentEmits, TableComponentProps } from './TableComponent.types';
 
-const props = defineProps<TableComponentProps>();
+const props = withDefaults(defineProps<TableComponentProps>(), {
+  canEdit: true,
+  canDelete: true,
+});
 
 const emit = defineEmits<TableComponentEmits>();
 
@@ -111,10 +116,16 @@ defineExpose({ selectItem });
 }
 
 .action-icon {
-  opacity: 1;
-  transition: color var(--transition-fast) var(--transition);
+  opacity: 0;
+  transition: color var(--transition-fast) var(--transition), opacity var(--transition-fast) var(--transition);
   --v-icon-color: var(--theme--foreground-subdued);
   --v-icon-color-hover: var(--theme--primary);
+}
+
+.table-container :deep(tr:hover) .action-icon,
+.table-container :deep(tr:focus-within) .action-icon,
+.table-container .actions:hover .action-icon {
+  opacity: 1;
 }
 
 .table-container :deep(tr:has(.selected-row)) {

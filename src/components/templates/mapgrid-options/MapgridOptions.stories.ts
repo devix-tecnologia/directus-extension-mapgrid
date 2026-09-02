@@ -13,10 +13,21 @@ type Story = StoryObj<typeof meta>;
 
 const mockData = generateMockData();
 
+const optionsFrame = (args: Record<string, unknown>) => ({
+  components: { MapgridOptions },
+  setup: () => ({ args }),
+  template: `
+    <div style="width: 380px; padding: 16px; background: var(--theme--background-normal, #fff);">
+      <MapgridOptions v-bind="args" />
+    </div>
+  `,
+});
+
 export const Default: Story = {
   args: {
     ...mockData.props,
   },
+  render: optionsFrame,
 };
 
 export const WithGeolocationField: Story = {
@@ -32,4 +43,5 @@ export const WithGeolocationField: Story = {
       { name: 'Position', field: 'position', meta: { interface: 'map' } },
     ],
   },
+  render: optionsFrame,
 };

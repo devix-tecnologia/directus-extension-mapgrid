@@ -1,4 +1,6 @@
+import { expect, waitFor } from '@storybook/test';
 import type { Meta, StoryObj } from '@storybook/vue3';
+import { mockGeoItems } from '../../../mocks/directus-mocks.js';
 import MapComponent from './MapComponent.vue';
 
 const meta: Meta<typeof MapComponent> = {
@@ -18,27 +20,14 @@ const meta: Meta<typeof MapComponent> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sampleItems = [
-  {
-    id: 1,
-    name: 'Location A',
-    position: { coordinates: [-47.9292, -15.7801] },
-  },
-  {
-    id: 2,
-    name: 'Location B',
-    position: { coordinates: [-43.9386, -19.8157] },
-  },
-];
-
 export const Default: Story = {
   args: {
-    items: sampleItems,
-    geolocation: 'position',
-    title: '{{name}}',
+    items: mockGeoItems,
+    geolocation: 'localizacao',
+    title: '{{nome}}',
     zoomOnClick: false,
-    centerLng: -47.9292,
-    centerLat: -15.7801,
+    centerLng: -46.6333,
+    centerLat: -23.5505,
     initialZoom: 4,
   },
   render: (args) => ({
@@ -50,16 +39,21 @@ export const Default: Story = {
       </div>
     `,
   }),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      expect(canvasElement.querySelector('.map-container')).toBeTruthy();
+    });
+  },
 };
 
 export const EmptyState: Story = {
   args: {
     items: [],
-    geolocation: 'position',
-    title: '{{name}}',
+    geolocation: 'localizacao',
+    title: '{{nome}}',
     zoomOnClick: false,
-    centerLng: -47.9292,
-    centerLat: -15.7801,
+    centerLng: -46.6333,
+    centerLat: -23.5505,
     initialZoom: 4,
   },
   render: (args) => ({
@@ -75,12 +69,12 @@ export const EmptyState: Story = {
 
 export const WithZoomOnClick: Story = {
   args: {
-    items: sampleItems,
-    geolocation: 'position',
-    title: '{{name}}',
+    items: mockGeoItems,
+    geolocation: 'localizacao',
+    title: '{{nome}}',
     zoomOnClick: true,
-    centerLng: -47.9292,
-    centerLat: -15.7801,
+    centerLng: -46.6333,
+    centerLat: -23.5505,
     initialZoom: 4,
   },
   render: (args) => ({

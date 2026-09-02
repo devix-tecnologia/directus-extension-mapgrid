@@ -4,7 +4,6 @@ import { testEnv } from '../test-env.js';
 import { type CameraState, projectToScreenPoint } from './helpers/map-projection.js';
 
 const FOCUSED_ZOOM_THRESHOLD = 10;
-const OVERVIEW_ZOOM_THRESHOLD = 8;
 const CAMERA_SETTLE_POLL_MS = 700;
 const CAMERA_SETTLE_TIMEOUT_MS = 30_000;
 const BRASILIA: [number, number] = [-47.9292, -15.7801];
@@ -104,22 +103,6 @@ test.describe('MapGrid Layout - E2E Tests', () => {
 
     const selectedRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
     await expect(selectedRow.locator('.selected-row')).toBeVisible({ timeout: 15_000 });
-  });
-
-  test('should restore the overview camera when clicking the reset button', async ({ page }) => {
-    const targetRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
-    await expect(targetRow).toBeVisible({ timeout: 30_000 });
-    await targetRow.click();
-
-    await expect
-      .poll(async () => (await readCamera(page)).zoom, { timeout: 20_000 })
-      .toBeGreaterThan(FOCUSED_ZOOM_THRESHOLD);
-
-    await page.locator('.reset-map-btn').click();
-
-    await expect
-      .poll(async () => (await readCamera(page)).zoom, { timeout: 20_000 })
-      .toBeLessThan(OVERVIEW_ZOOM_THRESHOLD);
   });
 
   test('should enable the delete action when selecting a grid row', async ({ page }) => {

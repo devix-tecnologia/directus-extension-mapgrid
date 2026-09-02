@@ -84,16 +84,6 @@ describe('MapComponent', () => {
     expect(wrapper.find('.map-container').exists()).toBe(true);
   });
 
-  it('should render reset button', () => {
-    const wrapper = mount(MapComponent, {
-      props: defaultProps,
-      global: {
-        stubs: directusComponentStubs,
-      },
-    });
-    expect(wrapper.find('.reset-map-btn').exists()).toBe(true);
-  });
-
   it('should expose focusOnItem method', () => {
     const wrapper = mount(MapComponent, {
       props: defaultProps,

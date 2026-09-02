@@ -26,6 +26,8 @@
         :headers="headers"
         :collection="collection"
         :selected-items="selectedItems"
+        :can-edit="canEdit"
+        :can-delete="canDelete"
         @update:selected-items="selectedItems = $event"
         @focus-on-item="handleFocusOnItem"
         @edit-item="editItem"
@@ -37,18 +39,19 @@
 <script setup lang="ts">
 import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import type { GeoItem } from '../../../services/geo/index.js';
 import type { Header } from '../../../services/table/index.js';
 import MapComponent from '../../organisms/map-component/MapComponent.vue';
 import TableComponent from '../../organisms/table-component/TableComponent.vue';
 import type { MapgridLayoutEmits, MapgridLayoutProps } from './MapgridLayout.types';
 
-const props = defineProps<MapgridLayoutProps>();
+const props = withDefaults(defineProps<MapgridLayoutProps>(), {
+  canEdit: true,
+  canDelete: true,
+});
 
 const emit = defineEmits<MapgridLayoutEmits>();
 
-const router = useRouter();
 const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
 const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 
@@ -75,7 +78,7 @@ const handleSelectItem = (id: string | number): void => {
 };
 
 const editItem = (item: GeoItem): void => {
-  router.push(`/content/${props.collection}/${item.id}`);
+  emit('edit-item', item);
 };
 </script>
 

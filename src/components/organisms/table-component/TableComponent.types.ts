@@ -14,6 +14,8 @@ export interface TableComponentProps {
   headers: Header[];
   collection: string;
   selectedItems: GeoItem[];
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 export interface TableComponentEmits {

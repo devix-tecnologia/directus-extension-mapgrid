@@ -237,3 +237,151 @@ anotar o ref explicitamente com `Ref<T>` (preserva a classe nominal), em vez do 
   fora do escopo desta rodada.
 - Nenhum comentário adicionado; `tmp-repro/` (usado para isolar o TS2322) removido. Alterações na
   árvore de trabalho (13 arquivos + `src/test-setup.ts` novo), **aguardando decisão de commit**.
+
+## Ajustes de revisão Storybook/UI + permissões — lista de commit/push (2026-09-02)
+
+Ajustes aplicados na branch `feat/task-004` para deixar o Mapgrid **independente do Directus**
+(revisão de UI vs proposta + fluxo de edição + permissões), conforme revisões encadeadas nesta sessão.
+**Nenhum commit realizado** — alterações na árvore de trabalho, aguardando decisão de commit.
+
+### 1. Remoção do MapToolbar (componente excedente)
+
+`MapToolbar` (botão circular "Reset view", `zoom_out_map`) removido por completo — não faz parte da
+proposta de UI independente.
+
+- `src/components/molecules/map-toolbar/` deletado (`.vue`, `.types.ts`, `.mock.ts`, `.test.ts`,
+  `.stories.ts`, `index.ts`); diretório `molecules/` ficou vazio.
+- `MapComponent.vue`: removidos `<MapToolbar @reset>` do template, import, função `resetMap` e a
+  exposição `resetMap` no `defineExpose` (agora `{ focusOnItem, getCameraState }`).
+- `src/components/index.ts`: export `MapToolbar` removido.
+- `MapComponent.test.ts`: removido o teste "should render reset button" (ficaram 2 testes).
+- `tests/e2e/mapgrid-layout.spec.ts`: removido o teste do botão reset e a constante
+  `OVERVIEW_ZOOM_THRESHOLD` (mantida `FOCUSED_ZOOM_THRESHOLD`).
+
+### 2. Correções de UI no Storybook
+
+- **`.map-wrapper` com `height: 100%`** (`MapComponent.vue`) — restaurado para o mapa renderizar em
+  qualquer container (a revisão detectou a perda do height original).
+- **`vTableStub` renderiza seleção e edição** (`src/mocks/directus-mocks.ts`):
+  - Coluna de **checkbox** (select-all no header + por linha) quando `show-select` — reativa via
+    `localSelected` (estado interno) para funcionar no Storybook sem parent; diffusão de
+    `update:modelValue`.
+  - Ícone de edição como **SVG de lápis** no `vIconStub` para `name="edit"` (antes era só o texto "edit").
+  - **Select-all do header marca/desmarca todas as linhas** (via estado interno refletido).
+- **`vProgressCircularStub`**: emoji `⏳` trocado por **spinner CSS** (anel giratório com `@keyframes`),
+  no estilo Directus.
+
+### 3. Testes de interação (`play`) e addons
+
+- Instalados `@storybook/test@8.6.18` e `@storybook/addon-interactions@8.6.18` (devDependencies,
+  alinhados ao Storybook 8.6.18). Registrado o addon em `.storybook/main.ts`.
+- `play` adicionados: `MapComponent/Default` (verifica `.map-container`), `MapgridLayout/Default`
+  (verifica `.mapgrid-container`) e `TableComponent/Default` (clica a primeira linha).
+
+### 4. Unificação de mocks de mapa
+
+`MapComponent.stories.ts` passou a usar `mockGeoItems` central com campo `localizacao` e
+`title: '{{nome}}'` (antes usava itens inline com `position`/`name`), corrigindo a divergência entre
+os stories de mapa e alinhando o GeoJson.
+
+### 5. Wrapper compacto do MapgridOptions
+
+`MapgridOptions.stories.ts`: canvas agora renderiza em wrapper de painel lateral (380px + padding 16px
++ fundo), reproduzindo o contexto real de um painel de layout do Directus.
+
+### 6. Fluxo de edição independente do Directus
+
+- **`MapgridLayout.vue`**: o clique do lápis passa a **emitir `edit-item`** em vez de
+  `router.push('/content/...')` (Directus). Removidos `useRouter`/`vue-router`. O consumer decide o
+  que fazer com a edição.
+- **`MapgridLayout.types.ts`**: novo emit `'edit-item': [item: GeoItem]`.
+- **Story `WithEditFlow`** (`MapgridLayout.stories.ts`): demonstra o fluxo completo de edição — clica
+  no lápis → abre overlay de edição mock (formulário com campo Nome, Salvar/Cancelar) por `defineComponent`
+  com `setup: () => ({ args })` (mesmo padrão das demais stories).
+
+### 7. Permissões de edição/deleção (independentes do Directus)
+
+Como o delete no Directus acontece no menu principal (fora do Mapgrid), a representação no grid é o
+**checkbox de seleção**: usuário sem permissão de delete não pode selecionar linhas.
+
+- **`TableComponent`** (`.types.ts`/`.vue`): props `canEdit?`/`canDelete?` (default `true` via
+  `withDefaults`, evitando que `:can-delete="undefined"` sobrescreva o default).
+  - `canEdit: false` → lápis de edição **não é renderizado**.
+  - `canDelete: false` → checkboxes de seleção **desabilitados** (select-all e por linha).
+- **`MapgridLayout`** (`.types.ts`/`.vue`): repassa `canEdit`/`canDelete` ao `TableComponent`.
+- **`vTableStub`**: prop `canDelete` aplica `:disabled` aos checkboxes.
+- **Stories**:
+  - `TableComponent`: `Permissão: sem edição`, `Permissão: sem deleção`,
+    `Permissão: sem edição e sem deleção`.
+  - `MapgridLayout`: `Permissão: sem edição e sem deleção` (renomeado de `ReadOnlyPermission`).
+
+### Validação
+
+| Comando | Resultado |
+|---|---|
+| `pnpm typecheck` | 0 erros ✔ |
+| `pnpm lint` | 0 erros (6 warnings pré-existentes em `.storybook/`) ✔ |
+| `pnpm test` | 16/16 ✔ |
+| `pnpm build-storybook` | ✔ |
+
+Verificação de comportamento via mount: default → lápis presente + checkbox habilitado;
+`canDelete:false` → checkboxes disabled; `canEdit:false` → sem lápis. Mapgrid operando de forma
+independente (sem `@directus/extensions-sdk`/`vue-router` no fluxo de edição).
+
+### Arquivos alterados (a serem commitados)
+
+- `.storybook/main.ts`
+- `package.json`, `pnpm-lock.yaml`
+- `src/components/molecules/map-toolbar/` (deletado)
+- `src/components/index.ts`
+- `src/components/organisms/map-component/MapComponent.vue`, `MapComponent.stories.ts`, `MapComponent.test.ts`
+- `src/components/organisms/table-component/TableComponent.vue`, `TableComponent.types.ts`,
+  `TableComponent.mock.ts`, `TableComponent.stories.ts`
+- `src/components/templates/mapgrid-layout/MapgridLayout.vue`, `MapgridLayout.types.ts`,
+  `MapgridLayout.mock.ts`, `MapgridLayout.stories.ts`
+- `src/components/templates/mapgrid-options/MapgridOptions.stories.ts`
+- `src/mocks/directus-mocks.ts`
+- `tests/e2e/mapgrid-layout.spec.ts`
+
+### Observação
+
+Plano de revisão (`TASKS/planos/plan-task-004-revisar-storybook-ui.md`) permanece **sem commit**
+(untracked), como documentação analítica da revisão.
+
+## Quarta rodada de revisão — Total TypeScript (2026-09-02)
+
+Revisão transversal de todos os arquivos da árvore de trabalho prontos para commit, sob o crivo
+Total TypeScript (nomes autoexplicativos, tipos honestos, ausência de comentários). **Nenhum
+comentário encontrado em arquivo-fonte** — bateria verde antes do ajuste: typecheck 0 erros,
+lint 0 erros (6 warnings pré-existentes em `.storybook/mocks/`), unit 16/16, build-storybook ✔.
+
+### Ajustes propostos e decisão
+
+Três micro-ajustes candidatos foram levantados; após aplicar e revalidar, **P1 e P3 foram
+descartados** (falsos positivos) e apenas **P2 foi mantido**:
+
+| # | Proposta | Decisão | Justificativa |
+|---|---|---|---|
+| P1 | Remover o cast `as GeoItem` em `MapgridLayout.mock.ts` (`'edit-item'`) | **Descartado** | `noUncheckedIndexedAccess: true` → `mockGeoItems[0]` é `GeoItem \| undefined`; o cast é **necessário** ao tipo do emit `[item: GeoItem]`. |
+| P2 | Remover o alias `const sampleItems = mockGeoItems` em `MapComponent.stories.ts` | **Aplicado** | Alias sem ganho — referência direta a `mockGeoItems` nos args de `Default`/`WithZoomOnClick`. |
+| P3 | `TableComponent.mock.ts` reusar `mockGeoItems[0]` em vez do `firstItem` declarado | **Descartado** | O `firstItem` tipado `GeoItem` com literal inline é a forma correta sob `noUncheckedIndexedAccess` (indexar `mockGeoItems[0]` devolveria `Geolocation \| undefined` e quebraria os tipos). |
+
+Lição do crivo: casts e literais tipados **não são** código redundante quando o acesso indexado é
+não-checado — são proteção honesta de tipo. A tentativa de "limpar" expôs exatamente isso na
+revalidação (`Type 'RowItem \| undefined' is not assignable to type 'RowItem'`), comprovando que o
+estado original estava correto.
+
+### Revalidação após o ajuste P2
+
+| Comando | Resultado |
+|---|---|
+| `pnpm typecheck` | 0 erros ✔ |
+| `pnpm lint` | 0 erros (6 warnings pré-existentes em `.storybook/`) ✔ |
+| `pnpm test` | 16/16 ✔ |
+| `pnpm build-storybook` | ✔ |
+
+### Arquivo alterado (net)
+
+- `src/components/organisms/map-component/MapComponent.stories.ts` (removido o alias `sampleItems`)
+
+Árvore de trabalho pronta para commit.

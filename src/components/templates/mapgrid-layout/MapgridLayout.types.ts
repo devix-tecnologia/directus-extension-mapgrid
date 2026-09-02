@@ -22,10 +22,13 @@ export interface MapgridLayoutProps {
   coluna5?: string;
   zoomOnClick?: boolean;
   selectedItems: GeoItem[];
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 export interface MapgridLayoutEmits {
   'update:selectedItems': [items: GeoItem[]];
+  'edit-item': [item: GeoItem];
 }
 
 export interface MapgridLayoutModels {}
