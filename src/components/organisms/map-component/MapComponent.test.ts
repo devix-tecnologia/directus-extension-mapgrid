@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { directusComponentStubs, tooltipDirective } from '../../../mocks/directus-mocks.js';
+import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
 
 vi.mock('maplibre-gl', () => {
   class MockMap {
@@ -79,7 +79,6 @@ describe('MapComponent', () => {
       props: defaultProps,
       global: {
         stubs: directusComponentStubs,
-        directives: { tooltip: tooltipDirective },
       },
     });
     expect(wrapper.find('.map-container').exists()).toBe(true);
@@ -90,7 +89,6 @@ describe('MapComponent', () => {
       props: defaultProps,
       global: {
         stubs: directusComponentStubs,
-        directives: { tooltip: tooltipDirective },
       },
     });
     expect(wrapper.find('.reset-map-btn').exists()).toBe(true);
@@ -101,7 +99,6 @@ describe('MapComponent', () => {
       props: defaultProps,
       global: {
         stubs: directusComponentStubs,
-        directives: { tooltip: tooltipDirective },
       },
     });
     expect(typeof wrapper.vm.focusOnItem).toBe('function');

@@ -1,5 +1,10 @@
 import { resolveFieldTemplate } from '../value-formatter/index.js';
-import type { GeoItem, GeoJsonFeature, GeoJsonFeatureCollection } from './geo.types.js';
+import type {
+  GeoItem,
+  GeoJsonFeature,
+  GeoJsonFeatureCollection,
+  GeolocationData,
+} from './geo.types.js';
 
 export const GEO_SOURCE_ID = 'points';
 export const GEO_CLUSTER_LAYER_ID = 'clusters';
@@ -13,8 +18,7 @@ export const DEFAULT_MAP_CENTER: [number, number] = [-47.9292, -15.7801];
 export const DEFAULT_MAP_ZOOM = 4;
 
 export const getItemCoordinates = (item: GeoItem, geolocation: string): [number, number] | null => {
-  const coordinates = (item[geolocation] as { coordinates?: [number, number] } | undefined)
-    ?.coordinates;
+  const coordinates = (item[geolocation] as GeolocationData | undefined)?.coordinates;
 
   if (coordinates?.length !== 2) return null;
 

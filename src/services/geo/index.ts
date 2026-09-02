@@ -15,7 +15,6 @@ export type {
   GeoItem,
   GeoJsonFeature,
   GeoJsonFeatureCollection,
-  GeolocationData,
   PointCoordinates,
   PointGeometry,
   RowItem,

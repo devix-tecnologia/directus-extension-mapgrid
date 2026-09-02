@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import maplibregl from 'maplibre-gl';
-import { nextTick, onMounted, ref, watchEffect } from 'vue';
+import maplibregl, { type FilterSpecification } from 'maplibre-gl';
+import { nextTick, onMounted, type Ref, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {
   buildPointFeatureCollection,
@@ -32,8 +32,8 @@ const props = defineProps<MapComponentProps>();
 
 const emit = defineEmits<MapComponentEmits>();
 
-const CLUSTER_FILTER = ['has', 'point_count'];
-const UNCLUSTERED_FILTER = ['!', ['has', 'point_count']];
+const CLUSTER_FILTER: FilterSpecification = ['has', 'point_count'];
+const UNCLUSTERED_FILTER: FilterSpecification = ['!', ['has', 'point_count']];
 const MARKER_SIZE = 40;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const FIT_BOUNDS_PADDING = 50;
@@ -50,7 +50,7 @@ interface CameraState {
 }
 
 const mapContainer = ref<HTMLDivElement | null>(null);
-const map = ref<maplibregl.Map | null>(null);
+const map: Ref<maplibregl.Map | null> = ref(null);
 let activePopups: maplibregl.Popup[] = [];
 let clusterMarkers: maplibregl.Marker[] = [];
 let hasPerformedInitialFitBounds = false;
@@ -219,7 +219,7 @@ const flashHighlightMarker = (): void => {
 const focusOnItem = (item: GeoItem): void => {
   const instance = getMap();
   const coords = getItemCoordinates(item, props.geolocation);
-  if (!instance || !item || !coords) return;
+  if (!instance || !coords) return;
 
   const label = resolveFieldTemplate(item, props.title);
   openPopupAt(coords, label);
@@ -351,7 +351,9 @@ const registerMapEvents = (): void => {
 };
 
 const resolveMapCenter = (): PointCoordinates =>
-  props.centerLng && props.centerLat ? [props.centerLng, props.centerLat] : [...DEFAULT_MAP_CENTER];
+  props.centerLng != null && props.centerLat != null
+    ? [props.centerLng, props.centerLat]
+    : [...DEFAULT_MAP_CENTER];
 
 const initializeMap = (): void => {
   if (!mapContainer.value) return;

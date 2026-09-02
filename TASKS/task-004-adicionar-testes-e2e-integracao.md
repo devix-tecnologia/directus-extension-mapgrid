@@ -190,3 +190,50 @@ Validação antes do push: `pnpm test` 18/18 ✔, `pnpm lint` 0 erros (6 warning
 `.storybook/`) ✔, `pnpm typecheck` ✔, `pnpm build` ✔.
 
 Push: `25e123a..99a51c9 feat/task-004 -> feat/task-004` ✔
+
+## Terceira rodada de revisão — vue-tsc no typecheck (2026-09-01)
+
+Revisão focada em checagem de tipos efetiva dos componentes `.vue`, aplicando o escopo aprovado
+"A1–A8". **Descoberta-chave**: as rodadas anteriores reportavam `pnpm typecheck` verde, mas o
+`tsc` (assim como o build via esbuild) **não checa `<script setup>` de arquivos `.vue`** —
+`src/shims.d.ts` tipa todo `.vue` como `DefineComponent`, então apenas 0 arquivos `.vue` eram
+verificados. Com o `vue-tsc` (devDependency 3.3.11) adicionado ao script `typecheck`, **7 erros
+reais** vieram à tona: 3 em `MapComponent.vue`, 2 em `MapgridLayout.vue` e 2 em `MapgridOptions.vue`.
+
+### Root cause do erro mais obscuro (TS2322 no `MapComponent.vue:58`)
+
+`ref<maplibregl.Map | null>(null)` envia a classe `Map` do maplibre pela utilidade `UnwrapRef`
+do Vue, que mapeia recursivamente toda propriedade pública do objeto em um clone estrutural —
+perdendo os membros privados de `Style` (`_createLayers`, `_serializeByIds`, `_serializedAllLayers`).
+Resultado: `.value` do ref deixava de ser atribuível ao próprio `maplibregl.Map`. A correção é
+anotar o ref explicitamente com `Ref<T>` (preserva a classe nominal), em vez do generic em linha:
+`const map: Ref<maplibregl.Map | null> = ref(null)`. Do mesmo efeito, os filtros de cluster
+(`['has', 'point_count']`) foram tipados como `FilterSpecification` — antes eram `string[]`.
+
+### Correções aplicadas
+
+1. **A1 — `vue-tsc --noEmit` no script `typecheck`** (`vue-tsc --noEmit && tsc --noEmit -p tsconfig.tests.json`) e correção dos 7 erros: `ref` do mapa com `Ref<T>` (TS2322 de `MapComponent.vue:58`), `CLUSTER_FILTER`/`UNCLUSTERED_FILTER` tipados como `FilterSpecification` (linhas 262/281), e `geolocation`/`title` normalizados com `?? ''` no `MapgridLayout.vue` antes de repassar às props obrigatórias do `MapComponent` (linhas 15/16).
+2. **A2 — cast inline eliminado em `getItemCoordinates`** (`geo.ts`): `item[geolocation] as GeolocationData | undefined` em vez do objeto anônimo; export tipo morto `GeolocationData` removido do barrel `geo/index.ts`.
+3. **A3 — API idiomática no `MapgridOptions.vue`**: o acesso a `collection.fields` (3 níveis de `Array.isArray` defensivos + interface local `GeolocationField`) virou `toValue(collection.fields).filter((f) => f.meta?.interface === 'map')` com o tipo `Field` do `@directus/types`.
+4. **A4 — `DeleteAction.vue`** passou a usar `DeleteActionProps` do `.types` (props inline duplicadas removidas).
+5. **A5 — `console.log` removidos** das histórias `Default`/`NoItems` de `DeleteAction.stories.ts`.
+6. **A6 — diretivas de tooltip unificadas** em `tooltipDirective` (a variante local `vTooltipDirective` era código morto) e registro global no Vitest via `src/test-setup.ts` (`config.global.directives` + `setupFiles` no `vitest.config.ts`); removido o registro manual nos 3 mounts de `MapComponent.test.ts`. Warnings `Failed to resolve directive: tooltip` eliminados de `TableComponent.test.ts` e `DeleteAction.test.ts`.
+7. **A7 — guarda redundante removida**: `if (!instance || !item || !coords)` virou `if (!instance || !coords)` em `focusOnItem` (`item` é parâmetro tipado).
+8. **A8 — nullish check em `resolveMapCenter`**: `props.centerLng && props.centerLat` → `props.centerLng != null && props.centerLat != null`; `0` (meridiano de Greenwich) agora é um centro válido.
+
+### Validação
+
+| Comando | Resultado |
+|---|---|
+| `pnpm test` | 18/18 ✔ (warnings de diretiva eliminados) |
+| `pnpm lint` | 0 erros (6 warnings pré-existentes em `.storybook/`) ✔ |
+| `pnpm typecheck` | vue-tsc + tsc testes — 0 erros ✔ |
+| `pnpm build` | ✔ |
+
+### Observações
+
+- Permanece um warning pré-existente no `MapgridOptions.test.ts` (`Invalid prop: type check failed for
+  prop "collection"` no `v-collection-field-template`), relativo ao mock do `useCollection` no teste —
+  fora do escopo desta rodada.
+- Nenhum comentário adicionado; `tmp-repro/` (usado para isolar o TS2322) removido. Alterações na
+  árvore de trabalho (13 arquivos + `src/test-setup.ts` novo), **aguardando decisão de commit**.

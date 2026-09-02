@@ -82,7 +82,8 @@
 
 <script setup lang="ts">
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import { computed, ref, toRefs, type WritableComputedRef, watch } from 'vue';
+import type { Field } from '@directus/types';
+import { computed, ref, toRefs, toValue, type WritableComputedRef, watch } from 'vue';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
@@ -120,8 +121,19 @@ watch(
   }
 );
 
+const setColumn = (key: (typeof COLUMN_KEYS)[number], value: string | null): void => {
+  if (key === 'coluna1') return void emit('update:coluna1', value);
+  if (key === 'coluna2') return void emit('update:coluna2', value);
+  if (key === 'coluna3') return void emit('update:coluna3', value);
+  if (key === 'coluna4') return void emit('update:coluna4', value);
+  emit('update:coluna5', value);
+};
+
 const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
-  useSync(props, key, emit)
+  computed<string | null>({
+    get: () => props[key] ?? null,
+    set: (value) => setColumn(key, value),
+  })
 );
 
 const localZoomOnClick = ref(props.zoomOnClick);
@@ -133,22 +145,9 @@ watch(
   }
 );
 
-interface GeolocationField {
-  name: string;
-  field: string;
-  meta?: { interface?: string };
-}
-
-const geolocationFields = computed(() => {
-  const fields = collection.fields;
-  if (!fields) return [];
-  const fieldsArray = Array.isArray(fields)
-    ? fields
-    : Array.isArray(fields.value)
-      ? fields.value
-      : [];
-  return fieldsArray.filter((f: GeolocationField) => f.meta?.interface === 'map');
-});
+const geolocationFields = computed(() =>
+  toValue(collection.fields).filter((field) => field.meta?.interface === 'map')
+);
 </script>
 
 <style scoped>

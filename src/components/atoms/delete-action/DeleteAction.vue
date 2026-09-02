@@ -24,12 +24,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { GeoItem } from '../../../services/geo/geo.types.js';
+import type { DeleteActionProps } from './DeleteAction.types';
 
-const props = defineProps<{
-  selectedItems: GeoItem[];
-  deleteSelectedItems: () => Promise<void>;
-}>();
+const props = defineProps<DeleteActionProps>();
 
 const confirmVisible = ref(false);
 

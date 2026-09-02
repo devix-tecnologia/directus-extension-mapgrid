@@ -296,9 +296,7 @@ export const directusComponentStubs: Record<string, Component> = {
   'v-progress-circular': vProgressCircularStub,
 };
 
-export const tooltipDirective: Directive = () => {};
-
-const vTooltipDirective: Directive = {
+export const tooltipDirective: Directive = {
   mounted(): void {},
   updated(): void {},
 };
@@ -512,7 +510,7 @@ export function registerDirectusMockComponents(app: App): void {
   });
 
   if (!app.directive('tooltip')) {
-    app.directive('tooltip', vTooltipDirective);
+    app.directive('tooltip', tooltipDirective);
   }
 }
 

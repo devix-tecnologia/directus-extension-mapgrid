@@ -12,8 +12,8 @@
       <MapComponent
         ref="mapComponent"
         :items="items"
-        :geolocation="geolocation"
-        :title="title"
+        :geolocation="geolocation ?? ''"
+        :title="title ?? ''"
         :zoom-on-click="zoomOnClick"
         :center-lng="mapCenterLng"
         :center-lat="mapCenterLat"

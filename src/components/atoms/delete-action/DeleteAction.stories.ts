@@ -24,17 +24,13 @@ export const Default: Story = {
       { id: 1, nome: 'Item 1' },
       { id: 2, nome: 'Item 2' },
     ],
-    deleteSelectedItems: async () => {
-      console.log('Delete executed');
-    },
+    deleteSelectedItems: async () => {},
   },
 };
 
 export const NoItems: Story = {
   args: {
     selectedItems: [],
-    deleteSelectedItems: async () => {
-      console.log('Delete executed');
-    },
+    deleteSelectedItems: async () => {},
   },
 };
