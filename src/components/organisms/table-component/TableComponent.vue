@@ -78,6 +78,11 @@ const handleRowClick = ({ item }: { item: GeoItem }): void => {
   selectedItemId.value = item.id;
 };
 
+/**
+ * Rola a grade ate a linha do item e a destaca. O atraso espera o v-table
+ * terminar de desenhar a linha: sem ele o querySelector roda antes de a linha
+ * existir e a rolagem nao acontece.
+ */
 const selectItem = (id: string | number): void => {
   selectedItemId.value = id;
 

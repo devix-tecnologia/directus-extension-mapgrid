@@ -1,62 +1,70 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
-
-vi.mock('@directus/extensions-sdk', () => ({
-  useCollection: vi.fn(),
-  useSync: vi.fn(),
-}));
-
+import { mappableKind } from '../../../mocks/mappable-mocks.js';
+import { tablePropsFor } from './TableComponent.mock.js';
 import TableComponent from './TableComponent.vue';
 
-describe('TableComponent', () => {
-  const defaultProps = {
-    items: [
-      { id: 1, name: 'Item 1', status: 'active' },
-      { id: 2, name: 'Item 2', status: 'inactive' },
-    ],
-    headers: [
-      { text: 'Name', value: 'name' },
-      { text: 'Status', value: 'status' },
-    ],
-    collection: 'test_collection',
-    selectedItems: [],
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
+const mountTable = (props: Partial<ReturnType<typeof tablePropsFor>> = {}) =>
+  mount(TableComponent, {
+    props: { ...tablePropsFor(), ...props },
+    global: { stubs: directusComponentStubs },
   });
 
-  it('should render table container', () => {
-    const wrapper = mount(TableComponent, {
-      props: defaultProps,
-      global: { stubs: directusComponentStubs },
-    });
-    expect(wrapper.find('.table-container').exists()).toBe(true);
+describe('TableComponent — a grade dos itens', () => {
+  it('desenha uma linha por item', () => {
+    const kind = mappableKind('pontos_turisticos');
+    const wrapper = mountTable();
+
+    expect(wrapper.findAll('tbody tr')).toHaveLength(kind.items.length);
   });
 
-  it('should render with items', () => {
-    const wrapper = mount(TableComponent, {
-      props: defaultProps,
-      global: { stubs: directusComponentStubs },
-    });
-    expect(wrapper.props('items')).toHaveLength(2);
+  it('mostra o estado vazio, e não uma tabela só com cabeçalho', () => {
+    const wrapper = mountTable({ items: [] });
+
+    expect(wrapper.find('.v-info').exists()).toBe(true);
+    expect(wrapper.find('tbody').exists()).toBe(false);
   });
 
-  it('should expose selectItem method', () => {
-    const wrapper = mount(TableComponent, {
-      props: defaultProps,
-      global: { stubs: directusComponentStubs },
-    });
+  it('acrescenta a coluna de ações depois das colunas configuradas', () => {
+    const table = mountTable().findComponent({ name: 'v-table' });
+    const headers = table.props('headers') as { value: string; sortable: boolean }[];
+    const last = headers[headers.length - 1];
+
+    expect(last?.value).toBe('actions');
+    expect(last?.sortable).toBe(false);
+  });
+});
+
+describe('TableComponent — clicar numa linha leva o mapa até o item', () => {
+  it('emite focus-on-item com o item clicado', async () => {
+    const wrapper = mountTable();
+    const item = mappableKind('pontos_turisticos').items[1];
+
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('click:row', { item });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('focus-on-item')?.[0]).toEqual([item]);
+  });
+
+  it('expõe selectItem, que é como o mapa devolve o destaque para a grade', () => {
+    const wrapper = mountTable();
+
     expect(typeof wrapper.vm.selectItem).toBe('function');
   });
+});
 
-  it('should emit focus-on-item event on row click', () => {
-    const wrapper = mount(TableComponent, {
-      props: defaultProps,
-      global: { stubs: directusComponentStubs },
-    });
-    expect(wrapper.emitted('focus-on-item')).toBeFalsy();
+describe('TableComponent — permissões da coleção', () => {
+  it('esconde o ícone de editar quando a permissão não existe', () => {
+    const wrapper = mountTable({ canEdit: false });
+
+    expect(wrapper.find('.action-icon').exists()).toBe(false);
+  });
+
+  it('mostra o ícone de editar quando a permissão existe', () => {
+    const wrapper = mountTable({ canEdit: true });
+
+    expect(wrapper.find('.action-icon').exists()).toBe(true);
   });
 });

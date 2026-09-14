@@ -9,6 +9,10 @@ import type { GeoItem } from './contract/index.js';
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index.js';
 import type { LayoutOptions, LayoutQuery } from './types.js';
 
+/**
+ * Campos de controle do Directus. Nao servem como titulo nem como coluna, e um
+ * deles como padrao so daria trabalho de trocar a cada colecao nova.
+ */
 const EXCLUDED_FIELDS = [
   'id',
   'sort',

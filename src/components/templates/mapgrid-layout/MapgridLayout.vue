@@ -43,7 +43,6 @@
 </template>
 
 <script setup lang="ts">
-import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index.js';
@@ -66,7 +65,16 @@ const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
 const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 
-const selectedItems = useSync(props, 'selectedItems', emit);
+/**
+ * A selecao vive no layout, que e quem a envia para a acao de excluir. O
+ * componente so a espelha, com um computed gravavel em vez do `useSync` do SDK
+ * do Directus: sem aquele import o template nao depende mais do app hospedeiro,
+ * e monta igual no Storybook, no teste e dentro do Directus.
+ */
+const selectedItems = computed<GeoItem[]>({
+  get: () => props.selectedItems,
+  set: (items) => emit('update:selectedItems', items),
+});
 
 const headers = computed<Header[]>(() =>
   configuredColumns(props).map((column) => ({ text: column, value: column }))

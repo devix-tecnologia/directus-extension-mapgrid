@@ -78,6 +78,11 @@ const getCameraState = (): CameraState | null => {
   return { center: instance.getCenter().toArray() as PointCoordinates, zoom: instance.getZoom() };
 };
 
+/**
+ * Publica a camera nos data-attributes do container. O canvas do WebGL nao
+ * expoe nada que um teste de navegador possa ler, entao e por aqui que o e2e
+ * verifica para onde o mapa foi.
+ */
 const syncCameraMetadata = (instance: maplibregl.Map): void => {
   if (!mapContainer.value) return;
   const center = instance.getCenter().toArray() as PointCoordinates;
@@ -106,6 +111,12 @@ const fitBoundsToItems = (): void => {
   }
 };
 
+/**
+ * O enquadramento automatico roda uma vez so. Cada refetch da lista reexecutava
+ * o fitBounds, que cancelava o flyTo disparado por um clique na grade e devolvia
+ * a camera ao Brasil inteiro no meio da animacao. Reenquadrar depois disso e
+ * escolha do usuario, pelo botao do MapToolbar.
+ */
 const performInitialFitBoundsOnce = (): void => {
   if (hasPerformedInitialFitBounds) return;
   hasPerformedInitialFitBounds = true;

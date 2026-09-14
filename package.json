@@ -39,9 +39,16 @@
   },
   "files": [
     "dist/",
+    "src/contract/",
     "package.json",
     "pnpm-lock.yaml"
   ],
+  "exports": {
+    "./contract": {
+      "types": "./src/contract/index.ts",
+      "import": "./src/contract/index.ts"
+    }
+  },
   "directus:extension": {
     "type": "layout",
     "path": "dist/index.js",

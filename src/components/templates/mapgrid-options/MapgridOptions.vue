@@ -77,7 +77,6 @@
 </template>
 
 <script setup lang="ts">
-import { useSync } from '@directus/extensions-sdk';
 import { computed, type WritableComputedRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { ColumnKey } from '../../../contract/index.js';
@@ -91,8 +90,15 @@ const emit = defineEmits<MapgridOptionsEmits>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
-const title = useSync(props, 'title', emit);
-const geolocation = useSync(props, 'geolocation', emit);
+const title = computed<string, string>({
+  get: () => props.title ?? '',
+  set: (value) => emit('update:title', value),
+});
+
+const geolocation = computed<string | null, string | null>({
+  get: () => props.geolocation ?? null,
+  set: (value) => emit('update:geolocation', value),
+});
 
 const toFiniteNumber = (value: unknown): number | undefined => {
   if (value === '' || value === null || value === undefined) return undefined;
