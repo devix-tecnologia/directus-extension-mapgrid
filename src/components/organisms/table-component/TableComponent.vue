@@ -15,7 +15,7 @@
         <div class="actions">
           <v-icon
             v-if="canEdit"
-            v-tooltip="'Edit'"
+            v-tooltip="t('editItem')"
             class="action-icon"
             name="edit"
             small
@@ -32,14 +32,16 @@
       </template>
     </v-table>
 
-    <v-info v-else icon="search" title="No items found" center />
+    <v-info v-else icon="search" :title="t('noItems')" center />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index.js';
 import type { ResolvedHeader } from '../../../services/table/index.js';
+import { MESSAGES } from '../../../shared/messages.js';
 import { ValueCell } from '../../atoms/value-cell/index.js';
 import type { TableComponentEmits, TableComponentProps } from './TableComponent.types';
 
@@ -49,6 +51,8 @@ const props = withDefaults(defineProps<TableComponentProps>(), {
 });
 
 const emit = defineEmits<TableComponentEmits>();
+
+const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
 const selectedItemId = ref<string | number | null>(null);
 const tableContainer = ref<HTMLDivElement | null>(null);
@@ -66,7 +70,7 @@ const resolvedHeaders = computed<ResolvedHeader[]>(() => [
     sortable: true,
     width: null as number | null,
   })),
-  { text: 'Actions', value: 'actions', sortable: false, width: 100, align: 'right' },
+  { text: t('actionsColumn'), value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
 const handleRowClick = ({ item }: { item: GeoItem }): void => {

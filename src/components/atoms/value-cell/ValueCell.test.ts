@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import ValueCell from './ValueCell.vue';

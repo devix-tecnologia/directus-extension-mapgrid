@@ -1,12 +1,18 @@
 <template>
   <div class="mapgrid-layout">
-    <v-info v-if="loading" icon="refresh" title="Loading..." center>
+    <v-info v-if="loading" icon="refresh" :title="t('loading')" center>
       <template #append>
         <v-progress-circular indeterminate />
       </template>
     </v-info>
 
-    <v-info v-else-if="items.length === 0" icon="map" title="No items found" center />
+    <v-info
+      v-else-if="items.length === 0"
+      icon="map"
+      :title="t('noItems')"
+      :subtitle="t('noItemsHint')"
+      center
+    />
 
     <div v-else class="mapgrid-container">
       <MapComponent
@@ -39,9 +45,11 @@
 <script setup lang="ts">
 import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index.js';
 import { configuredColumns } from '../../../contract/index.js';
 import type { Header } from '../../../services/table/index.js';
+import { MESSAGES } from '../../../shared/messages.js';
 import MapComponent from '../../organisms/map-component/MapComponent.vue';
 import TableComponent from '../../organisms/table-component/TableComponent.vue';
 import type { MapgridLayoutEmits, MapgridLayoutProps } from './MapgridLayout.types';
@@ -52,6 +60,8 @@ const props = withDefaults(defineProps<MapgridLayoutProps>(), {
 });
 
 const emit = defineEmits<MapgridLayoutEmits>();
+
+const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
 const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
 const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);

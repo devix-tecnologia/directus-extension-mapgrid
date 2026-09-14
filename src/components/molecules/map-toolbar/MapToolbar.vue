@@ -1,13 +1,17 @@
 <template>
-  <v-button v-tooltip="'Reset view'" class="reset-map-btn" icon rounded @click="emit('reset')">
+  <v-button v-tooltip="t('resetView')" class="reset-map-btn" icon rounded @click="emit('reset')">
     <v-icon name="zoom_out_map" />
   </v-button>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+import { MESSAGES } from '../../../shared/messages.js';
 import type { MapToolbarEmits } from './MapToolbar.types';
 
 const emit = defineEmits<MapToolbarEmits>();
+
+const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 </script>
 
 <script lang="ts">

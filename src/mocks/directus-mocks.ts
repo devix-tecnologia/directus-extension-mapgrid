@@ -597,27 +597,74 @@ export function registerDirectusMockComponents(app: App): void {
   }
 }
 
-export function createMockApi(): Record<string, () => Promise<{ data: unknown }>> {
+/** Uma rota que o cliente de api falso atende, por método e caminho. */
+export interface MockApiRoute {
+  method: 'get' | 'post' | 'patch' | 'delete';
+  /** Caminho exato, ou um prefixo terminado em `/`. */
+  path: string;
+  respond: (config?: { data?: unknown }) => unknown;
+}
+
+const routeMatches = (route: MockApiRoute, method: string, url: string): boolean =>
+  route.method === method &&
+  (route.path.endsWith('/') ? url.startsWith(route.path) : url === route.path);
+
+/**
+ * O cliente de api do Directus, servindo rotas declaradas. Sem rotas devolve uma
+ * resposta vazia — mas uma story que exercita busca ou exclusão precisa que a
+ * chamada devolva algo coerente, e não `{}`.
+ */
+export function createMockApi({ routes = [] }: { routes?: MockApiRoute[] } = {}) {
+  const handle =
+    (method: MockApiRoute['method']) =>
+    async (url: string, config?: { data?: unknown }): Promise<{ data: unknown }> => {
+      const route = routes.find((candidate) => routeMatches(candidate, method, url));
+      return { data: route ? route.respond(config) : method === 'get' ? [] : {} };
+    };
+
   return {
-    get: async () => ({ data: {} }),
-    post: async () => ({ data: {} }),
-    patch: async () => ({ data: {} }),
-    delete: async () => ({ data: {} }),
+    get: handle('get'),
+    post: handle('post'),
+    patch: handle('patch'),
+    delete: handle('delete'),
   };
 }
 
-export function createMockStores(): Record<string, () => unknown> {
+/** Um campo de coleção como as stores do Directus o descrevem. */
+export interface MockCollectionField {
+  field: string;
+  primaryKey?: boolean;
+  /** `null` é como o Directus grava "sem interface", e não ausência do campo. */
+  meta?: { interface?: string | null } | null;
+}
+
+/** Uma coleção como as stores do Directus a descrevem. */
+export interface MockCollection {
+  collection: string;
+  icon?: string;
+  fields?: MockCollectionField[];
+}
+
+/** As stores do app, com as coleções que as stories precisam que `useCollection()` resolva. */
+export function createMockStores(
+  collections: MockCollection[] = [{ collection: 'mapgrid' }]
+): Record<string, () => unknown> {
   const collectionsStore = {
-    collections: [
-      {
-        collection: 'mapgrid',
-        meta: { sort_field: null, singleton: false, accountability: null },
-      },
-    ],
+    collections: collections.map((entry) => ({
+      collection: entry.collection,
+      icon: entry.icon ?? 'map',
+      meta: { sort_field: null, singleton: false, accountability: null },
+    })),
+  };
+
+  const fieldsStore = {
+    getFieldsForCollection: (collection: string) =>
+      collections.find((entry) => entry.collection === collection)?.fields ?? [],
   };
 
   return {
     useCollectionsStore: () => collectionsStore,
+    useFieldsStore: () => fieldsStore,
     usePermissionsStore: () => ({ hasPermission: () => true }),
     useUserStore: () => ({ currentUser: { id: 1, email: 'test@example.com' } }),
   };

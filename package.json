@@ -81,6 +81,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.9",
+    "@directus/constants": "^13.0.3",
     "@directus/extensions-sdk": "^16.0.2",
     "@directus/types": "^13.2.3",
     "@playwright/test": "^1.62.1",
@@ -106,6 +107,7 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "vue": "^3.5.22",
+    "vue-i18n": "^11.4.10",
     "vue-router": "4.5.1",
     "vue-tsc": "^3.3.11"
   },

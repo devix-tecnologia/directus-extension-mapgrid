@@ -1,29 +1,29 @@
 <template>
-  <v-detail icon="info" header="Popup Pin Map">
+  <v-detail icon="info" :header="t('optionPopup')">
     <div class="field">
       <v-collection-field-template v-model="title" :collection="collection" />
     </div>
   </v-detail>
 
-  <v-detail icon="place" header="Geolocation">
+  <v-detail icon="place" :header="t('optionGeolocation')">
     <div class="field">
       <v-select
         v-model="geolocation"
         :collection="collection"
-        :items="[{ name: '---', field: null }, ...geolocationFields]"
+        :items="[{ name: t('optionNone'), field: null }, ...geolocationFields]"
         item-text="name"
         item-value="field"
-        placeholder="Select a geolocation field"
+        :placeholder="t('optionGeolocationPlaceholder')"
         :show-deselect="true"
       />
     </div>
   </v-detail>
 
-  <v-detail icon="map" header="Map Center">
+  <v-detail icon="map" :header="t('optionMapCenter')">
     <div class="field">
       <v-input
         v-model="centerLng"
-        label="Longitude"
+        :label="t('optionLongitude')"
         placeholder="-47.9292"
         type="number"
         step="0.0001"
@@ -32,7 +32,7 @@
     <div class="field">
       <v-input
         v-model="centerLat"
-        label="Latitude"
+        :label="t('optionLatitude')"
         placeholder="-15.7801"
         type="number"
         step="0.0001"
@@ -41,7 +41,7 @@
     <div class="field">
       <v-input
         v-model="mapZoom"
-        label="Initial Zoom"
+        :label="t('optionInitialZoom')"
         placeholder="4"
         type="number"
         min="1"
@@ -50,25 +50,25 @@
     </div>
   </v-detail>
 
-  <v-detail icon="zoom_in" header="Zoom on Table Click">
+  <v-detail icon="zoom_in" :header="t('optionZoomOnClick')">
     <div class="field">
       <v-checkbox
         v-model="zoomOnClick"
-        label="Zoom when clicking table items"
+        :label="t('optionZoomOnClickLabel')"
       />
     </div>
   </v-detail>
 
-  <v-detail icon="view_column" header="Table Columns">
+  <v-detail icon="view_column" :header="t('optionColumns')">
     <div class="field-group">
       <div v-for="(column, idx) in columnRefs" :key="idx" class="field">
         <v-select
           v-model="column.value"
           :collection="collection"
-          :items="[{ name: '---', field: null }, ...fieldsInCollection]"
+          :items="[{ name: t('optionNone'), field: null }, ...fieldsInCollection]"
           item-text="name"
           item-value="field"
-          :placeholder="`Column ${idx + 1}`"
+          :placeholder="t('optionColumnPlaceholder', { number: idx + 1 })"
           :show-deselect="true"
         />
       </div>
@@ -79,13 +79,17 @@
 <script setup lang="ts">
 import { useSync } from '@directus/extensions-sdk';
 import { computed, type WritableComputedRef } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { ColumnKey } from '../../../contract/index.js';
 import { COLUMN_KEYS } from '../../../contract/index.js';
+import { MESSAGES } from '../../../shared/messages.js';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const props = defineProps<MapgridOptionsProps>();
 
 const emit = defineEmits<MapgridOptionsEmits>();
+
+const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
 const title = useSync(props, 'title', emit);
 const geolocation = useSync(props, 'geolocation', emit);

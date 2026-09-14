@@ -1,31 +1,12 @@
 {
+	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
-		"target": "ES2019",
-		"lib": ["ES2019", "DOM", "DOM.Iterable"],
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"strict": true,
-		"noFallthroughCasesInSwitch": true,
-		"esModuleInterop": true,
-		"noImplicitAny": true,
-		"noImplicitThis": true,
-		"noImplicitReturns": true,
-		"noUncheckedIndexedAccess": true,
-		"alwaysStrict": true,
-		"strictNullChecks": true,
-		"strictFunctionTypes": true,
-		"strictBindCallApply": true,
-		"strictPropertyInitialization": true,
-		"resolveJsonModule": false,
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true,
-		"allowSyntheticDefaultImports": true,
-		"isolatedModules": true,
 		"noEmit": true
 	},
 	"include": [
 		"./src/**/*.ts",
 		"./tests/**/*.ts",
+		"./.storybook/**/*.ts",
 		"./playwright.config.ts",
 		"./vitest.config.ts",
 		"./vitest.integration.config.ts"
