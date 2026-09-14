@@ -1,5 +1,5 @@
-import { expect, waitFor } from 'storybook/test';
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
+import { expect, waitFor } from 'storybook/test';
 import { defineComponent } from 'vue';
 import type { GeoItem } from '../../../services/geo/index.js';
 import { generateMockData } from './MapgridLayout.mock';

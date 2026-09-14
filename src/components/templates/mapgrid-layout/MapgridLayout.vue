@@ -64,7 +64,7 @@ const headers = computed<Header[]>(() => {
     props.coluna3,
     props.coluna4,
     props.coluna5,
-  ].filter(Boolean) as string[];
+  ].filter((column): column is string => Boolean(column));
 
   return columns.map((column) => ({ text: column, value: column }));
 });

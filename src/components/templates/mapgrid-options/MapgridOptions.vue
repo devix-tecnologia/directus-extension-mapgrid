@@ -22,33 +22,30 @@
   <v-detail icon="map" header="Map Center">
     <div class="field">
       <v-input
-        v-model.number="localCenterLng"
+        v-model="centerLng"
         label="Longitude"
         placeholder="-47.9292"
         type="number"
         step="0.0001"
-        @update:modelValue="emit('update:mapCenterLng', $event)"
       />
     </div>
     <div class="field">
       <v-input
-        v-model.number="localCenterLat"
+        v-model="centerLat"
         label="Latitude"
         placeholder="-15.7801"
         type="number"
         step="0.0001"
-        @update:modelValue="emit('update:mapCenterLat', $event)"
       />
     </div>
     <div class="field">
       <v-input
-        v-model.number="localMapZoom"
+        v-model="mapZoom"
         label="Initial Zoom"
         placeholder="4"
         type="number"
         min="1"
         max="20"
-        @update:modelValue="emit('update:mapZoom', $event)"
       />
     </div>
   </v-detail>
@@ -56,9 +53,8 @@
   <v-detail icon="zoom_in" header="Zoom on Table Click">
     <div class="field">
       <v-checkbox
-        v-model="localZoomOnClick"
+        v-model="zoomOnClick"
         label="Zoom when clicking table items"
-        @update:modelValue="emit('update:zoomOnClick', $event)"
       />
     </div>
   </v-detail>
@@ -82,7 +78,7 @@
 
 <script setup lang="ts">
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import { computed, ref, toRefs, toValue, type WritableComputedRef, watch } from 'vue';
+import { computed, toRefs, toValue, type WritableComputedRef } from 'vue';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
@@ -97,28 +93,40 @@ const collection = useCollection(collectionKey);
 const title = useSync(props, 'title', emit);
 const geolocation = useSync(props, 'geolocation', emit);
 
-const localCenterLng = ref(props.mapCenterLng);
-const localCenterLat = ref(props.mapCenterLat);
-const localMapZoom = ref(props.mapZoom);
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
 
-watch(
-  () => props.mapCenterLng,
-  (v) => {
-    localCenterLng.value = v;
-  }
-);
-watch(
-  () => props.mapCenterLat,
-  (v) => {
-    localCenterLat.value = v;
-  }
-);
-watch(
-  () => props.mapZoom,
-  (v) => {
-    localMapZoom.value = v;
-  }
-);
+const centerLng = computed<number | undefined, unknown>({
+  get: () => props.mapCenterLng,
+  set: (value) => {
+    const parsed = toFiniteNumber(value);
+    if (parsed !== undefined) emit('update:mapCenterLng', parsed);
+  },
+});
+
+const centerLat = computed<number | undefined, unknown>({
+  get: () => props.mapCenterLat,
+  set: (value) => {
+    const parsed = toFiniteNumber(value);
+    if (parsed !== undefined) emit('update:mapCenterLat', parsed);
+  },
+});
+
+const mapZoom = computed<number | undefined, unknown>({
+  get: () => props.mapZoom,
+  set: (value) => {
+    const parsed = toFiniteNumber(value);
+    if (parsed !== undefined) emit('update:mapZoom', parsed);
+  },
+});
+
+const zoomOnClick = computed<boolean | undefined, unknown>({
+  get: () => props.zoomOnClick,
+  set: (value) => emit('update:zoomOnClick', Boolean(value)),
+});
 
 const setColumn = (key: (typeof COLUMN_KEYS)[number], value: string | null): void => {
   if (key === 'coluna1') return void emit('update:coluna1', value);
@@ -133,15 +141,6 @@ const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =
     get: () => props[key] ?? null,
     set: (value) => setColumn(key, value),
   })
-);
-
-const localZoomOnClick = ref(props.zoomOnClick);
-
-watch(
-  () => props.zoomOnClick,
-  (newValue) => {
-    localZoomOnClick.value = newValue;
-  }
 );
 
 const geolocationFields = computed(() =>

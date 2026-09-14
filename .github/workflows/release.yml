@@ -64,8 +64,11 @@ jobs:
         run: pnpm run lint
 
       - name: Check code formatting
-        run: pnpm exec prettier --check src/
-        
+        run: pnpm exec biome format .
+
+      - name: Run unit tests
+        run: pnpm test
+
       - name: Build extension
         run: pnpm run build
 

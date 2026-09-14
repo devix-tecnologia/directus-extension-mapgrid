@@ -1,12 +1,13 @@
 <template>
   <div class="map-wrapper">
     <div ref="mapContainer" class="map-container"></div>
+    <MapToolbar @reset="resetMapView" />
   </div>
 </template>
 
 <script setup lang="ts">
 import maplibregl, { type FilterSpecification } from 'maplibre-gl';
-import { nextTick, onMounted, type Ref, ref, watchEffect } from 'vue';
+import { nextTick, onMounted, onUnmounted, type Ref, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {
   buildPointFeatureCollection,
@@ -24,6 +25,7 @@ import {
   type PointCoordinates,
 } from '../../../services/geo/index.js';
 import { resolveFieldTemplate } from '../../../services/value-formatter/index.js';
+import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import type { MapComponentEmits, MapComponentProps } from './MapComponent.types';
 
 const props = defineProps<MapComponentProps>();
@@ -51,6 +53,8 @@ const mapContainer = ref<HTMLDivElement | null>(null);
 const map: Ref<maplibregl.Map | null> = ref(null);
 let activePopups: maplibregl.Popup[] = [];
 let clusterMarkers: maplibregl.Marker[] = [];
+let resizeObserver: ResizeObserver | null = null;
+let highlightResetTimer: ReturnType<typeof setTimeout> | null = null;
 let hasPerformedInitialFitBounds = false;
 
 const getMap = (): maplibregl.Map | null => map.value;
@@ -209,9 +213,15 @@ const flashHighlightMarker = (): void => {
   if (!instance) return;
 
   instance.setPaintProperty(GEO_POINT_LAYER_ID, 'circle-stroke-width', HIGHLIGHT_STROKE_WIDTH);
-  setTimeout(() => {
-    instance.setPaintProperty(GEO_POINT_LAYER_ID, 'circle-stroke-width', DEFAULT_STROKE_WIDTH);
+  if (highlightResetTimer) clearTimeout(highlightResetTimer);
+  highlightResetTimer = setTimeout(() => {
+    highlightResetTimer = null;
+    getMap()?.setPaintProperty(GEO_POINT_LAYER_ID, 'circle-stroke-width', DEFAULT_STROKE_WIDTH);
   }, FLASH_HIGHLIGHT_DURATION_MS);
+};
+
+const resetMapView = (): void => {
+  fitBoundsToItems();
 };
 
 const focusOnItem = (item: GeoItem): void => {
@@ -369,8 +379,41 @@ const initializeMap = (): void => {
 
   registerMapEvents();
 };
+
+const observeContainerResize = (): void => {
+  if (!mapContainer.value || typeof ResizeObserver === 'undefined') return;
+
+  resizeObserver = new ResizeObserver(() => {
+    getMap()?.resize();
+  });
+  resizeObserver.observe(mapContainer.value);
+};
+
+const releaseMapResources = (): void => {
+  if (highlightResetTimer) {
+    clearTimeout(highlightResetTimer);
+    highlightResetTimer = null;
+  }
+
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+
+  for (const marker of clusterMarkers) marker.remove();
+  clusterMarkers = [];
+
+  dismissAllPopups();
+
+  map.value?.remove();
+  map.value = null;
+};
+
 onMounted(() => {
   initializeMap();
+  observeContainerResize();
+});
+
+onUnmounted(() => {
+  releaseMapResources();
 });
 
 watchEffect(() => {
