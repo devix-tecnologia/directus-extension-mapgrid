@@ -5,6 +5,8 @@
  * meio preenchido, ou `null`. Quem lê precisa parsear, não asseverar.
  */
 
+import { isRecord } from './is-record.js';
+
 /** Longitude e latitude, na ordem que o GeoJSON e o maplibre usam. */
 export type PointCoordinates = [number, number];
 
@@ -25,12 +27,10 @@ const isFiniteNumber = (value: unknown): value is number =>
  * maplibre, longe da causa.
  */
 export const parsePointCoordinates = (raw: unknown): PointCoordinates | null => {
-  if (typeof raw !== 'object' || raw === null) return null;
+  if (!isRecord(raw)) return null;
+  if (raw.type !== undefined && raw.type !== 'Point') return null;
 
-  const geometry = raw as { type?: unknown; coordinates?: unknown };
-  if (geometry.type !== undefined && geometry.type !== 'Point') return null;
-
-  const coordinates = geometry.coordinates;
+  const coordinates = raw.coordinates;
   if (!Array.isArray(coordinates) || coordinates.length !== 2) return null;
 
   const [longitude, latitude] = coordinates;

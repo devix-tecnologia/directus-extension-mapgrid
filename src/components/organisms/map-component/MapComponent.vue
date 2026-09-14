@@ -10,7 +10,7 @@ import maplibregl, { type FilterSpecification } from 'maplibre-gl';
 import { nextTick, onMounted, onUnmounted, type Ref, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoItem, PointCoordinates } from '../../../contract/index.js';
-import { itemPointCoordinates, parsePointCoordinates } from '../../../contract/index.js';
+import { itemPointCoordinates } from '../../../contract/index.js';
 import {
   buildPointFeatureCollection,
   coordinatesNearest,
@@ -22,6 +22,9 @@ import {
   GEO_POINT_LAYER_ID,
   GEO_SOURCE_ID,
   isOutsideBounds,
+  parseClusterFeature,
+  parseClusterFeatures,
+  parseMarkerFeature,
   resolveMapCenter,
   resolveMapZoom,
 } from '../../../services/geo/index.js';
@@ -75,7 +78,7 @@ const buildFeatureCollection = () =>
 const getCameraState = (): CameraState | null => {
   const instance = getMap();
   if (!instance) return null;
-  return { center: instance.getCenter().toArray() as PointCoordinates, zoom: instance.getZoom() };
+  return { center: instance.getCenter().toArray(), zoom: instance.getZoom() };
 };
 
 /**
@@ -85,7 +88,7 @@ const getCameraState = (): CameraState | null => {
  */
 const syncCameraMetadata = (instance: maplibregl.Map): void => {
   if (!mapContainer.value) return;
-  const center = instance.getCenter().toArray() as PointCoordinates;
+  const center = instance.getCenter().toArray();
   mapContainer.value.dataset.center = center.join(',');
   mapContainer.value.dataset.zoom = String(instance.getZoom());
 };
@@ -156,7 +159,7 @@ const refreshClusterLabels = (): void => {
   const instance = getMap();
   if (!instance?.isStyleLoaded()) return;
 
-  const source = instance.getSource(GEO_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+  const source = instance.getSource<maplibregl.GeoJSONSource>(GEO_SOURCE_ID);
   if (!source) return;
 
   source.setData(buildFeatureCollection());
@@ -164,17 +167,16 @@ const refreshClusterLabels = (): void => {
   for (const marker of clusterMarkers) marker.remove();
   clusterMarkers = [];
 
-  const clusters = instance.querySourceFeatures(GEO_SOURCE_ID, { filter: ['has', 'point_count'] });
+  const clusters = parseClusterFeatures(
+    instance.querySourceFeatures(GEO_SOURCE_ID, { filter: ['has', 'point_count'] })
+  );
 
   for (const cluster of clusters) {
-    const count = cluster.properties?.point_count as number;
-    const coords = (cluster.geometry as GeoJSON.Point).coordinates as PointCoordinates;
-
     const marker = new maplibregl.Marker({
-      element: createClusterLabelElement(count),
+      element: createClusterLabelElement(cluster.pointCount),
       offset: [0, 0],
     })
-      .setLngLat(coords)
+      .setLngLat(cluster.coordinates)
       .addTo(instance);
 
     clusterMarkers.push(marker);
@@ -295,14 +297,11 @@ const registerMapEvents = (): void => {
       const feature = event.features?.[0];
       if (!feature) return;
 
-      const point = parsePointCoordinates(feature.geometry);
-      if (!point) return;
+      const marker = parseMarkerFeature(feature);
+      if (!marker) return;
 
-      const title = feature.properties?.formattedTitle as string;
-      const id = feature.properties?.id as string | number;
-
-      openPopupAt(coordinatesNearest(point, event.lngLat.lng), title);
-      emit('select-item', id);
+      openPopupAt(coordinatesNearest(marker.coordinates, event.lngLat.lng), marker.formattedTitle);
+      emit('select-item', marker.id);
     });
 
     instance.on('mouseenter', GEO_POINT_LAYER_ID, () => {
@@ -316,16 +315,15 @@ const registerMapEvents = (): void => {
       const features = instance.queryRenderedFeatures(event.point, {
         layers: [GEO_CLUSTER_LAYER_ID],
       });
-      const clusterFeature = features[0];
-      if (!clusterFeature) return;
+      const firstFeature = features[0];
+      if (!firstFeature) return;
 
-      const clusterId = clusterFeature.properties?.cluster_id as number;
-      const source = instance.getSource(GEO_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      if (!source) return;
+      const cluster = parseClusterFeature(firstFeature);
+      const source = instance.getSource<maplibregl.GeoJSONSource>(GEO_SOURCE_ID);
+      if (!cluster || !source) return;
 
-      source.getClusterExpansionZoom(clusterId).then((zoom: number) => {
-        const coords = (clusterFeature.geometry as GeoJSON.Point).coordinates as PointCoordinates;
-        instance.easeTo({ center: coords, zoom });
+      source.getClusterExpansionZoom(cluster.clusterId).then((zoom: number) => {
+        instance.easeTo({ center: cluster.coordinates, zoom });
       });
     });
 

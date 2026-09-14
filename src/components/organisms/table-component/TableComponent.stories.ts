@@ -34,9 +34,10 @@ export const Default: Story = {
   },
   render: tableFrame,
   play: async ({ canvasElement }) => {
-    const rows = canvasElement.querySelectorAll('tbody tr');
-    expect(rows.length).toBeGreaterThan(0);
-    await userEvent.click(rows[0] as HTMLTableRowElement);
+    const rows = canvasElement.querySelectorAll<HTMLTableRowElement>('tbody tr');
+    const firstRow = rows[0];
+    expect(firstRow).toBeTruthy();
+    if (firstRow) await userEvent.click(firstRow);
   },
 };
 

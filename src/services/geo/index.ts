@@ -23,3 +23,15 @@ export {
   resolveMapCenter,
   resolveMapZoom,
 } from './map-camera.js';
+export {
+  type ClusterFeature,
+  type ClusterProperties,
+  type MarkerFeature,
+  type MarkerProperties,
+  parseClusterFeature,
+  parseClusterFeatures,
+  parseClusterProperties,
+  parseMarkerFeature,
+  parseMarkerProperties,
+  type QueriedFeature,
+} from './map-feature.js';

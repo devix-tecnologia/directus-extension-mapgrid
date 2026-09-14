@@ -101,7 +101,9 @@ export const vTableStub: Component = {
   `,
   methods: {
     onSelectAll(event: Event): void {
-      const target = event.target as HTMLInputElement;
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+
       this.localSelected = target.checked ? [...this.items] : [];
       this.$emit('update:modelValue', this.localSelected);
     },

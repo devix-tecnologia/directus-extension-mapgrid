@@ -57,11 +57,8 @@ const editFlowFrame = (args: Record<string, unknown>) =>
   defineComponent({
     components: { MapgridLayout },
     setup: () => ({ args }),
-    data() {
-      return {
-        editingItem: null as GeoItem | null,
-        draft: '' as string,
-      };
+    data(): { editingItem: GeoItem | null; draft: string } {
+      return { editingItem: null, draft: '' };
     },
     methods: {
       openEdit(item: GeoItem) {

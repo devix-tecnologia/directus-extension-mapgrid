@@ -64,12 +64,14 @@ const selectedItems = computed({
 });
 
 const resolvedHeaders = computed<ResolvedHeader[]>(() => [
-  ...props.headers.map((header) => ({
-    text: header.text,
-    value: header.value,
-    sortable: true,
-    width: null as number | null,
-  })),
+  ...props.headers.map(
+    (header): ResolvedHeader => ({
+      text: header.text,
+      value: header.value,
+      sortable: true,
+      width: null,
+    })
+  ),
   { text: t('actionsColumn'), value: 'actions', sortable: false, width: 100, align: 'right' },
 ]);
 
@@ -90,10 +92,11 @@ const selectItem = (id: string | number): void => {
     setTimeout(() => {
       if (!tableContainer.value) return;
 
-      const selectedRow = tableContainer.value.querySelector(`[data-id="${id}"]`);
-      if (!selectedRow) return;
+      const row = tableContainer.value.querySelector<HTMLElement>(
+        `[data-id="${CSS.escape(String(id))}"]`
+      );
+      if (!row) return;
 
-      const row = selectedRow as HTMLElement;
       const container = tableContainer.value;
       const scrollOffset = row.offsetTop - container.clientHeight / 2 + row.clientHeight / 2;
 

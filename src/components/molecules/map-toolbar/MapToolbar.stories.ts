@@ -35,8 +35,8 @@ export const Default: Story = {
     `,
   }),
   play: async ({ canvasElement }) => {
-    const button = canvasElement.querySelector('button');
+    const button = canvasElement.querySelector<HTMLButtonElement>('button');
     expect(button).toBeTruthy();
-    await userEvent.click(button as HTMLButtonElement);
+    if (button) await userEvent.click(button);
   },
 };

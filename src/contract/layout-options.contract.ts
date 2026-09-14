@@ -5,6 +5,8 @@
  * edição num arquivo só.
  */
 
+import { isRecord } from './is-record.js';
+
 /** Id do layout — o que o `layout` de um preset aponta. */
 export const MAPGRID_LAYOUT_ID = 'mapgrid';
 
@@ -66,8 +68,7 @@ const toBoolean = (value: unknown): boolean | undefined =>
  * descarta o que não serve, em vez de asseverar a forma com `as`.
  */
 export const normalizeLayoutOptions = (raw: unknown): LayoutOptions => {
-  const source: Record<string, unknown> =
-    typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
+  const source = isRecord(raw) ? raw : {};
 
   const options: LayoutOptions = {
     title: toTrimmedText(source.title),
