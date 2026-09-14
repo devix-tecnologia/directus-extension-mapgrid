@@ -28,12 +28,13 @@ const isHeadlessGpuNoise = (text: string): boolean =>
 
 interface StoryIndexEntry {
   id: string;
+  /** `story` para uma story; `docs` para a página de autodocs de um componente. */
   type: string;
   name: string;
   title: string;
 }
 
-const fetchStoryIds = async (page: Page, baseURL: string): Promise<StoryIndexEntry[]> => {
+const fetchIndexEntries = async (page: Page, baseURL: string): Promise<StoryIndexEntry[]> => {
   const response = await page.request.get(`${baseURL}/index.json`);
   expect(response.ok(), 'o Storybook precisa servir o índice de stories').toBe(true);
 
@@ -43,7 +44,13 @@ const fetchStoryIds = async (page: Page, baseURL: string): Promise<StoryIndexEnt
       ? (index as { entries: Record<string, StoryIndexEntry> }).entries
       : {};
 
-  return Object.values(entries).filter((entry) => entry.type === 'story');
+  /*
+   * Stories e páginas de docs. A página de docs monta todas as stories do
+   * componente de uma vez, num app diferente do da story isolada — foi
+   * justamente ali que a ponte de devtools do vue-i18n apareceu quebrando
+   * enquanto este check, que só abria `viewMode=story`, passava.
+   */
+  return Object.values(entries).filter((entry) => entry.type === 'story' || entry.type === 'docs');
 };
 
 const describeProblems = (problems: ConsoleProblem[]): string =>
@@ -55,8 +62,8 @@ test('nenhuma story escreve no console do navegador', async ({ page, baseURL }) 
   expect(baseURL, 'baseURL do Storybook').toBeTruthy();
   const storybookUrl = baseURL ?? '';
 
-  const stories = await fetchStoryIds(page, storybookUrl);
-  expect(stories.length, 'o índice precisa listar ao menos uma story').toBeGreaterThan(0);
+  const entries = await fetchIndexEntries(page, storybookUrl);
+  expect(entries.length, 'o índice precisa listar ao menos uma entrada').toBeGreaterThan(0);
 
   const problems: ConsoleProblem[] = [];
   let currentStoryId = '';
@@ -72,11 +79,21 @@ test('nenhuma story escreve no console do navegador', async ({ page, baseURL }) 
     problems.push({ storyId: currentStoryId, kind: 'pageerror', text: String(error) });
   });
 
-  for (const story of stories) {
-    currentStoryId = story.id;
-    // viewMode=story abre só a story, sem o manager em volta, para o que
-    // aparecer no console ser do componente e não da interface do Storybook
-    await page.goto(`${storybookUrl}/iframe.html?id=${story.id}&viewMode=story`, {
+  /*
+   * Uma rejeição de promise sem tratamento não vira `pageerror`, e era assim
+   * que a ponte de devtools falhava: "Uncaught (in promise)". Sem este ouvinte
+   * o check não a enxerga.
+   */
+  await page.addInitScript(() => {
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error(`[unhandledrejection] ${event.reason}`);
+    });
+  });
+
+  for (const entry of entries) {
+    currentStoryId = entry.id;
+    const viewMode = entry.type === 'docs' ? 'docs' : 'story';
+    await page.goto(`${storybookUrl}/iframe.html?id=${entry.id}&viewMode=${viewMode}`, {
       waitUntil: 'networkidle',
     });
     await page.waitForTimeout(250);
@@ -84,6 +101,6 @@ test('nenhuma story escreve no console do navegador', async ({ page, baseURL }) 
 
   expect(
     problems,
-    `${problems.length} mensagem(ns) de console em ${stories.length} stories:\n\n${describeProblems(problems)}\n`
+    `${problems.length} mensagem(ns) de console em ${entries.length} entradas:\n\n${describeProblems(problems)}\n`
   ).toEqual([]);
 });

@@ -200,6 +200,12 @@ const vButtonStub: Component = {
   },
 };
 
+/**
+ * O `v-icon` do app desenha um glifo do Material Symbols a partir do nome. Aqui
+ * o nome viaja num atributo e o CSS o transforma no glifo, em vez de virar um
+ * nó de texto: assim `textContent` continua vazio e uma asserção sobre o rótulo
+ * de um botão não recebe a palavra "delete" junto.
+ */
 const vIconStub: Component = {
   name: 'v-icon',
   props: {
@@ -207,33 +213,12 @@ const vIconStub: Component = {
     small: { type: Boolean, default: false },
     large: { type: Boolean, default: false },
   },
-  computed: {
-    isEdit(): boolean {
-      return this.name === 'edit';
-    },
-    sizeClass(): string {
-      if (this.small) return 'v-icon-mock--small';
-      if (this.large) return 'v-icon-mock--large';
-      return '';
-    },
-  },
   template: `
-    <span
+    <i
       class="v-icon v-icon-mock"
-      :class="sizeClass"
-    >
-      <svg
-        v-if="isEdit"
-        viewBox="0 0 24 24"
-        width="20"
-        height="20"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-      </svg>
-      <template v-else>{{ name }}</template>
-    </span>
+      :data-name="name"
+      :data-size="small ? 'small' : large ? 'large' : undefined"
+    />
   `,
 };
 
@@ -466,12 +451,61 @@ const mockComponentsStyles = `
   min-inline-size: 0;
   padding: 0;
 }
+/*
+ * O icone de verdade, a partir do nome no atributo.
+ *
+ * O Material Symbols mapeia uma ligadura (\`map\`, \`delete\`) para um glifo, e
+ * ligaduras valem tambem em conteudo gerado — entao o nome pode viver no
+ * \`content\` do CSS em vez de num no de texto. E isso que mantem o
+ * \`textContent\` vazio, e a assercao de um teste sobre o rotulo de um botao
+ * intacta. Sem a fonte (offline) o nome aparece como texto, que continua
+ * legivel. A fonte vem de .storybook/preview-head.html.
+ */
 .v-icon-mock {
   display: inline-flex;
   align-items: center;
-  font-size: 20px;
+  justify-content: center;
+  font-style: normal;
   line-height: 1;
-  color: var(--v-icon-color, var(--theme--primary, var(--theme--primary, #6644ff)));
+  vertical-align: middle;
+  color: var(--v-icon-color, var(--theme--primary, #6644ff));
+  transition: color var(--transition-fast, 120ms) var(--transition, ease);
+}
+.v-icon-mock::before {
+  content: attr(data-name);
+  font-family: 'Material Symbols Rounded', monospace;
+  font-weight: 400;
+  font-size: var(--v-icon-size, 24px);
+  line-height: 1;
+  letter-spacing: normal;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-feature-settings: 'liga';
+  word-wrap: normal;
+  direction: ltr;
+}
+.v-icon-mock[data-size='small']::before {
+  font-size: var(--v-icon-size, 18px);
+}
+.v-icon-mock[data-size='large']::before {
+  font-size: var(--v-icon-size, 36px);
+}
+.v-icon-mock:hover {
+  color: var(--v-icon-color-hover, var(--v-icon-color, var(--theme--primary, #6644ff)));
+}
+.v-select-mock {
+  inline-size: 100%;
+  box-sizing: border-box;
+  min-block-size: 44px;
+  padding: 0 12px;
+  border: var(--theme--border-width, 1px) solid var(--theme--border-color, #d9d9d9);
+  border-radius: var(--theme--border-radius, 6px);
+  background: var(--theme--form--field--input--background, #fff);
+  color: var(--theme--form--field--input--foreground, #212222);
+  font-size: 14px;
+}
+.v-select-mock:focus {
+  outline: none;
+  border-color: var(--theme--primary, #6644ff);
 }
 .v-progress-circular {
   display: inline-flex;

@@ -1,0 +1,16 @@
+<!--
+  A fonte de ícones do Directus. O `v-icon` do app desenha um glifo do Material
+  Symbols a partir do nome (`map`, `delete`, `refresh`), e a fonte vem do app —
+  fora dele o stub mostraria o nome como texto, que é o que deixava as stories
+  com cara de página sem CSS.
+
+  Vem da CDN de propósito: é ferramenta de desenvolvimento, e sem rede o
+  Storybook simplesmente volta a mostrar o nome, que continua legível. Um pacote
+  de fonte no devDependencies custaria megabytes para o mesmo resultado.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&family=Inter:wght@400;500;600;700&display=swap"
+/>

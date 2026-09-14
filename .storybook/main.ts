@@ -32,14 +32,26 @@ const config: StorybookConfig = {
       '@': resolve(currentDir, '../src'),
       '@directus/extensions-sdk': resolve(currentDir, 'mocks/directus-extensions-sdk.ts'),
       'vue-router': resolve(currentDir, 'mocks/vue-router.ts'),
+      /*
+       * O build de desenvolvimento do vue-i18n chama `enableDevTools` no
+       * install, sem flag que desligue: a condição compila para `if (true)`.
+       * O Storybook cria um app por story, cada install registra a ponte de
+       * novo, e a extensão Vue Devtools quebra sozinha com "Cannot read
+       * properties of undefined (reading 'app')" — uma rejeição não tratada
+       * por story, para quem tem a extensão instalada, que é quase todo
+       * desenvolvedor Vue.
+       *
+       * O build de produção não tem esse caminho compilado. Custa os avisos de
+       * desenvolvimento do próprio vue-i18n, que aqui não fazem falta: a
+       * paridade de chaves entre os idiomas é garantida por teste.
+       */
+      'vue-i18n': resolve(currentDir, '../node_modules/vue-i18n/dist/vue-i18n.esm-browser.prod.js'),
     };
     /*
-     * Desliga as pontes de devtools do Vue e do vue-i18n. O Storybook cria um
-     * app por story e cada plugin se registra na extensão Vue Devtools ao ser
-     * instalado; a extensão não espera o registro repetido e quebra sozinha
-     * com "Cannot read properties of undefined (reading 'app')", uma vez por
-     * story, no mesmo console que pedimos para as pessoas lerem. As pontes não
-     * servem para nada aqui, já que cada story é um app separado e efêmero.
+     * Cada story é um app separado e efêmero, então nenhuma ponte de devtools
+     * tem utilidade aqui. `__INTLIFY_PROD_DEVTOOLS__` é o que o build de
+     * produção do vue-i18n lê para decidir se registra a ponte; o alias acima
+     * é o que resolve o caso de desenvolvimento.
      */
     config.define = {
       ...config.define,
