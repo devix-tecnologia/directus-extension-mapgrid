@@ -4,10 +4,10 @@ export interface ValueCellType {
   emits: ValueCellEmits;
 }
 
-export interface ValueCellModels {}
+export type ValueCellModels = Record<string, never>;
 
 export interface ValueCellProps {
   value: unknown;
 }
 
-export interface ValueCellEmits {}
+export type ValueCellEmits = Record<string, never>;

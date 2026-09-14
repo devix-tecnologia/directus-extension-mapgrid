@@ -6,7 +6,7 @@ export interface MapComponentType {
   emits: MapComponentEmits;
 }
 
-export interface MapComponentModels {}
+export type MapComponentModels = Record<string, never>;
 
 export interface MapComponentProps {
   items: GeoItem[];

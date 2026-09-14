@@ -7,7 +7,7 @@ export interface TableComponentType {
   emits: TableComponentEmits;
 }
 
-export interface TableComponentModels {}
+export type TableComponentModels = Record<string, never>;
 
 export interface TableComponentProps {
   items: GeoItem[];

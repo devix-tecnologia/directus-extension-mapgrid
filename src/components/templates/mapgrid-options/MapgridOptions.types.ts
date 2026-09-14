@@ -6,7 +6,7 @@ export interface MapgridOptionsType {
   emits: MapgridOptionsEmits;
 }
 
-export interface MapgridOptionsModels {}
+export type MapgridOptionsModels = Record<string, never>;
 
 export interface MapgridOptionsProps {
   collection: string;

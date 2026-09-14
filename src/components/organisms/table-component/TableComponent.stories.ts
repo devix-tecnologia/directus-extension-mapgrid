@@ -1,5 +1,5 @@
-import { expect, userEvent } from '@storybook/test';
-import type { Meta, StoryObj } from '@storybook/vue3';
+import { expect, userEvent } from 'storybook/test';
+import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { generateMockData } from './TableComponent.mock';
 import TableComponent from './TableComponent.vue';
 

@@ -10,12 +10,7 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
     pool: 'threads',
     isolate: false,
-    poolOptions: {
-      threads: {
-        minThreads: 1,
-        maxThreads: 3,
-      },
-    },
+    maxWorkers: 3,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

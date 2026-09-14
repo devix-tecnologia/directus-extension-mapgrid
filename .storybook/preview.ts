@@ -1,6 +1,6 @@
 import './directus-theme.css';
-import type { Preview } from '@storybook/vue3';
-import { setup } from '@storybook/vue3';
+import type { Preview } from '@storybook/vue3-vite';
+import { setup } from '@storybook/vue3-vite';
 import {
   createMockApi,
   createMockStores,

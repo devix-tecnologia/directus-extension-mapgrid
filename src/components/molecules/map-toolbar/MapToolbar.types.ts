@@ -4,9 +4,9 @@ export interface MapToolbarType {
   emits: MapToolbarEmits;
 }
 
-export interface MapToolbarModels {}
+export type MapToolbarModels = Record<string, never>;
 
-export interface MapToolbarProps {}
+export type MapToolbarProps = Record<string, never>;
 
 export interface MapToolbarEmits {
   reset: [];

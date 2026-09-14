@@ -1,5 +1,5 @@
-import { expect, waitFor } from '@storybook/test';
-import type { Meta, StoryObj } from '@storybook/vue3';
+import { expect, waitFor } from 'storybook/test';
+import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { mockGeoItems } from '../../../mocks/directus-mocks.js';
 import MapComponent from './MapComponent.vue';
 

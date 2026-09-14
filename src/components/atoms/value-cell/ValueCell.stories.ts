@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/vue3';
+import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { generateMockData } from './ValueCell.mock';
 import ValueCell from './ValueCell.vue';
 

@@ -1,10 +1,10 @@
-const mockFn = () => (() => undefined) as any;
+const noop = (): void => undefined;
 
 export function useRouter() {
   return {
-    push: mockFn(),
-    replace: mockFn(),
-    back: mockFn(),
+    push: noop,
+    replace: noop,
+    back: noop,
     currentRoute: { value: { path: '/' } },
   };
 }

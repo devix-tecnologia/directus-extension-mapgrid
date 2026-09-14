@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/vue3';
+import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import DeleteAction from './DeleteAction.vue';
 
 const meta: Meta<typeof DeleteAction> = {

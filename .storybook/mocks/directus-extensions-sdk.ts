@@ -6,18 +6,18 @@ function useCollection() {
   };
 }
 
-function useSync(
-  props: Record<string, any>,
-  key: string,
-  emit: (event: string, ...args: any[]) => void
+function useSync<Props extends Record<string, unknown>, Key extends keyof Props & string>(
+  props: Props,
+  key: Key,
+  emit: (event: `update:${Key}`, value: Props[Key]) => void
 ) {
   return computed({
     get: () => props[key],
-    set: (val: any) => emit(`update:${key}`, val),
+    set: (value: Props[Key]) => emit(`update:${key}`, value),
   });
 }
 
-function defineLayout(options: any) {
+function defineLayout<Options>(options: Options): Options {
   return options;
 }
 

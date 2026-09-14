@@ -31,4 +31,4 @@ export interface MapgridLayoutEmits {
   'edit-item': [item: GeoItem];
 }
 
-export interface MapgridLayoutModels {}
+export type MapgridLayoutModels = Record<string, never>;

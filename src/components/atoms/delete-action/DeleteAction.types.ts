@@ -6,11 +6,11 @@ export interface DeleteActionType {
   emits: DeleteActionEmits;
 }
 
-export interface DeleteActionModels {}
+export type DeleteActionModels = Record<string, never>;
 
 export interface DeleteActionProps {
   selectedItems: GeoItem[];
   deleteSelectedItems: () => Promise<void>;
 }
 
-export interface DeleteActionEmits {}
+export type DeleteActionEmits = Record<string, never>;

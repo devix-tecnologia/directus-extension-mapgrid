@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import { userEvent } from 'storybook/test';
-import { expect } from 'storybook/test';
-import MapToolbar from './MapToolbar.vue';
+import { expect, userEvent } from 'storybook/test';
 import { generateMockData } from './MapToolbar.mock';
+import MapToolbar from './MapToolbar.vue';
 
 const meta: Meta<typeof MapToolbar> = {
   title: '02 - Moléculas/MapToolbar',

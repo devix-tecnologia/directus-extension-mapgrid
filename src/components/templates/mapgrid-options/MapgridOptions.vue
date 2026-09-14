@@ -82,7 +82,6 @@
 
 <script setup lang="ts">
 import { useCollection, useSync } from '@directus/extensions-sdk';
-import type { Field } from '@directus/types';
 import { computed, ref, toRefs, toValue, type WritableComputedRef, watch } from 'vue';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 

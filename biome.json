@@ -5,20 +5,19 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedImports": "warn",
-        "noUnusedVariables": "warn",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
         "noUnusedFunctionParameters": "off",
         "noVueDuplicateKeys": "off"
       },
       "suspicious": {
-        "noExplicitAny": "warn",
-        "noEmptyInterface": "off"
+        "noExplicitAny": "error"
       },
       "complexity": {
-        "noBannedTypes": "warn"
+        "noBannedTypes": "error"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "error"
       }
     }
   },
