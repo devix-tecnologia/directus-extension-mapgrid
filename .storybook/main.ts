@@ -33,6 +33,20 @@ const config: StorybookConfig = {
       '@directus/extensions-sdk': resolve(currentDir, 'mocks/directus-extensions-sdk.ts'),
       'vue-router': resolve(currentDir, 'mocks/vue-router.ts'),
     };
+    /*
+     * Desliga as pontes de devtools do Vue e do vue-i18n. O Storybook cria um
+     * app por story e cada plugin se registra na extensão Vue Devtools ao ser
+     * instalado; a extensão não espera o registro repetido e quebra sozinha
+     * com "Cannot read properties of undefined (reading 'app')", uma vez por
+     * story, no mesmo console que pedimos para as pessoas lerem. As pontes não
+     * servem para nada aqui, já que cada story é um app separado e efêmero.
+     */
+    config.define = {
+      ...config.define,
+      __VUE_PROD_DEVTOOLS__: false,
+      __INTLIFY_PROD_DEVTOOLS__: false,
+    };
+
     config.plugins = config.plugins || [];
     const hasVuePlugin = config.plugins.some(
       (plugin) =>
