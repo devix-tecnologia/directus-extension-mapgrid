@@ -81,9 +81,9 @@ const handleRowClick = ({ item }: { item: GeoItem }): void => {
 };
 
 /**
- * Rola a grade ate a linha do item e a destaca. O atraso espera o v-table
- * terminar de desenhar a linha: sem ele o querySelector roda antes de a linha
- * existir e a rolagem nao acontece.
+ * Scrolls the grid to the item's row and highlights it. The delay waits for
+ * v-table to finish drawing the row: without it querySelector runs before the
+ * row exists and the scroll never happens.
  */
 const selectItem = (id: string | number): void => {
   selectedItemId.value = id;

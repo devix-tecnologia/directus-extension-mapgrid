@@ -12,9 +12,9 @@ import { fieldsFor, MAPPABLE_KINDS } from '../src/mocks/mappable-mocks';
 import { MESSAGES } from '../src/shared/messages';
 
 /**
- * Em escopo de módulo para o decorator poder trocar o locale. Os componentes
- * usam `useI18n({ useScope: 'local' })`, que herda daqui — então a toolbar
- * exercita o pt-BR de verdade, e não uma ligação separada só da story.
+ * At module scope so the decorator can switch the locale. The components use
+ * `useI18n({ useScope: 'local' })`, which inherits from here — so the toolbar
+ * really exercises pt-BR, rather than a separate wiring only the story sees.
  */
 const i18n = createI18n({
   legacy: false,
@@ -24,10 +24,11 @@ const i18n = createI18n({
 });
 
 /**
- * Tudo o que o app do Directus entrega a uma extensão, entregue aqui. A api e as
- * stores vão sob as chaves de injeção do próprio app (`API_INJECT`/`STORES_INJECT`),
- * que é o que `useApi()` e `useStores()` leem — em vez de strings repetidas aqui,
- * que passariam a divergir em silêncio se o Directus as renomeasse.
+ * Everything the Directus app hands an extension, provided here instead. The
+ * api and the stores go under the app's own injection keys
+ * (`API_INJECT`/`STORES_INJECT`), which is what `useApi()` and `useStores()`
+ * read — rather than strings repeated here, which would drift silently if
+ * Directus ever renamed them.
  */
 setup((app) => {
   registerDirectusMockComponents(app);
@@ -56,7 +57,7 @@ setup((app) => {
 const preview: Preview = {
   globalTypes: {
     locale: {
-      description: 'Idioma do app do Directus',
+      description: 'Directus app language',
       toolbar: {
         icon: 'globe',
         items: [
@@ -83,9 +84,9 @@ const preview: Preview = {
     },
     docs: { toc: true },
     /*
-     * Por título, para o prefixo numérico de cada nível do Atomic Design fazer o
-     * que existe para fazer: átomos antes de moléculas, antes de organismos.
-     * Sem isso a barra lateral segue a ordem em que os arquivos carregaram.
+     * By title, so the numeric prefix on each Atomic Design level does what it
+     * is there for: atoms before molecules before organisms. Without this the
+     * sidebar follows whatever order the files happened to load in.
      */
     options: { storySort: { method: 'alphabetical' } },
     backgrounds: {

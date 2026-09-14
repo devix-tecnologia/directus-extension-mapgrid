@@ -2,14 +2,14 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import DeleteAction from './DeleteAction.vue';
 
 const meta: Meta<typeof DeleteAction> = {
-  title: '01 - Átomos/DeleteAction',
+  title: '01 - Atoms/DeleteAction',
   component: DeleteAction,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Botão de exclusão em lote com diálogo de confirmação. Fica visível apenas quando há itens selecionados.',
+          'Bulk delete button with a confirmation dialog. Only visible when items are selected.',
       },
     },
   },

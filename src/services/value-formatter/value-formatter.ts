@@ -1,18 +1,18 @@
 import type { GeoItem } from '../../contract/index';
 import { parsePointCoordinates } from '../../contract/index';
 
-/** `{{campo}}`. Compilado uma vez: `resolveFieldTemplate` roda por item exibido. */
+/** `{{field}}`. Compiled once: `resolveFieldTemplate` runs per displayed item. */
 const PLACEHOLDER_PATTERN = /\{\{([^}]+)\}\}/;
 const PLACEHOLDER_PATTERN_GLOBAL = /\{\{([^}]+)\}\}/g;
 
 /**
- * Um ponto na célula da grade é mostrado como "latitude, longitude" — a ordem
- * que se lê, invertida em relação à ordem do GeoJSON.
+ * A point in a grid cell is shown as "latitude, longitude" — the order people
+ * read, reversed from the GeoJSON order.
  */
 const formatPointCoordinates = ([longitude, latitude]: [number, number]): string =>
   `${latitude}, ${longitude}`;
 
-/** Qualquer valor de um item como texto de uma célula. */
+/** Any value of an item, as the text of a cell. */
 export const serializeValue = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   if (typeof value !== 'object') return String(value);
@@ -25,9 +25,9 @@ export const serializeValue = (value: unknown): string => {
 };
 
 /**
- * O template do popup, resolvido sobre um item. Aceita tanto `{{campo}}` quanto
- * o nome cru de um campo, porque as opções do layout permitem os dois. Sempre
- * cai no id quando nada resolve, para o popup nunca abrir em branco.
+ * The popup template, resolved against an item. Accepts both `{{field}}` and a
+ * bare field name, because the layout options allow either. Always falls back
+ * to the id when nothing resolves, so the popup never opens blank.
  */
 export const resolveFieldTemplate = (item: GeoItem, template: string): string => {
   if (!template) return String(item.id);
@@ -42,7 +42,7 @@ export const resolveFieldTemplate = (item: GeoItem, template: string): string =>
   return resolved.trim() || String(item.id);
 };
 
-/** O valor de um campo do item, pronto para a célula. */
+/** The value of an item's field, ready for the cell. */
 export const serializeItemRow = (item: GeoItem | null | undefined, field: string): string => {
   if (!item) return '';
   if (!(field in item)) return '';

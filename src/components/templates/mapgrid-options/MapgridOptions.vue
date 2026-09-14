@@ -151,9 +151,10 @@ const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =
 );
 
 /**
- * Os campos que podem guardar um ponto. Vêm da prop, e não de um `useCollection`
- * próprio: o layout já resolveu a coleção uma vez, e buscá-la de novo aqui era
- * uma segunda fonte da verdade que podia discordar da primeira.
+ * The fields that can hold a point. They come from the prop, not from a
+ * `useCollection` of its own: the layout already resolved the collection once,
+ * and fetching it again here was a second source of truth that could disagree
+ * with the first.
  */
 const geolocationFields = computed(() =>
   props.fieldsInCollection.filter((field) => field.meta?.interface === 'map')

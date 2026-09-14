@@ -1,14 +1,14 @@
 import { expect, type Page, test } from '@playwright/test';
 
 /**
- * Abre cada story num navegador de verdade e falha se alguma escrever no
+ * Opens every story in a real browser and fails if any of them writes to the
  * console.
  *
- * Existe porque nem o `build-storybook` nem os testes unitários enxergam este
- * tipo de problema: os dois já passavam enquanto o console acusava props não
- * declaradas chegando a um componente e a ponte de devtools do vue-i18n
- * quebrando uma vez por story. São defeitos reais — uma prop que o componente
- * ignora em silêncio costuma ser prop que alguém achou que estava passando.
+ * It exists because neither `build-storybook` nor the unit tests can see this
+ * kind of problem: both were passing while the console reported undeclared
+ * props reaching a component and vue-i18n's devtools bridge breaking once per
+ * story. These are real defects — a prop the component silently ignores is
+ * usually a prop somebody believed they were passing.
  */
 
 interface ConsoleProblem {
@@ -18,17 +18,17 @@ interface ConsoleProblem {
 }
 
 /**
- * O Chromium sem GPU emite mensagens do próprio driver de software ao desenhar
- * o mapa. Não vêm do projeto e não há o que corrigir nelas — é a única exceção,
- * e casada por texto exato de driver justamente para não virar um ralo onde
- * avisos de verdade somem.
+ * Chromium with no GPU emits messages from its own software driver while
+ * drawing the map. They do not come from this project and there is nothing to
+ * fix in them — this is the only exception, and it matches exact driver text
+ * precisely so it does not become a drain where real warnings disappear.
  */
 const isHeadlessGpuNoise = (text: string): boolean =>
   /GL Driver Message|GPU stall due to ReadPixels|Failed to initialize WebGL/i.test(text);
 
 interface StoryIndexEntry {
   id: string;
-  /** `story` para uma story; `docs` para a página de autodocs de um componente. */
+  /** `story` for a story; `docs` for a component's autodocs page. */
   type: string;
   name: string;
   title: string;
@@ -36,7 +36,7 @@ interface StoryIndexEntry {
 
 const fetchIndexEntries = async (page: Page, baseURL: string): Promise<StoryIndexEntry[]> => {
   const response = await page.request.get(`${baseURL}/index.json`);
-  expect(response.ok(), 'o Storybook precisa servir o índice de stories').toBe(true);
+  expect(response.ok(), 'Storybook must serve the story index').toBe(true);
 
   const index: unknown = await response.json();
   const entries =
@@ -45,10 +45,10 @@ const fetchIndexEntries = async (page: Page, baseURL: string): Promise<StoryInde
       : {};
 
   /*
-   * Stories e páginas de docs. A página de docs monta todas as stories do
-   * componente de uma vez, num app diferente do da story isolada — foi
-   * justamente ali que a ponte de devtools do vue-i18n apareceu quebrando
-   * enquanto este check, que só abria `viewMode=story`, passava.
+   * Stories and docs pages. A docs page mounts all of a component's stories at
+   * once, in a different app from the isolated story — and that is exactly
+   * where vue-i18n's devtools bridge showed up breaking while this check,
+   * which only opened `viewMode=story`, was passing.
    */
   return Object.values(entries).filter((entry) => entry.type === 'story' || entry.type === 'docs');
 };
@@ -58,12 +58,12 @@ const describeProblems = (problems: ConsoleProblem[]): string =>
     .map((problem) => `  [${problem.kind}] ${problem.storyId}\n      ${problem.text}`)
     .join('\n\n');
 
-test('nenhuma story escreve no console do navegador', async ({ page, baseURL }) => {
-  expect(baseURL, 'baseURL do Storybook').toBeTruthy();
+test('no story writes to the browser console', async ({ page, baseURL }) => {
+  expect(baseURL, 'Storybook baseURL').toBeTruthy();
   const storybookUrl = baseURL ?? '';
 
   const entries = await fetchIndexEntries(page, storybookUrl);
-  expect(entries.length, 'o índice precisa listar ao menos uma entrada').toBeGreaterThan(0);
+  expect(entries.length, 'the index must list at least one entry').toBeGreaterThan(0);
 
   const problems: ConsoleProblem[] = [];
   let currentStoryId = '';
@@ -80,9 +80,9 @@ test('nenhuma story escreve no console do navegador', async ({ page, baseURL }) 
   });
 
   /*
-   * Uma rejeição de promise sem tratamento não vira `pageerror`, e era assim
-   * que a ponte de devtools falhava: "Uncaught (in promise)". Sem este ouvinte
-   * o check não a enxerga.
+   * An unhandled promise rejection does not become a `pageerror`, and that is
+   * how the devtools bridge failed: "Uncaught (in promise)". Without this
+   * listener the check cannot see it.
    */
   await page.addInitScript(() => {
     window.addEventListener('unhandledrejection', (event) => {
@@ -101,6 +101,6 @@ test('nenhuma story escreve no console do navegador', async ({ page, baseURL }) 
 
   expect(
     problems,
-    `${problems.length} mensagem(ns) de console em ${entries.length} entradas:\n\n${describeProblems(problems)}\n`
+    `${problems.length} console message(s) across ${entries.length} entries:\n\n${describeProblems(problems)}\n`
   ).toEqual([]);
 });

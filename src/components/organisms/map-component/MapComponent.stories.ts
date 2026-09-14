@@ -5,25 +5,25 @@ import { mapPropsFor } from './MapComponent.mock';
 import MapComponent from './MapComponent.vue';
 
 /**
- * MapComponent — os itens da coleção como pontos num mapa.
+ * MapComponent — the collection's items as points on a map.
  *
- * Objetivo: mostrar onde cada item está e deixar chegar nele com um clique. O
- * componente não sabe nada da coleção além do campo que guarda o ponto e do
- * template do rótulo, e as stories abaixo são as situações que isso produz:
- * pontos espalhados, pontos tão próximos que viram um agrupamento, pontos dos
- * dois lados da linha de data e uma coleção em que metade dos itens não tem
- * ponto nenhum.
+ * Purpose: show where each item is and let you reach it in one click. The
+ * component knows nothing about the collection beyond the field holding the
+ * point and the label template, and the stories below are the situations that
+ * produces: scattered points, points so close they become a cluster, points on
+ * both sides of the date line, and a collection where half the items have no
+ * point at all.
  */
 const meta: Meta<typeof MapComponent> = {
-  title: '03 - Organismos/MapComponent',
+  title: '03 - Organisms/MapComponent',
   component: MapComponent,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Mapa MapLibre com agrupamento automático, popup no marcador e ' +
-          'sincronia com a grade pelo evento `select-item`.',
+          'MapLibre map with automatic clustering, a marker popup and ' +
+          'grid synchronisation through the `select-item` event.',
       },
     },
   },
@@ -50,9 +50,9 @@ const meta: Meta<typeof MapComponent> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Pontos distantes entre si: o enquadramento inicial abre o Brasil inteiro. */
+/** Points far apart: the initial framing opens on the whole country. */
 export const PontosEspalhados: Story = {
-  name: 'Pontos espalhados',
+  name: 'Scattered points',
   play: async ({ canvasElement }) => {
     await waitFor(() => {
       expect(canvasElement.querySelector('.maplibregl-canvas')).toBeTruthy();
@@ -61,72 +61,73 @@ export const PontosEspalhados: Story = {
 };
 
 export const PontosAglomerados: Story = {
-  name: 'Pontos aglomerados',
-  args: mapPropsFor('unidades'),
+  name: 'Clustered points',
+  args: mapPropsFor('units'),
   parameters: {
     docs: {
       description: {
         story:
-          'Doze pontos dentro de poucos quarteirões. O agrupamento junta o que ' +
-          'não caberia separado e o rótulo mostra quantos itens estão ali; ' +
-          'clicar no grupo aproxima até ele se abrir.',
+          'A dozen points within a few blocks. Clustering gathers what would ' +
+          'not fit apart, and the label shows how many items are there; ' +
+          'clicking the cluster zooms in until it breaks open.',
       },
     },
   },
 };
 
 export const LinhaDeData: Story = {
-  name: 'Dos dois lados da linha de data',
-  args: mapPropsFor('sensores'),
+  name: 'Both sides of the date line',
+  args: mapPropsFor('sensors'),
   parameters: {
     docs: {
       description: {
         story:
-          'O mapa rola sem fim no eixo leste-oeste, então um ponto em -174° e ' +
-          'um clique em +179° estão perto na tela e a 353° na conta. O popup ' +
-          'abre na volta que está à vista, e não numa cópia do mundo fora dela.',
+          'The map scrolls endlessly along the east-west axis, so a point at ' +
+          '-174° and a click at +179° are close on screen and 353° apart in ' +
+          'arithmetic. The popup opens on the turn that is in view, not on a ' +
+          'copy of the world outside it.',
       },
     },
   },
 };
 
 export const ItensSemPonto: Story = {
-  name: 'Coleção meio preenchida',
-  args: mapPropsFor('obras'),
+  name: 'Half-filled collection',
+  args: mapPropsFor('works'),
   parameters: {
     docs: {
       description: {
         story:
-          'Metade dos itens não tem ponto. Eles continuam na grade e são ' +
-          'omitidos do mapa, em vez de virarem um marcador em (0, 0) no golfo ' +
-          'da Guiné ou de quebrarem o agrupamento.',
+          'Half the items have no point. They stay in the grid and are left ' +
+          'off the map, instead of becoming a marker at (0, 0) in the Gulf of ' +
+          'Guinea or breaking the clustering.',
       },
     },
   },
 };
 
 export const ZoomAoClicar: Story = {
-  name: 'Zoom ao clicar na linha',
+  name: 'Zoom on row click',
   args: { ...mapPropsFor(), zoomOnClick: true },
   parameters: {
     docs: {
       description: {
         story:
-          'Com a opção ligada, clicar numa linha da grade voa até o ponto. ' +
-          'Desligada, o mapa só desloca quando o ponto está fora do que se vê.',
+          'With the option on, clicking a grid row flies to the point. With ' +
+          'it off, the map only pans when the point is outside the view.',
       },
     },
   },
 };
 
-/** Sem itens o mapa ainda desenha, centrado onde o preset mandou. */
+/** With no items the map still draws, centred where the preset said. */
 export const SemItens: Story = {
-  name: 'Sem itens',
+  name: 'No items',
   args: { ...mapPropsFor(), items: [] },
 };
 
-/** O campo de geolocalização é escolhido nas opções — aqui, o de outra coleção. */
+/** The geolocation field is chosen in the options — here, another collection's. */
 export const OutroCampoDeGeolocalizacao: Story = {
-  name: 'Outro campo de geolocalização',
-  args: mapPropsFor(mappableKind('unidades').id),
+  name: 'Another geolocation field',
+  args: mapPropsFor(mappableKind('units').id),
 };

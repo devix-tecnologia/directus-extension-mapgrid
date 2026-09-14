@@ -4,9 +4,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [vue()],
   test: {
-    // Os módulos de lógica pura (contract, services, shared) rodam em node; os
-    // testes de componente pedem o DOM com um docblock `// @vitest-environment
-    // happy-dom`, para só eles pagarem o custo de montar um documento.
+    // The pure-logic modules (contract, services, shared) run in node; the
+    // component tests ask for the DOM with a `// @vitest-environment happy-dom`
+    // docblock, so only they pay the cost of building a document.
     environment: 'node',
     globals: true,
     setupFiles: ['src/test-setup.ts'],

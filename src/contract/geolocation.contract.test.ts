@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { itemPointCoordinates, parsePointCoordinates } from './geolocation.contract';
 
-describe('parsePointCoordinates — o campo é JSON na coleção, então nada garante que seja um ponto', () => {
-  it('lê um ponto do Directus na ordem [longitude, latitude]', () => {
+describe('parsePointCoordinates — the field is JSON on the collection, so nothing guarantees it is a point', () => {
+  it('reads a Directus point in [longitude, latitude] order', () => {
     expect(parsePointCoordinates({ type: 'Point', coordinates: [-47.9292, -15.7801] })).toEqual([
       -47.9292, -15.7801,
     ]);
   });
 
-  it('aceita coordenadas sem o campo type, que é como alguns presets antigos gravaram', () => {
+  it('accepts coordinates without a type field, which is how some older presets wrote them', () => {
     expect(parsePointCoordinates({ coordinates: [10, 20] })).toEqual([10, 20]);
   });
 
-  it('recusa geometrias que não são ponto em vez de ler o primeiro par de um polígono', () => {
+  it('rejects non-point geometries instead of reading a polygon’s first pair', () => {
     expect(
       parsePointCoordinates({
         type: 'Polygon',
@@ -24,21 +24,21 @@ describe('parsePointCoordinates — o campo é JSON na coleção, então nada ga
     ).toBeNull();
   });
 
-  it('recusa NaN e Infinity, que chegariam ao maplibre como "Invalid LngLat object" longe da causa', () => {
+  it('rejects NaN and Infinity, which would reach maplibre as "Invalid LngLat object" far from the cause', () => {
     expect(parsePointCoordinates({ coordinates: [Number.NaN, 10] })).toBeNull();
     expect(parsePointCoordinates({ coordinates: [10, Number.POSITIVE_INFINITY] })).toBeNull();
   });
 
-  it('recusa coordenadas em texto, porque um ponto meio convertido desenha no lugar errado', () => {
+  it('rejects coordinates given as text, because a half-converted point draws in the wrong place', () => {
     expect(parsePointCoordinates({ coordinates: ['-47.9', '-15.7'] })).toBeNull();
   });
 
-  it('recusa pares incompletos ou com dimensão a mais', () => {
+  it('rejects pairs that are incomplete or carry an extra dimension', () => {
     expect(parsePointCoordinates({ coordinates: [10] })).toBeNull();
     expect(parsePointCoordinates({ coordinates: [10, 20, 30] })).toBeNull();
   });
 
-  it('trata ausência de valor como ausência de ponto, sem lançar', () => {
+  it('treats a missing value as a missing point, without throwing', () => {
     expect(parsePointCoordinates(null)).toBeNull();
     expect(parsePointCoordinates(undefined)).toBeNull();
     expect(parsePointCoordinates('POINT(-47.9 -15.7)')).toBeNull();
@@ -46,19 +46,19 @@ describe('parsePointCoordinates — o campo é JSON na coleção, então nada ga
   });
 });
 
-describe('itemPointCoordinates — o campo de geolocalização é escolhido nas opções do layout', () => {
+describe('itemPointCoordinates — the geolocation field is chosen in the layout options', () => {
   const item = {
     id: 1,
     position: { type: 'Point', coordinates: [-46.6333, -23.5505] },
-    outro: 'texto',
+    other: 'text',
   };
 
-  it('lê o campo pedido', () => {
+  it('reads the requested field', () => {
     expect(itemPointCoordinates(item, 'position')).toEqual([-46.6333, -23.5505]);
   });
 
-  it('devolve null quando o campo configurado não existe no item, para o item ser pulado', () => {
-    expect(itemPointCoordinates(item, 'inexistente')).toBeNull();
-    expect(itemPointCoordinates(item, 'outro')).toBeNull();
+  it('returns null when the configured field is absent from the item, so the item is skipped', () => {
+    expect(itemPointCoordinates(item, 'missing')).toBeNull();
+    expect(itemPointCoordinates(item, 'other')).toBeNull();
   });
 });

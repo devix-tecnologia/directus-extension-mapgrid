@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { COLUMN_KEYS, configuredColumns, normalizeLayoutOptions } from './layout-options.contract';
 
-describe('normalizeLayoutOptions — o preset vem do banco, não de um objeto já tipado', () => {
-  it('converte números que voltaram como texto, que é como a interface grava um v-input', () => {
+describe('normalizeLayoutOptions — the preset comes from the database, not from an already typed object', () => {
+  it('converts numbers that came back as text, which is how the interface stores a v-input', () => {
     const options = normalizeLayoutOptions({
       mapCenterLng: '-47.9292',
       mapCenterLat: '-15.7801',
@@ -14,14 +14,14 @@ describe('normalizeLayoutOptions — o preset vem do banco, não de um objeto j�
     expect(options.mapZoom).toBe(8);
   });
 
-  it('descarta números impossíveis em vez de deixar NaN chegar ao mapa', () => {
+  it('drops impossible numbers instead of letting NaN reach the map', () => {
     const options = normalizeLayoutOptions({ mapCenterLng: 'abc', mapZoom: Number.NaN });
 
     expect(options.mapCenterLng).toBeUndefined();
     expect(options.mapZoom).toBeUndefined();
   });
 
-  it('trata texto em branco como campo não preenchido, para o padrão detectado valer', () => {
+  it('treats blank text as an unset field, so the detected default applies', () => {
     const options = normalizeLayoutOptions({ title: '   ', geolocation: '', coluna1: '  ' });
 
     expect(options.title).toBeUndefined();
@@ -29,22 +29,22 @@ describe('normalizeLayoutOptions — o preset vem do banco, não de um objeto j�
     expect(options.coluna1).toBeUndefined();
   });
 
-  it('apara espaços em volta do nome do campo, que quebrariam a busca na coleção', () => {
+  it('trims whitespace around a field name, which would break the lookup on the collection', () => {
     expect(normalizeLayoutOptions({ geolocation: ' position ' }).geolocation).toBe('position');
   });
 
-  it('só aceita booleano de verdade em zoomOnClick, sem tratar "false" como verdadeiro', () => {
+  it('only accepts a real boolean for zoomOnClick, so "false" is not treated as true', () => {
     expect(normalizeLayoutOptions({ zoomOnClick: true }).zoomOnClick).toBe(true);
     expect(normalizeLayoutOptions({ zoomOnClick: 'false' }).zoomOnClick).toBeUndefined();
   });
 
-  it('não lança para um preset ausente ou de outro formato, porque layoutOptions começa vazio', () => {
+  it('does not throw for a missing preset or one of another shape, because layoutOptions starts empty', () => {
     expect(normalizeLayoutOptions(undefined)).toBeDefined();
     expect(normalizeLayoutOptions(null)).toBeDefined();
-    expect(normalizeLayoutOptions('texto')).toBeDefined();
+    expect(normalizeLayoutOptions('text')).toBeDefined();
   });
 
-  it('ignora chaves que o layout não conhece, vindas de um preset antigo', () => {
+  it('ignores keys the layout does not know, carried over from an older preset', () => {
     const options = normalizeLayoutOptions({ geolocation: 'position', widthMap: { a: 1 } });
 
     expect(options).not.toHaveProperty('widthMap');
@@ -52,26 +52,26 @@ describe('normalizeLayoutOptions — o preset vem do banco, não de um objeto j�
   });
 });
 
-describe('configuredColumns — o usuário pode deixar buracos entre as colunas', () => {
-  it('devolve as colunas na ordem em que foram declaradas', () => {
-    const columns = configuredColumns({ coluna1: 'nome', coluna2: 'status', coluna3: 'cidade' });
+describe('configuredColumns — a user can leave gaps between the columns', () => {
+  it('returns the columns in the order they were declared', () => {
+    const columns = configuredColumns({ coluna1: 'name', coluna2: 'status', coluna3: 'city' });
 
-    expect(columns).toEqual(['nome', 'status', 'cidade']);
+    expect(columns).toEqual(['name', 'status', 'city']);
   });
 
-  it('fecha os buracos, para a grade não abrir uma coluna sem cabeçalho', () => {
-    const columns = configuredColumns({ coluna1: 'nome', coluna3: 'cidade', coluna5: 'uf' });
+  it('closes the gaps, so the grid does not open a headerless column', () => {
+    const columns = configuredColumns({ coluna1: 'name', coluna3: 'city', coluna5: 'state' });
 
-    expect(columns).toEqual(['nome', 'cidade', 'uf']);
+    expect(columns).toEqual(['name', 'city', 'state']);
   });
 
-  it('devolve lista vazia quando nada foi configurado', () => {
+  it('returns an empty list when nothing was configured', () => {
     expect(configuredColumns({})).toEqual([]);
   });
 });
 
-describe('COLUMN_KEYS — os nomes numerados vêm do formato do preset do Directus', () => {
-  it('cobre as cinco colunas que o preset guarda', () => {
+describe('COLUMN_KEYS — the numbered names come from the Directus preset format', () => {
+  it('covers the five columns the preset stores', () => {
     expect(COLUMN_KEYS).toEqual(['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5']);
   });
 });

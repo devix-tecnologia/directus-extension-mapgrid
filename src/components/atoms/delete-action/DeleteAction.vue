@@ -46,9 +46,9 @@ watch(confirmVisible, (visible) => {
 });
 
 /**
- * A exclusao e irreversivel e passa pela rede, entao o dialogo so fecha quando
- * ela terminou. Sem isso um erro da api rejeitava calado e o dialogo sumia como
- * se tivesse dado certo.
+ * Deleting is irreversible and goes over the network, so the dialog only closes
+ * once it has finished. Without this an api error rejected silently and the
+ * dialog vanished as though it had worked.
  */
 const executeDelete = async (): Promise<void> => {
   if (deleting.value) return;

@@ -1,31 +1,32 @@
 /**
- * A fronteira com o maplibre. As features que voltam de `querySourceFeatures` e
- * `queryRenderedFeatures` têm `properties: { [name: string]: any }`, porque o
- * que há ali depende da fonte e do agrupamento — o maplibre não tem como saber.
- * Este módulo converte esse `any` nas formas que o componente usa, em vez de
- * afirmá-las com `as` e descobrir o erro lá dentro da biblioteca.
+ * The boundary with maplibre. Features returned by `querySourceFeatures` and
+ * `queryRenderedFeatures` carry `properties: { [name: string]: any }`, because
+ * what is in there depends on the source and on clustering — maplibre has no
+ * way to know. This module converts that `any` into the shapes the component
+ * uses, instead of asserting them with `as` and finding the error deep inside
+ * the library.
  */
 import { isRecord, type PointCoordinates, parsePointCoordinates } from '../../contract/index';
 
-/** Uma feature como o maplibre a devolve: geometria e propriedades opacas. */
+/** A feature as maplibre returns it: opaque geometry and properties. */
 export interface QueriedFeature {
   geometry: unknown;
   properties?: Record<string, unknown> | null;
 }
 
-/** As propriedades que `buildPointFeatureCollection` grava em cada ponto. */
+/** The properties `buildPointFeatureCollection` writes on each point. */
 export interface MarkerProperties {
   id: string | number;
   formattedTitle: string;
 }
 
-/** As propriedades que o agrupamento do maplibre acrescenta a um cluster. */
+/** The properties maplibre's clustering adds to a cluster. */
 export interface ClusterProperties {
   clusterId: number;
   pointCount: number;
 }
 
-/** Um ponto já posicionado, com o que o componente precisa para desenhá-lo. */
+/** A positioned point, with what the component needs to draw it. */
 export interface MarkerFeature extends MarkerProperties {
   coordinates: PointCoordinates;
 }
@@ -41,9 +42,9 @@ const propertiesOf = (feature: QueriedFeature): Record<string, unknown> =>
   isRecord(feature.properties) ? feature.properties : {};
 
 /**
- * O id e o rótulo de um marcador. `null` quando falta qualquer um dos dois: um
- * popup sem texto ou um `select-item` com id indefinido são piores que ignorar
- * o clique, porque destacariam a linha errada da grade.
+ * A marker's id and label. `null` when either is missing: a popup with no text,
+ * or a `select-item` with an undefined id, is worse than ignoring the click,
+ * because it would highlight the wrong grid row.
  */
 export const parseMarkerProperties = (raw: unknown): MarkerProperties | null => {
   if (!isRecord(raw)) return null;
@@ -56,8 +57,9 @@ export const parseMarkerProperties = (raw: unknown): MarkerProperties | null => 
 };
 
 /**
- * O id do cluster e quantos itens ele reúne. O id é o que `getClusterExpansionZoom`
- * recebe; sem ele a promessa rejeita e o clique no grupo não faz nada.
+ * The cluster id and how many items it gathers. The id is what
+ * `getClusterExpansionZoom` takes; without it the promise rejects and clicking
+ * the cluster does nothing.
  */
 export const parseClusterProperties = (raw: unknown): ClusterProperties | null => {
   if (!isRecord(raw)) return null;
@@ -69,7 +71,7 @@ export const parseClusterProperties = (raw: unknown): ClusterProperties | null =
   return { clusterId, pointCount };
 };
 
-/** Um marcador completo, ou `null` se a feature não trouxer tudo o que ele exige. */
+/** A complete marker, or `null` when the feature lacks anything it requires. */
 export const parseMarkerFeature = (feature: QueriedFeature): MarkerFeature | null => {
   const coordinates = parsePointCoordinates(feature.geometry);
   if (!coordinates) return null;
@@ -80,7 +82,7 @@ export const parseMarkerFeature = (feature: QueriedFeature): MarkerFeature | nul
   return { ...properties, coordinates };
 };
 
-/** Um cluster completo, ou `null`. */
+/** A complete cluster, or `null`. */
 export const parseClusterFeature = (feature: QueriedFeature): ClusterFeature | null => {
   const coordinates = parsePointCoordinates(feature.geometry);
   if (!coordinates) return null;
@@ -91,7 +93,7 @@ export const parseClusterFeature = (feature: QueriedFeature): ClusterFeature | n
   return { ...properties, coordinates };
 };
 
-/** Os clusters de uma lista de features, já parseados, na ordem. */
+/** The clusters of a feature list, parsed, in order. */
 export const parseClusterFeatures = (features: QueriedFeature[]): ClusterFeature[] =>
   features.flatMap((feature) => {
     const cluster = parseClusterFeature(feature);

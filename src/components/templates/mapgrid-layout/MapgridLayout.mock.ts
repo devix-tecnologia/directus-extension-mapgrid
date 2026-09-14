@@ -1,7 +1,7 @@
 import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks';
 import type { MapgridLayoutType } from './MapgridLayout.types';
 
-/** As props do layout inteiro para uma das coleções do catálogo. */
+/** The whole layout's props for one of the catalogue's collections. */
 export const layoutPropsFor = (kindId: string = DEFAULT_KIND_ID): MapgridLayoutType['props'] => {
   const kind = mappableKind(kindId);
 

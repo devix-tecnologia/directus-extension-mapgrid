@@ -9,15 +9,15 @@ export interface MapComponentType {
 export type MapComponentModels = Record<string, never>;
 
 /**
- * Os campos de câmera vêm do contrato com os mesmos nomes que o preset usa, em
- * vez de serem rebatizados aqui: um par de nomes por camada só cria um ponto
- * onde trocar longitude por latitude passa despercebido.
+ * The camera fields come from the contract under the same names the preset
+ * uses, rather than being renamed here: a second set of names per layer only
+ * creates a place where swapping longitude for latitude goes unnoticed.
  */
 export interface MapComponentProps extends MapCameraOptions {
   items: GeoItem[];
-  /** Campo de geolocalização a ler em cada item. */
+  /** The geolocation field to read on each item. */
   geolocation: string;
-  /** Template do rótulo do popup. */
+  /** Template for the popup label. */
   title: string;
   zoomOnClick?: boolean;
 }

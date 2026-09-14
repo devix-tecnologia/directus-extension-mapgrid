@@ -1,83 +1,83 @@
 import { describe, expect, it } from 'vitest';
 import { resolveFieldTemplate, serializeItemRow, serializeValue } from './value-formatter';
 
-describe('serializeValue — o que a célula da grade mostra', () => {
-  it('mostra texto e número como são', () => {
+describe('serializeValue — what a grid cell shows', () => {
+  it('shows text and numbers as they are', () => {
     expect(serializeValue('Brasília')).toBe('Brasília');
     expect(serializeValue(42)).toBe('42');
     expect(serializeValue(0)).toBe('0');
     expect(serializeValue(false)).toBe('false');
   });
 
-  it('mostra célula vazia para ausência de valor, em vez das palavras null e undefined', () => {
+  it('shows an empty cell for a missing value, rather than the words null and undefined', () => {
     expect(serializeValue(null)).toBe('');
     expect(serializeValue(undefined)).toBe('');
   });
 
-  it('inverte o ponto para "latitude, longitude", que é a ordem que se lê', () => {
+  it('flips a point to "latitude, longitude", which is the order people read', () => {
     expect(serializeValue({ type: 'Point', coordinates: [-47.9292, -15.7801] })).toBe(
       '-15.7801, -47.9292'
     );
   });
 
-  it('cai no JSON quando o objeto tem coordinates mas não é um ponto de verdade', () => {
-    // antes isto era um type predicate que só checava a presença da chave, e
-    // lia coordinates[1] de um texto, produzindo "undefined, undefined"
-    expect(serializeValue({ coordinates: 'não é um par' })).toBe('{"coordinates":"não é um par"}');
+  it('falls back to JSON when an object has coordinates but is not really a point', () => {
+    // this used to be a type predicate that only checked for the key, and read
+    // coordinates[1] off a string, producing "undefined, undefined"
+    expect(serializeValue({ coordinates: 'not a pair' })).toBe('{"coordinates":"not a pair"}');
     expect(serializeValue({ coordinates: [1] })).toBe('{"coordinates":[1]}');
   });
 
-  it('junta lista por vírgula, que é como um campo de múltipla escolha aparece', () => {
+  it('joins a list with commas, which is how a multi-select field shows up', () => {
     expect(serializeValue(['a', 'b', 'c'])).toBe('a, b, c');
     expect(serializeValue([])).toBe('');
   });
 
-  it('cai no JSON para qualquer outro objeto, para a célula não ficar "[object Object]"', () => {
-    expect(serializeValue({ nome: 'x' })).toBe('{"nome":"x"}');
+  it('falls back to JSON for any other object, so the cell is not "[object Object]"', () => {
+    expect(serializeValue({ name: 'x' })).toBe('{"name":"x"}');
   });
 });
 
-describe('resolveFieldTemplate — o rótulo do popup do marcador', () => {
-  const item = { id: 7, nome: 'Brasília', uf: 'DF', vazio: null };
+describe('resolveFieldTemplate — the label of a marker popup', () => {
+  const item = { id: 7, name: 'Brasília', state: 'DF', empty: null };
 
-  it('substitui cada {{campo}} pelo valor do item', () => {
-    expect(resolveFieldTemplate(item, '{{nome}}')).toBe('Brasília');
-    expect(resolveFieldTemplate(item, '{{nome}} - {{uf}}')).toBe('Brasília - DF');
+  it('replaces each {{field}} with the item’s value', () => {
+    expect(resolveFieldTemplate(item, '{{name}}')).toBe('Brasília');
+    expect(resolveFieldTemplate(item, '{{name}} - {{state}}')).toBe('Brasília - DF');
   });
 
-  it('aceita o nome cru de um campo, porque as opções do layout permitem os dois formatos', () => {
-    expect(resolveFieldTemplate(item, 'nome')).toBe('Brasília');
+  it('accepts a bare field name, because the layout options allow either form', () => {
+    expect(resolveFieldTemplate(item, 'name')).toBe('Brasília');
   });
 
-  it('cai no id quando o template está vazio, para o popup nunca abrir em branco', () => {
+  it('falls back to the id when the template is empty, so the popup never opens blank', () => {
     expect(resolveFieldTemplate(item, '')).toBe('7');
   });
 
-  it('cai no id quando os campos do template não existem no item', () => {
-    expect(resolveFieldTemplate(item, '{{inexistente}}')).toBe('7');
-    expect(resolveFieldTemplate(item, '{{vazio}}')).toBe('7');
+  it('falls back to the id when the template’s fields are absent from the item', () => {
+    expect(resolveFieldTemplate(item, '{{missing}}')).toBe('7');
+    expect(resolveFieldTemplate(item, '{{empty}}')).toBe('7');
   });
 
-  it('mantém o texto fixo em volta dos campos', () => {
-    expect(resolveFieldTemplate(item, 'Cidade: {{nome}}')).toBe('Cidade: Brasília');
+  it('keeps the literal text around the fields', () => {
+    expect(resolveFieldTemplate(item, 'City: {{name}}')).toBe('City: Brasília');
   });
 
-  it('trata um nome cru desconhecido como template sem campo, e cai no id', () => {
-    expect(resolveFieldTemplate(item, 'texto solto')).toBe('texto solto');
-    expect(resolveFieldTemplate(item, 'inexistente')).toBe('inexistente');
+  it('treats an unknown bare name as a template with no field, and falls back to the id', () => {
+    expect(resolveFieldTemplate(item, 'loose text')).toBe('loose text');
+    expect(resolveFieldTemplate(item, 'missing')).toBe('missing');
   });
 });
 
-describe('serializeItemRow — o valor de um campo numa linha da grade', () => {
-  const item = { id: 1, nome: 'Brasília' };
+describe('serializeItemRow — the value of one field on a grid row', () => {
+  const item = { id: 1, name: 'Brasília' };
 
-  it('mostra o valor do campo', () => {
-    expect(serializeItemRow(item, 'nome')).toBe('Brasília');
+  it('shows the field value', () => {
+    expect(serializeItemRow(item, 'name')).toBe('Brasília');
   });
 
-  it('mostra célula vazia quando o item ou o campo não existem, sem lançar', () => {
-    expect(serializeItemRow(item, 'inexistente')).toBe('');
-    expect(serializeItemRow(null, 'nome')).toBe('');
-    expect(serializeItemRow(undefined, 'nome')).toBe('');
+  it('shows an empty cell when the item or the field is missing, without throwing', () => {
+    expect(serializeItemRow(item, 'missing')).toBe('');
+    expect(serializeItemRow(null, 'name')).toBe('');
+    expect(serializeItemRow(undefined, 'name')).toBe('');
   });
 });

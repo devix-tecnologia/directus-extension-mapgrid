@@ -3,12 +3,12 @@ import { optionsPropsFor } from './MapgridOptions.mock';
 import MapgridOptions from './MapgridOptions.vue';
 
 /**
- * MapgridOptions — o painel lateral que configura o layout.
+ * MapgridOptions — the sidebar panel that configures the layout.
  *
- * Objetivo: deixar escolher o campo de geolocalização, o template do popup, a
- * câmera inicial e as colunas da grade. O painel não busca nada por conta
- * própria: os campos da coleção chegam por prop, e cada alteração sobe como um
- * evento — o que permite montá-lo aqui sem o app do Directus por trás.
+ * Purpose: let someone pick the geolocation field, the popup template, the
+ * initial camera and the grid columns. The panel fetches nothing on its own:
+ * the collection's fields arrive as a prop and every change goes up as an
+ * event — which is what lets it mount here without the Directus app behind it.
  */
 const meta: Meta<typeof MapgridOptions> = {
   title: '04 - Templates/MapgridOptions',
@@ -17,8 +17,7 @@ const meta: Meta<typeof MapgridOptions> = {
   parameters: {
     docs: {
       description: {
-        component:
-          'Seções de Popup, Geolocalização, Centro do mapa, Zoom ao clicar e Colunas da grade.',
+        component: 'Popup, Geolocation, Map centre, Zoom on click and Grid columns sections.',
       },
     },
   },
@@ -37,27 +36,27 @@ const meta: Meta<typeof MapgridOptions> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Uma coleção já configurada: campo de mapa escolhido e três colunas preenchidas. */
+/** A collection already set up: map field chosen and three columns filled in. */
 export const Configurado: Story = {
-  name: 'Coleção configurada',
+  name: 'Configured collection',
 };
 
 export const OutraColecao: Story = {
-  name: 'Outra coleção',
-  args: optionsPropsFor('unidades'),
+  name: 'Another collection',
+  args: optionsPropsFor('units'),
   parameters: {
     docs: {
       description: {
         story:
-          'Os campos oferecidos vêm da coleção, não de uma lista fixa: aqui o ' +
-          'campo de mapa chama `position` e as colunas são outras.',
+          'The fields on offer come from the collection, not from a fixed ' +
+          'list: here the map field is called `position` and the columns differ.',
       },
     },
   },
 };
 
 export const SemConfiguracao: Story = {
-  name: 'Nada configurado ainda',
+  name: 'Nothing configured yet',
   args: {
     ...optionsPropsFor(),
     title: undefined,
@@ -75,19 +74,19 @@ export const SemConfiguracao: Story = {
     docs: {
       description: {
         story:
-          'Como o painel abre numa coleção recém-configurada, antes de o ' +
-          'layout gravar os padrões que detectou.',
+          'How the panel opens on a freshly configured collection, before the ' +
+          'layout stores the defaults it detected.',
       },
     },
   },
 };
 
 export const SemCampoDeMapa: Story = {
-  name: 'Coleção sem campo de mapa',
+  name: 'Collection without a map field',
   args: {
     ...optionsPropsFor(),
     fieldsInCollection: [
-      { name: 'Nome', field: 'nome', meta: null },
+      { name: 'Name', field: 'name', meta: null },
       { name: 'Status', field: 'status', meta: { interface: 'input' } },
     ],
   },
@@ -95,9 +94,10 @@ export const SemCampoDeMapa: Story = {
     docs: {
       description: {
         story:
-          'O select de geolocalização só oferece campos com interface `map`. ' +
-          'Numa coleção sem nenhum, ele fica apenas com a opção vazia — o que ' +
-          'é o sinal de que falta criar o campo antes de usar este layout.',
+          'The geolocation select only offers fields with the `map` interface. ' +
+          'On a collection with none it is left with the empty option only — ' +
+          'which is the sign that the field has to be created before this ' +
+          'layout can be used.',
       },
     },
   },

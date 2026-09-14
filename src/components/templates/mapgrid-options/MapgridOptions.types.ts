@@ -10,9 +10,9 @@ export interface MapgridOptionsType {
 export type MapgridOptionsModels = Record<string, never>;
 
 /**
- * O painel de opções só lê dos campos da coleção o nome, a chave e a interface —
- * o suficiente para montar os selects. Declarar esse recorte com `Pick` em vez de
- * redesenhar um objeto mantém o alinhamento com o `Field` do Directus.
+ * The options panel reads only a field's name, key and interface — enough to
+ * build the selects. Declaring that slice with `Pick`, instead of redrawing an
+ * object, keeps it aligned with the Directus `Field`.
  */
 export type CollectionFieldSummary = Pick<Field, 'name' | 'field'> & {
   meta?: Pick<NonNullable<Field['meta']>, 'interface'> | null;

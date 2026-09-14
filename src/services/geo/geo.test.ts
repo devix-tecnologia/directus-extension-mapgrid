@@ -2,18 +2,18 @@ import { describe, expect, it } from 'vitest';
 import type { GeoItem } from '../../contract/index';
 import { buildPointFeatureCollection } from './geo';
 
-const itemAt = (id: number, coordinates: [number, number], nome: string): GeoItem => ({
+const itemAt = (id: number, coordinates: [number, number], name: string): GeoItem => ({
   id,
-  nome,
+  name,
   position: { type: 'Point', coordinates },
 });
 
-describe('buildPointFeatureCollection — a fonte GeoJSON do mapa', () => {
-  it('vira uma feature por item, com o id preservado para casar com a linha da grade', () => {
+describe('buildPointFeatureCollection — the map’s GeoJSON source', () => {
+  it('turns each item into a feature, keeping the id so it matches its grid row', () => {
     const collection = buildPointFeatureCollection({
       items: [itemAt(1, [-47.9, -15.7], 'Brasília'), itemAt(2, [-46.6, -23.5], 'São Paulo')],
       geolocationField: 'position',
-      titleTemplate: '{{nome}}',
+      titleTemplate: '{{name}}',
     });
 
     expect(collection.type).toBe('FeatureCollection');
@@ -25,56 +25,56 @@ describe('buildPointFeatureCollection — a fonte GeoJSON do mapa', () => {
     });
   });
 
-  it('omite o item sem ponto, porque o agrupamento contaria um marcador inexistente', () => {
+  it('omits an item without a point, because clustering would count a marker that is not there', () => {
     const collection = buildPointFeatureCollection({
       items: [
         itemAt(1, [-47.9, -15.7], 'Brasília'),
-        { id: 2, nome: 'Sem local', position: null },
-        { id: 3, nome: 'Campo ausente' },
+        { id: 2, name: 'No location', position: null },
+        { id: 3, name: 'Missing field' },
       ],
       geolocationField: 'position',
-      titleTemplate: '{{nome}}',
+      titleTemplate: '{{name}}',
     });
 
     expect(collection.features).toHaveLength(1);
     expect(collection.features[0]?.properties.id).toBe(1);
   });
 
-  it('omite o item cujo ponto não sobrevive ao parse, em vez de propagar NaN ao mapa', () => {
+  it('omits an item whose point does not survive parsing, instead of propagating NaN to the map', () => {
     const collection = buildPointFeatureCollection({
-      items: [{ id: 1, nome: 'Torto', position: { coordinates: ['a', 'b'] } }],
+      items: [{ id: 1, name: 'Malformed', position: { coordinates: ['a', 'b'] } }],
       geolocationField: 'position',
-      titleTemplate: '{{nome}}',
+      titleTemplate: '{{name}}',
     });
 
     expect(collection.features).toEqual([]);
   });
 
-  it('lê o campo de geolocalização que o preset escolheu, não um nome fixo', () => {
+  it('reads the geolocation field the preset chose, not a hardcoded name', () => {
     const collection = buildPointFeatureCollection({
-      items: [{ id: 1, nome: 'Outro campo', localizacao: { coordinates: [1, 2] } }],
-      geolocationField: 'localizacao',
-      titleTemplate: '{{nome}}',
+      items: [{ id: 1, name: 'Another field', location: { coordinates: [1, 2] } }],
+      geolocationField: 'location',
+      titleTemplate: '{{name}}',
     });
 
     expect(collection.features[0]?.geometry.coordinates).toEqual([1, 2]);
   });
 
-  it('cai no id quando o template não resolve, para o popup nunca abrir vazio', () => {
+  it('falls back to the id when the template does not resolve, so a popup never opens blank', () => {
     const collection = buildPointFeatureCollection({
-      items: [itemAt(7, [0, 0], 'Sete')],
+      items: [itemAt(7, [0, 0], 'Seven')],
       geolocationField: 'position',
-      titleTemplate: '{{inexistente}}',
+      titleTemplate: '{{missing}}',
     });
 
     expect(collection.features[0]?.properties.formattedTitle).toBe('7');
   });
 
-  it('devolve uma coleção vazia para lista vazia, e não um valor ausente', () => {
+  it('returns an empty collection for an empty list, and not a missing value', () => {
     const collection = buildPointFeatureCollection({
       items: [],
       geolocationField: 'position',
-      titleTemplate: '{{nome}}',
+      titleTemplate: '{{name}}',
     });
 
     expect(collection).toEqual({ type: 'FeatureCollection', features: [] });

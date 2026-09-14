@@ -4,7 +4,7 @@ import { generateMockData } from './TableComponent.mock';
 import TableComponent from './TableComponent.vue';
 
 const meta: Meta<typeof TableComponent> = {
-  title: '03 - Organismos/TableComponent',
+  title: '03 - Organisms/TableComponent',
   component: TableComponent,
   tags: ['autodocs'],
   argTypes: {
@@ -60,7 +60,7 @@ export const EmptyState: Story = {
 };
 
 export const EditDisabled: Story = {
-  name: 'Permissão: sem edição',
+  name: 'Permissions: no edit',
   args: {
     ...mockData.props,
     canEdit: false,
@@ -69,7 +69,7 @@ export const EditDisabled: Story = {
 };
 
 export const DeleteDisabled: Story = {
-  name: 'Permissão: sem deleção',
+  name: 'Permissions: no delete',
   args: {
     ...mockData.props,
     canDelete: false,
@@ -78,7 +78,7 @@ export const DeleteDisabled: Story = {
 };
 
 export const EditDeleteDisabled: Story = {
-  name: 'Permissão: sem edição e sem deleção',
+  name: 'Permissions: no edit, no delete',
   args: {
     ...mockData.props,
     canEdit: false,

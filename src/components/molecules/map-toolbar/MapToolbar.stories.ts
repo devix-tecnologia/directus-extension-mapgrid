@@ -4,13 +4,13 @@ import { generateMockData } from './MapToolbar.mock';
 import MapToolbar from './MapToolbar.vue';
 
 const meta: Meta<typeof MapToolbar> = {
-  title: '02 - Moléculas/MapToolbar',
+  title: '02 - Molecules/MapToolbar',
   component: MapToolbar,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component: 'Botão de reset da visualização do mapa.',
+        component: 'Button that resets the map view.',
       },
     },
   },

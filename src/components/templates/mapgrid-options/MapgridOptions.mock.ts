@@ -6,22 +6,22 @@ import {
 } from '../../../mocks/mappable-mocks';
 import type { MapgridOptionsType } from './MapgridOptions.types';
 
-/** As props do painel de opções para uma das coleções do catálogo. */
+/** The options panel's props for one of the catalogue's collections. */
 export const optionsPropsFor = (kindId: string = DEFAULT_KIND_ID): MapgridOptionsType['props'] => ({
   ...layoutOptionsFor(kindId),
   collection: mappableKind(kindId).id,
   fieldsInCollection: fieldsFor(kindId),
 });
 
-/** Uma carga de exemplo por evento, para a story documentar o que o painel emite. */
+/** One sample payload per event, so the story documents what the panel emits. */
 const sampleEmits: MapgridOptionsType['emits'] = {
-  'update:title': ['{{nome}}'],
-  'update:geolocation': ['localizacao'],
+  'update:title': ['{{name}}'],
+  'update:geolocation': ['location'],
   'update:mapCenterLng': [-47.9292],
   'update:mapCenterLat': [-15.7801],
   'update:mapZoom': [4],
-  'update:coluna1': ['nome'],
-  'update:coluna2': ['cidade'],
+  'update:coluna1': ['name'],
+  'update:coluna2': ['city'],
   'update:coluna3': [null],
   'update:coluna4': [null],
   'update:coluna5': [null],

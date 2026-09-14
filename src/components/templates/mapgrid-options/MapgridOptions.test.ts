@@ -11,36 +11,36 @@ const mountOptions = (props: Partial<ReturnType<typeof optionsPropsFor>> = {}) =
     global: { stubs: directusComponentStubs },
   });
 
-describe('MapgridOptions — as seções do painel', () => {
-  it('abre uma seção por grupo de opções', () => {
+describe('MapgridOptions — the panel sections', () => {
+  it('opens one section per option group', () => {
     const wrapper = mountOptions();
 
     expect(wrapper.findAll('.v-detail').length).toBe(5);
   });
 
-  it('oferece um select por coluna da grade', () => {
+  it('offers one select per grid column', () => {
     const wrapper = mountOptions();
 
     expect(wrapper.findAll('.field-group .field').length).toBe(5);
   });
 });
 
-describe('MapgridOptions — o select de geolocalização', () => {
-  it('só oferece campos de mapa, porque um campo de texto não guarda um ponto', () => {
+describe('MapgridOptions — the geolocation select', () => {
+  it('offers map fields only, because a text field does not hold a point', () => {
     const wrapper = mountOptions({
       fieldsInCollection: [
-        { name: 'Nome', field: 'nome', meta: null },
-        { name: 'Local', field: 'local', meta: { interface: 'map' } },
-        { name: 'Outro', field: 'outro', meta: { interface: 'input' } },
+        { name: 'Name', field: 'name', meta: null },
+        { name: 'Site', field: 'site', meta: { interface: 'map' } },
+        { name: 'Other', field: 'other', meta: { interface: 'input' } },
       ],
     });
     const select = wrapper.findAllComponents({ name: 'v-select' })[0];
     const items = select?.props('items') as { field: string | null }[];
 
-    expect(items.map((item) => item.field)).toEqual([null, 'local']);
+    expect(items.map((item) => item.field)).toEqual([null, 'site']);
   });
 
-  it('usa os campos vindos por prop, sem buscar a coleção por conta própria', () => {
+  it('uses the fields that arrive as a prop, without fetching the collection on its own', () => {
     const wrapper = mountOptions({ fieldsInCollection: [] });
     const select = wrapper.findAllComponents({ name: 'v-select' })[0];
     const items = select?.props('items') as { field: string | null }[];
@@ -49,8 +49,8 @@ describe('MapgridOptions — o select de geolocalização', () => {
   });
 });
 
-describe('MapgridOptions — os campos numéricos da câmera', () => {
-  it('converte o texto do input antes de emitir, para o preset não guardar string', async () => {
+describe('MapgridOptions — the numeric camera fields', () => {
+  it('converts the input text before emitting, so the preset does not store a string', async () => {
     const wrapper = mountOptions();
     const inputs = wrapper.findAllComponents({ name: 'v-input' });
 
@@ -60,7 +60,7 @@ describe('MapgridOptions — os campos numéricos da câmera', () => {
     expect(wrapper.emitted('update:mapCenterLng')?.[0]).toEqual([-42.5]);
   });
 
-  it('não emite para um valor que não é número, em vez de gravar NaN', async () => {
+  it('does not emit for a non-numeric value, instead of storing NaN', async () => {
     const wrapper = mountOptions();
     const inputs = wrapper.findAllComponents({ name: 'v-input' });
 

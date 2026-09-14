@@ -82,9 +82,9 @@ const getCameraState = (): CameraState | null => {
 };
 
 /**
- * Publica a camera nos data-attributes do container. O canvas do WebGL nao
- * expoe nada que um teste de navegador possa ler, entao e por aqui que o e2e
- * verifica para onde o mapa foi.
+ * Publishes the camera on the container's data attributes. The WebGL canvas
+ * exposes nothing a browser test can read, so this is how the e2e suite checks
+ * where the map went.
  */
 const syncCameraMetadata = (instance: maplibregl.Map): void => {
   if (!mapContainer.value) return;
@@ -115,10 +115,10 @@ const fitBoundsToItems = (): void => {
 };
 
 /**
- * O enquadramento automatico roda uma vez so. Cada refetch da lista reexecutava
- * o fitBounds, que cancelava o flyTo disparado por um clique na grade e devolvia
- * a camera ao Brasil inteiro no meio da animacao. Reenquadrar depois disso e
- * escolha do usuario, pelo botao do MapToolbar.
+ * The automatic framing runs exactly once. Every refetch of the list used to
+ * re-run fitBounds, which cancelled the flyTo triggered by a grid click and
+ * pulled the camera back to the whole country mid-animation. Re-framing after
+ * that is the user's call, through the MapToolbar button.
  */
 const performInitialFitBoundsOnce = (): void => {
   if (hasPerformedInitialFitBounds) return;

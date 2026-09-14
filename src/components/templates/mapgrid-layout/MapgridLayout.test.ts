@@ -7,9 +7,9 @@ import { layoutPropsFor } from './MapgridLayout.mock';
 import MapgridLayout from './MapgridLayout.vue';
 
 /**
- * O mapa de verdade pede WebGL, que o happy-dom não tem. O que interessa aqui é
- * a fiação do layout — quais props descem e quais eventos sobem — e não o
- * desenho do mapa, que o MapComponent.test.ts cobre com o maplibre falso.
+ * The real map needs WebGL, which happy-dom does not have. What matters here is
+ * the layout's wiring — which props go down and which events come up — not the
+ * drawing of the map, which MapComponent.test.ts covers with a fake maplibre.
  */
 const MapComponentStub = {
   name: 'MapComponent',
@@ -32,22 +32,22 @@ const mountLayout = (props: Partial<ReturnType<typeof layoutPropsFor>> = {}) =>
     global: { stubs: { ...directusComponentStubs, MapComponent: MapComponentStub } },
   });
 
-describe('MapgridLayout — o que aparece enquanto os itens não estão prontos', () => {
-  it('mostra o aviso de carregamento e nenhum mapa, para não desenhar um mapa vazio que logo muda', () => {
+describe('MapgridLayout — what shows while the items are not ready', () => {
+  it('shows the loading notice and no map, so it does not draw an empty map that changes at once', () => {
     const wrapper = mountLayout({ loading: true, items: [] });
 
     expect(wrapper.find('.v-info').exists()).toBe(true);
     expect(wrapper.find('.mapgrid-container').exists()).toBe(false);
   });
 
-  it('mostra o estado vazio quando o filtro não devolveu nada', () => {
+  it('shows the empty state when the filter returned nothing', () => {
     const wrapper = mountLayout({ loading: false, items: [] });
 
     expect(wrapper.find('.v-info').exists()).toBe(true);
     expect(wrapper.find('.mapgrid-container').exists()).toBe(false);
   });
 
-  it('desenha mapa e grade juntos assim que há itens', () => {
+  it('draws map and grid together as soon as there are items', () => {
     const wrapper = mountLayout();
 
     expect(wrapper.find('.mapgrid-container').exists()).toBe(true);
@@ -55,34 +55,34 @@ describe('MapgridLayout — o que aparece enquanto os itens não estão prontos'
   });
 });
 
-describe('MapgridLayout — as colunas da grade vêm do preset', () => {
-  it('monta um cabeçalho por coluna configurada', () => {
-    const kind = mappableKind('pontos_turisticos');
+describe('MapgridLayout — the grid columns come from the preset', () => {
+  it('builds one header per configured column', () => {
+    const kind = mappableKind('landmarks');
     const wrapper = mountLayout();
     const table = wrapper.findComponent({ name: 'v-table' });
 
     expect(table.props('headers')).toHaveLength(kind.columns.length + 1);
   });
 
-  it('fecha os buracos, para uma coluna 2 em branco não abrir espaço sem cabeçalho', () => {
+  it('closes the gaps, so a blank column 2 does not open a headerless space', () => {
     const wrapper = mountLayout({
-      coluna1: 'nome',
+      coluna1: 'name',
       coluna2: undefined,
-      coluna3: 'cidade',
+      coluna3: 'city',
       coluna4: undefined,
       coluna5: undefined,
     });
     const table = wrapper.findComponent({ name: 'v-table' });
     const values = (table.props('headers') as { value: string }[]).map((header) => header.value);
 
-    expect(values).toEqual(['nome', 'cidade', 'actions']);
+    expect(values).toEqual(['name', 'city', 'actions']);
   });
 });
 
-describe('MapgridLayout — a seleção pertence ao layout, que a envia para a exclusão', () => {
-  it('repassa para cima o que a grade selecionou, em vez de guardar uma cópia própria', async () => {
+describe('MapgridLayout — the selection belongs to the layout, which hands it to the delete action', () => {
+  it('passes up what the grid selected, instead of keeping a copy of its own', async () => {
     const wrapper = mountLayout();
-    const items = mappableKind('pontos_turisticos').items.slice(0, 2);
+    const items = mappableKind('landmarks').items.slice(0, 2);
 
     wrapper.findComponent({ name: 'TableComponent' }).vm.$emit('update:selectedItems', items);
     await wrapper.vm.$nextTick();
@@ -90,9 +90,9 @@ describe('MapgridLayout — a seleção pertence ao layout, que a envia para a e
     expect(wrapper.emitted('update:selectedItems')?.[0]).toEqual([items]);
   });
 
-  it('emite edit-item em vez de navegar, para quem hospeda decidir o que abrir', async () => {
+  it('emits edit-item instead of navigating, so the host decides what to open', async () => {
     const wrapper = mountLayout();
-    const item = mappableKind('pontos_turisticos').items[0];
+    const item = mappableKind('landmarks').items[0];
 
     wrapper.findComponent({ name: 'TableComponent' }).vm.$emit('edit-item', item);
     await wrapper.vm.$nextTick();

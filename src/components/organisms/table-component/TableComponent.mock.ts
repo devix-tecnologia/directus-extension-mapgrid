@@ -1,7 +1,7 @@
 import { DEFAULT_KIND_ID, headersFor, mappableKind } from '../../../mocks/mappable-mocks';
 import type { TableComponentType } from './TableComponent.types';
 
-/** As props da grade para uma das coleções do catálogo. */
+/** The grid's props for one of the catalogue's collections. */
 export const tablePropsFor = (kindId: string = DEFAULT_KIND_ID): TableComponentType['props'] => {
   const kind = mappableKind(kindId);
 

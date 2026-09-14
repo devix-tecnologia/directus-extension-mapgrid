@@ -66,10 +66,11 @@ const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
 const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 
 /**
- * A selecao vive no layout, que e quem a envia para a acao de excluir. O
- * componente so a espelha, com um computed gravavel em vez do `useSync` do SDK
- * do Directus: sem aquele import o template nao depende mais do app hospedeiro,
- * e monta igual no Storybook, no teste e dentro do Directus.
+ * The selection lives in the layout, which is what hands it to the delete
+ * action. This component only mirrors it, with a writable computed instead of
+ * the Directus SDK's `useSync`: without that import the template no longer
+ * depends on the host app, and mounts the same in Storybook, in a test and
+ * inside Directus.
  */
 const selectedItems = computed<GeoItem[]>({
   get: () => props.selectedItems,

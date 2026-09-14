@@ -29,7 +29,7 @@
   --fast: 120ms;
   --theme--form--field--input--background: #ffffff;
   --theme--form--field--input--foreground: #212222;
-  /* o app define --white; o botao de excluir o usa no hover */
+  /* the app defines --white; the delete button uses it on hover */
   --white: #ffffff;
 }
 

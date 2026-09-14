@@ -3,14 +3,13 @@ import { generateMockData } from './ValueCell.mock';
 import ValueCell from './ValueCell.vue';
 
 const meta: Meta<typeof ValueCell> = {
-  title: '01 - Átomos/ValueCell',
+  title: '01 - Atoms/ValueCell',
   component: ValueCell,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component:
-          'Renderiza qualquer valor serializado em texto (string, número, array, coordenadas).',
+        component: 'Renders any value serialized to text (string, number, array, coordinates).',
       },
     },
   },

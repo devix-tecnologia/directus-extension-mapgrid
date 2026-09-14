@@ -4,14 +4,14 @@ const STORYBOOK_PORT = 6099;
 const STORYBOOK_URL = `http://localhost:${STORYBOOK_PORT}`;
 
 /**
- * Checagem do console das stories. Ao contrário da suíte e2e, não precisa de
- * Docker nem de um Directus: o `webServer` sobe o próprio Storybook e o derruba
- * ao terminar, então `pnpm check:stories` roda sozinho em qualquer máquina.
+ * The stories' console check. Unlike the e2e suite it needs neither Docker nor
+ * a Directus: `webServer` starts Storybook itself and tears it down at the end,
+ * so `pnpm check:stories` runs on its own on any machine.
  */
 export default defineConfig({
   testDir: './tests/stories',
-  // uma story só é considerada limpa depois de renderizar, e o mapa leva um
-  // tempo para desistir do WebGL no headless
+  // a story only counts as clean once it has rendered, and the map takes a
+  // while to give up on WebGL in headless mode
   timeout: 180_000,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -27,8 +27,8 @@ export default defineConfig({
   webServer: {
     command: `pnpm exec storybook dev --ci --quiet --port ${STORYBOOK_PORT}`,
     url: STORYBOOK_URL,
-    // o Storybook leva perto de um minuto para o primeiro start, com as
-    // dependências do Vite ainda por otimizar
+    // Storybook takes close to a minute on its first start, with Vite's
+    // dependencies still to be optimized
     timeout: 180_000,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',

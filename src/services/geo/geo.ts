@@ -12,9 +12,9 @@ export const GEO_CLUSTER_MAX_ZOOM = 14;
 export const GEO_CLUSTER_RADIUS = 20;
 
 /**
- * A fonte GeoJSON do mapa. Itens sem ponto são omitidos em vez de virarem uma
- * feature vazia: o maplibre não sabe desenhar uma, e o agrupamento contaria um
- * marcador que não existe.
+ * The map's GeoJSON source. Items without a point are omitted rather than
+ * turned into an empty feature: maplibre cannot draw one, and clustering would
+ * count a marker that is not there.
  */
 export const buildPointFeatureCollection = ({
   items,

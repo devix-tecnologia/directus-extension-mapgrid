@@ -1,11 +1,11 @@
 /**
- * O catálogo de coleções mapeáveis usado por stories e testes.
+ * The catalogue of mappable collections used by stories and tests.
  *
- * Cada entrada é uma coleção coerente — itens, campos, template do popup,
- * colunas e câmera — e não uma lista solta de pontos. O conjunto existe para
- * demonstrar o que a extensão é: pontos espalhados, pontos aglomerados, pontos
- * dos dois lados da linha de data e uma coleção meio preenchida, todos no mesmo
- * componente. Uma story por tipo cobre o comportamento que cada um exercita.
+ * Each entry is a coherent collection — items, fields, popup template, columns
+ * and camera — rather than a loose list of points. The set exists to show what
+ * the extension is: scattered points, clustered points, points on both sides of
+ * the date line, and a half-filled collection, all in the same component. One
+ * story per kind covers the behaviour each of them exercises.
  */
 
 import type { CollectionFieldSummary } from '../components/templates/mapgrid-options/MapgridOptions.types';
@@ -13,7 +13,7 @@ import type { GeoItem, MapCameraOptions, PointCoordinates } from '../contract/in
 import type { Header } from '../services/table/table.types';
 
 export interface MappableKind {
-  /** Nome da coleção no Directus. */
+  /** The collection name in Directus. */
   id: string;
   label: string;
   geolocationField: string;
@@ -25,133 +25,113 @@ export interface MappableKind {
 
 const pointAt = (coordinates: PointCoordinates) => ({ type: 'Point' as const, coordinates });
 
-const BRASIL: MapCameraOptions = { mapCenterLng: -47.9292, mapCenterLat: -15.7801, mapZoom: 4 };
+const BRAZIL: MapCameraOptions = { mapCenterLng: -47.9292, mapCenterLat: -15.7801, mapZoom: 4 };
 
 export const MAPPABLE_KINDS: MappableKind[] = [
   {
-    id: 'pontos_turisticos',
-    label: 'Pontos espalhados',
-    geolocationField: 'localizacao',
-    titleTemplate: '{{nome}}',
-    columns: ['nome', 'cidade', 'localizacao'],
-    camera: BRASIL,
+    id: 'landmarks',
+    label: 'Scattered points',
+    geolocationField: 'location',
+    titleTemplate: '{{name}}',
+    columns: ['name', 'city', 'location'],
+    camera: BRAZIL,
     items: [
-      {
-        id: 1,
-        nome: 'Praça da Sé',
-        cidade: 'São Paulo',
-        localizacao: pointAt([-46.6333, -23.5505]),
-      },
+      { id: 1, name: 'Praça da Sé', city: 'São Paulo', location: pointAt([-46.6333, -23.5505]) },
       {
         id: 2,
-        nome: 'Museu do Amanhã',
-        cidade: 'Rio de Janeiro',
-        localizacao: pointAt([-43.1943, -22.8942]),
+        name: 'Museu do Amanhã',
+        city: 'Rio de Janeiro',
+        location: pointAt([-43.1943, -22.8942]),
       },
       {
         id: 3,
-        nome: 'Parque Ibirapuera',
-        cidade: 'São Paulo',
-        localizacao: pointAt([-46.6598, -23.5874]),
+        name: 'Parque Ibirapuera',
+        city: 'São Paulo',
+        location: pointAt([-46.6598, -23.5874]),
       },
       {
         id: 4,
-        nome: 'Cristo Redentor',
-        cidade: 'Rio de Janeiro',
-        localizacao: pointAt([-43.2105, -22.9519]),
+        name: 'Cristo Redentor',
+        city: 'Rio de Janeiro',
+        location: pointAt([-43.2105, -22.9519]),
       },
       {
         id: 5,
-        nome: 'Elevador Lacerda',
-        cidade: 'Salvador',
-        localizacao: pointAt([-38.5133, -12.9742]),
+        name: 'Elevador Lacerda',
+        city: 'Salvador',
+        location: pointAt([-38.5133, -12.9742]),
       },
-      {
-        id: 6,
-        nome: 'Teatro Amazonas',
-        cidade: 'Manaus',
-        localizacao: pointAt([-60.0234, -3.1301]),
-      },
+      { id: 6, name: 'Teatro Amazonas', city: 'Manaus', location: pointAt([-60.0234, -3.1301]) },
     ],
   },
   {
-    id: 'unidades',
-    label: 'Pontos aglomerados',
+    id: 'units',
+    label: 'Clustered points',
     geolocationField: 'position',
-    titleTemplate: '{{codigo}} — {{bairro}}',
-    columns: ['codigo', 'bairro', 'status'],
+    titleTemplate: '{{code}} — {{district}}',
+    columns: ['code', 'district', 'status'],
     camera: { mapCenterLng: -46.64, mapCenterLat: -23.55, mapZoom: 12 },
-    // doze pontos dentro de poucos quarteirões: é o que faz o agrupamento
-    // aparecer, e portanto o único jeito de a story mostrar um cluster
+    // a dozen points within a few blocks: this is what makes clustering show up,
+    // and therefore the only way a story can demonstrate a cluster
     items: Array.from({ length: 12 }, (_, index) => ({
       id: 100 + index,
-      codigo: `UN-${String(index + 1).padStart(3, '0')}`,
-      bairro: index % 2 === 0 ? 'Centro' : 'Bela Vista',
-      status: index % 3 === 0 ? 'ativo' : 'manutenção',
+      code: `UN-${String(index + 1).padStart(3, '0')}`,
+      district: index % 2 === 0 ? 'Centro' : 'Bela Vista',
+      status: index % 3 === 0 ? 'active' : 'maintenance',
       position: pointAt([-46.64 + index * 0.004, -23.55 + (index % 4) * 0.004]),
     })),
   },
   {
-    id: 'sensores',
-    label: 'Pontos dos dois lados da linha de data',
+    id: 'sensors',
+    label: 'Points on both sides of the date line',
     geolocationField: 'coord',
-    titleTemplate: '{{estacao}}',
-    columns: ['estacao', 'coord'],
+    titleTemplate: '{{station}}',
+    columns: ['station', 'coord'],
     camera: { mapCenterLng: 179, mapCenterLat: 0, mapZoom: 3 },
-    // os dois lados do meridiano 180: exercita o ajuste de volta inteira, sem
-    // o qual o popup abre numa cópia do mundo que não está à vista
+    // both sides of the 180th meridian: exercises the whole-turn adjustment,
+    // without which the popup opens on a copy of the world that is off screen
     items: [
-      { id: 'S-1', estacao: 'Taveuni', coord: pointAt([179.97, -16.85]) },
-      { id: 'S-2', estacao: 'Vava’u', coord: pointAt([-174.0, -18.65]) },
-      { id: 'S-3', estacao: 'Apia', coord: pointAt([-171.76, -13.83]) },
+      { id: 'S-1', station: 'Taveuni', coord: pointAt([179.97, -16.85]) },
+      { id: 'S-2', station: 'Vava’u', coord: pointAt([-174.0, -18.65]) },
+      { id: 'S-3', station: 'Apia', coord: pointAt([-171.76, -13.83]) },
     ],
   },
   {
-    id: 'obras',
-    label: 'Coleção meio preenchida',
-    geolocationField: 'local',
-    titleTemplate: '{{titulo}}',
-    columns: ['titulo', 'responsavel', 'local'],
-    camera: BRASIL,
-    // metade dos itens sem ponto: aparecem na grade e não no mapa, que é o
-    // comportamento que buildPointFeatureCollection garante
+    id: 'works',
+    label: 'Half-filled collection',
+    geolocationField: 'site',
+    titleTemplate: '{{title}}',
+    columns: ['title', 'crew', 'site'],
+    camera: BRAZIL,
+    // half the items have no point: they show in the grid and not on the map,
+    // which is the behaviour buildPointFeatureCollection guarantees
     items: [
-      {
-        id: 10,
-        titulo: 'Ponte do Rio Negro',
-        responsavel: 'Equipe Norte',
-        local: pointAt([-60.02, -3.13]),
-      },
-      { id: 11, titulo: 'Viaduto Central', responsavel: 'Equipe Sul', local: null },
-      {
-        id: 12,
-        titulo: 'Contorno Leste',
-        responsavel: 'Equipe Leste',
-        local: pointAt([-49.27, -25.43]),
-      },
-      { id: 13, titulo: 'Sem local definido', responsavel: 'Equipe Oeste' },
+      { id: 10, title: 'Rio Negro bridge', crew: 'North crew', site: pointAt([-60.02, -3.13]) },
+      { id: 11, title: 'Central overpass', crew: 'South crew', site: null },
+      { id: 12, title: 'Eastern bypass', crew: 'East crew', site: pointAt([-49.27, -25.43]) },
+      { id: 13, title: 'No site assigned', crew: 'West crew' },
     ],
   },
 ];
 
-/** Uma coleção do catálogo pelo nome. Lança para um nome que não existe, para a story falhar alto. */
+/** One collection from the catalogue by name. Throws for an unknown name, so a story fails loudly. */
 export const mappableKind = (id: string): MappableKind => {
   const kind = MAPPABLE_KINDS.find((candidate) => candidate.id === id);
-  if (!kind) throw new Error(`Coleção mapeável desconhecida: ${id}`);
+  if (!kind) throw new Error(`Unknown mappable collection: ${id}`);
   return kind;
 };
 
-/** A coleção de exemplo padrão. */
-export const DEFAULT_KIND_ID = 'pontos_turisticos';
+/** The default example collection. */
+export const DEFAULT_KIND_ID = 'landmarks';
 
 const titleCase = (field: string): string =>
   field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, ' ');
 
-/** Os cabeçalhos da grade para as colunas configuradas da coleção. */
+/** The grid headers for the collection's configured columns. */
 export const headersFor = (kindId: string = DEFAULT_KIND_ID): Header[] =>
   mappableKind(kindId).columns.map((column) => ({ text: titleCase(column), value: column }));
 
-/** Os campos da coleção como o painel de opções os enxerga. */
+/** The collection's fields as the options panel sees them. */
 export const fieldsFor = (kindId: string = DEFAULT_KIND_ID): CollectionFieldSummary[] => {
   const kind = mappableKind(kindId);
   const firstItem = kind.items[0] ?? {};
@@ -163,7 +143,7 @@ export const fieldsFor = (kindId: string = DEFAULT_KIND_ID): CollectionFieldSumm
   }));
 };
 
-/** As opções do preset que essa coleção representa, prontas para espalhar em props. */
+/** The preset options this collection stands for, ready to spread into props. */
 export const layoutOptionsFor = (kindId: string = DEFAULT_KIND_ID) => {
   const kind = mappableKind(kindId);
   const [coluna1, coluna2, coluna3, coluna4, coluna5] = kind.columns;
@@ -181,8 +161,8 @@ export const layoutOptionsFor = (kindId: string = DEFAULT_KIND_ID) => {
   };
 };
 
-/** Os itens da coleção padrão. Atalho para os mocks que só precisam de uma lista. */
+/** The default collection's items. A shortcut for mocks that only need a list. */
 export const mockGeoItems: GeoItem[] = mappableKind(DEFAULT_KIND_ID).items;
 
-/** Os cabeçalhos da coleção padrão. */
+/** The default collection's headers. */
 export const mockHeaders: Header[] = headersFor();

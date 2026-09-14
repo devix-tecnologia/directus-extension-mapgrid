@@ -106,16 +106,16 @@ export const WithEditFlow: Story = {
     docs: {
       description: {
         story:
-          'Demonstra o fluxo completo de edição: o clique no lápis emite `edit-item`, ' +
-          'que o consumidor intercepta para abrir uma tela de edição. O Mapgrid é um ' +
-          'componente independente — não navega nem depende do Directus para editar.',
+          'Shows the full edit flow: clicking the pencil emits `edit-item`, ' +
+          'which the consumer intercepts to open an edit screen. Mapgrid is a ' +
+          'standalone component — it neither navigates nor depends on Directus to edit.',
       },
     },
   },
 };
 
 export const ReadOnlyPermission: Story = {
-  name: 'Permissão: sem edição e sem deleção',
+  name: 'Permissions: no edit, no delete',
   args: {
     ...mockData.props,
     canEdit: false,
@@ -126,8 +126,9 @@ export const ReadOnlyPermission: Story = {
     docs: {
       description: {
         story:
-          'Usuário sem permissão de edição nem deleção: o lápis de edição não aparece e os ' +
-          'checkboxes de seleção ficam desabilitados (não é possível selecionar para excluir).',
+          'A user with neither edit nor delete permission: the edit pencil is ' +
+          'hidden and the selection checkboxes are disabled, so nothing can be ' +
+          'selected for deletion.',
       },
     },
   },

@@ -7,7 +7,7 @@ export default defineConfig({
     testTimeout: 300000,
     hookTimeout: 300000,
     include: ['tests/**/*.spec.ts'],
-    // tests/stories roda no Playwright, não aqui
+    // tests/stories runs under Playwright, not here
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/stories/**'],
     pool: 'threads',
     isolate: false,

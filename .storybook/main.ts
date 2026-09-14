@@ -12,12 +12,13 @@ const config: StorybookConfig = {
     name: '@storybook/vue3-vite',
     options: {
       /*
-       * O motor padrão, `vue-docgen-api`, está depreciado e sai no Storybook 11.
-       * Ele também resolve imports por conta própria, e não entende a convenção
-       * do TypeScript em que o especificador termina em `.js` e o arquivo em
-       * disco é `.ts` — daí ele procurar `contract/index.js.js` e desistir das
-       * props de quem importa assim. O `vue-component-meta` usa o language
-       * service do próprio TypeScript, então resolve igual ao compilador.
+       * The default engine, `vue-docgen-api`, is deprecated and goes away in
+       * Storybook 11. It also resolves imports on its own and does not
+       * understand TypeScript's convention where the specifier ends in `.js`
+       * and the file on disk is `.ts` — hence it looking for
+       * `contract/index.js.js` and giving up on the props of whoever imports
+       * that way. `vue-component-meta` uses TypeScript's own language service,
+       * so it resolves the way the compiler does.
        */
       docgen: 'vue-component-meta',
     },
@@ -33,25 +34,25 @@ const config: StorybookConfig = {
       '@directus/extensions-sdk': resolve(currentDir, 'mocks/directus-extensions-sdk.ts'),
       'vue-router': resolve(currentDir, 'mocks/vue-router.ts'),
       /*
-       * O build de desenvolvimento do vue-i18n chama `enableDevTools` no
-       * install, sem flag que desligue: a condição compila para `if (true)`.
-       * O Storybook cria um app por story, cada install registra a ponte de
-       * novo, e a extensão Vue Devtools quebra sozinha com "Cannot read
-       * properties of undefined (reading 'app')" — uma rejeição não tratada
-       * por story, para quem tem a extensão instalada, que é quase todo
-       * desenvolvedor Vue.
+       * The development build of vue-i18n calls `enableDevTools` on install,
+       * with no flag to turn it off: the condition compiles to `if (true)`.
+       * Storybook creates one app per story, every install registers the
+       * bridge again, and the Vue Devtools extension breaks on its own with
+       * "Cannot read properties of undefined (reading 'app')" — one unhandled
+       * rejection per story, for anyone with the extension installed, which is
+       * most Vue developers.
        *
-       * O build de produção não tem esse caminho compilado. Custa os avisos de
-       * desenvolvimento do próprio vue-i18n, que aqui não fazem falta: a
-       * paridade de chaves entre os idiomas é garantida por teste.
+       * The production build does not have that path compiled in. It costs
+       * vue-i18n's own development warnings, which are no loss here: key
+       * parity between the locales is guaranteed by a test.
        */
       'vue-i18n': resolve(currentDir, '../node_modules/vue-i18n/dist/vue-i18n.esm-browser.prod.js'),
     };
     /*
-     * Cada story é um app separado e efêmero, então nenhuma ponte de devtools
-     * tem utilidade aqui. `__INTLIFY_PROD_DEVTOOLS__` é o que o build de
-     * produção do vue-i18n lê para decidir se registra a ponte; o alias acima
-     * é o que resolve o caso de desenvolvimento.
+     * Each story is a separate, throwaway app, so no devtools bridge is of any
+     * use here. `__INTLIFY_PROD_DEVTOOLS__` is what vue-i18n's production build
+     * reads to decide whether to register the bridge; the alias above is what
+     * handles the development case.
      */
     config.define = {
       ...config.define,

@@ -1,13 +1,13 @@
 /**
- * A forma do campo de geolocalização de um item, como ele chega da API do
- * Directus. O valor é opaco: o campo é declarado como JSON na coleção, então
- * nada garante que o que voltou seja um ponto — pode ser um polígono, um valor
- * meio preenchido, ou `null`. Quem lê precisa parsear, não asseverar.
+ * The shape of an item's geolocation field as it arrives from the Directus API.
+ * The value is opaque: the field is declared as JSON on the collection, so
+ * nothing guarantees that what came back is a point — it may be a polygon, a
+ * half-filled value, or `null`. Whoever reads it has to parse, not assert.
  */
 
 import { isRecord } from './is-record';
 
-/** Longitude e latitude, na ordem que o GeoJSON e o maplibre usam. */
+/** Longitude and latitude, in the order GeoJSON and maplibre use. */
 export type PointCoordinates = [number, number];
 
 export interface RowItem {
@@ -21,10 +21,10 @@ const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
 /**
- * As coordenadas de um ponto, ou `null` para qualquer outra coisa. Rejeita
- * geometrias que não são ponto e coordenadas incompletas ou não numéricas —
- * um `NaN` que passasse daqui viraria um "Invalid LngLat object" lá dentro do
- * maplibre, longe da causa.
+ * A point's coordinates, or `null` for anything else. Rejects geometries that
+ * are not points, and coordinates that are incomplete or not numeric — a `NaN`
+ * getting past here would surface as an "Invalid LngLat object" deep inside
+ * maplibre, far from the cause.
  */
 export const parsePointCoordinates = (raw: unknown): PointCoordinates | null => {
   if (!isRecord(raw)) return null;
@@ -39,6 +39,6 @@ export const parsePointCoordinates = (raw: unknown): PointCoordinates | null => 
   return [longitude, latitude];
 };
 
-/** O ponto guardado em `field`, ou `null` se o item não tiver um ponto ali. */
+/** The point stored in `field`, or `null` when the item has no point there. */
 export const itemPointCoordinates = (item: GeoItem, field: string): PointCoordinates | null =>
   parsePointCoordinates(item[field]);

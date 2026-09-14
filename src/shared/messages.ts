@@ -1,8 +1,8 @@
 /**
- * Os textos da extensão. Não vão em `directus_translations`: aquela tabela
- * depende de dado no banco do projeto, o que quebraria numa instalação nova.
- * `useI18n({ useScope: 'local', messages: MESSAGES })` herda o locale do app do
- * Directus e cai no en-US quando falta uma chave.
+ * The extension's own strings. They do not live in `directus_translations`:
+ * that table depends on data in the project's database, which would break on a
+ * fresh install. `useI18n({ useScope: 'local', messages: MESSAGES })` inherits
+ * the Directus app locale and falls back to en-US when a key is missing.
  */
 export const MESSAGES = {
   'en-US': {
@@ -59,8 +59,8 @@ export const MESSAGES = {
   },
 } as const;
 
-/** Os locales que a extensão traduz. */
+/** The locales the extension translates. */
 export type MessageLocale = keyof typeof MESSAGES;
 
-/** As chaves de texto, derivadas do en-US para que faltar uma no pt-BR seja erro de tipo. */
+/** The message keys, derived from en-US so a missing pt-BR key is a type error. */
 export type MessageKey = keyof (typeof MESSAGES)['en-US'];

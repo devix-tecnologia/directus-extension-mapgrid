@@ -10,8 +10,9 @@ import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
 /**
- * Campos de controle do Directus. Nao servem como titulo nem como coluna, e um
- * deles como padrao so daria trabalho de trocar a cada colecao nova.
+ * Directus bookkeeping fields. They serve neither as a title nor as a column,
+ * and picking one as a default would only mean changing it on every new
+ * collection.
  */
 const EXCLUDED_FIELDS = [
   'id',

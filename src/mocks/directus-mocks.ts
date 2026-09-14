@@ -1,8 +1,8 @@
 /**
- * O ambiente que o app do Directus dá a uma extensão, reproduzido para stories e
- * testes: os componentes globais `v-*`, a diretiva de tooltip, o cliente de api
- * e as stores. As fixtures de domínio ficam em `mappable-mocks.ts` — aqui é só
- * o entorno.
+ * The environment the Directus app gives an extension, reproduced for stories
+ * and tests: the global `v-*` components, the tooltip directive, the api client
+ * and the stores. Domain fixtures live in `mappable-mocks.ts` — this file is
+ * only the surroundings.
  */
 import type { App, Component, Directive } from 'vue';
 
@@ -201,10 +201,10 @@ const vButtonStub: Component = {
 };
 
 /**
- * O `v-icon` do app desenha um glifo do Material Symbols a partir do nome. Aqui
- * o nome viaja num atributo e o CSS o transforma no glifo, em vez de virar um
- * nó de texto: assim `textContent` continua vazio e uma asserção sobre o rótulo
- * de um botão não recebe a palavra "delete" junto.
+ * The app's `v-icon` draws a Material Symbols glyph from the name. Here the
+ * name travels as an attribute and the CSS turns it into the glyph, instead of
+ * becoming a text node: that keeps `textContent` empty, so an assertion on a
+ * button's label does not pick up the word "delete" along with it.
  */
 const vIconStub: Component = {
   name: 'v-icon',
@@ -452,14 +452,14 @@ const mockComponentsStyles = `
   padding: 0;
 }
 /*
- * O icone de verdade, a partir do nome no atributo.
+ * The real icon, from the name in the attribute.
  *
- * O Material Symbols mapeia uma ligadura (\`map\`, \`delete\`) para um glifo, e
- * ligaduras valem tambem em conteudo gerado — entao o nome pode viver no
- * \`content\` do CSS em vez de num no de texto. E isso que mantem o
- * \`textContent\` vazio, e a assercao de um teste sobre o rotulo de um botao
- * intacta. Sem a fonte (offline) o nome aparece como texto, que continua
- * legivel. A fonte vem de .storybook/preview-head.html.
+ * Material Symbols maps a ligature (\`map\`, \`delete\`) to a glyph, and
+ * ligatures apply to generated content too — so the name can live in the CSS
+ * \`content\` instead of in a text node. That is what keeps \`textContent\`
+ * empty, and a test's assertion on a button label untouched. Without the font
+ * (offline) the name shows as text, which is still readable. The font comes
+ * from .storybook/preview-head.html.
  */
 .v-icon-mock {
   display: inline-flex;
@@ -633,10 +633,10 @@ export function registerDirectusMockComponents(app: App): void {
   }
 }
 
-/** Uma rota que o cliente de api falso atende, por método e caminho. */
+/** A route the fake api client serves, by method and path. */
 export interface MockApiRoute {
   method: 'get' | 'post' | 'patch' | 'delete';
-  /** Caminho exato, ou um prefixo terminado em `/`. */
+  /** An exact path, or a prefix ending in `/`. */
   path: string;
   respond: (config?: { data?: unknown }) => unknown;
 }
@@ -646,9 +646,9 @@ const routeMatches = (route: MockApiRoute, method: string, url: string): boolean
   (route.path.endsWith('/') ? url.startsWith(route.path) : url === route.path);
 
 /**
- * O cliente de api do Directus, servindo rotas declaradas. Sem rotas devolve uma
- * resposta vazia — mas uma story que exercita busca ou exclusão precisa que a
- * chamada devolva algo coerente, e não `{}`.
+ * The Directus api client, serving declared routes. With no routes it returns
+ * an empty response — but a story that exercises fetching or deleting needs the
+ * call to return something coherent, not `{}`.
  */
 export function createMockApi({ routes = [] }: { routes?: MockApiRoute[] } = {}) {
   const handle =
@@ -666,22 +666,22 @@ export function createMockApi({ routes = [] }: { routes?: MockApiRoute[] } = {})
   };
 }
 
-/** Um campo de coleção como as stores do Directus o descrevem. */
+/** A collection field as the Directus stores describe it. */
 export interface MockCollectionField {
   field: string;
   primaryKey?: boolean;
-  /** `null` é como o Directus grava "sem interface", e não ausência do campo. */
+  /** `null` is how Directus stores "no interface", not a missing field. */
   meta?: { interface?: string | null } | null;
 }
 
-/** Uma coleção como as stores do Directus a descrevem. */
+/** A collection as the Directus stores describe it. */
 export interface MockCollection {
   collection: string;
   icon?: string;
   fields?: MockCollectionField[];
 }
 
-/** As stores do app, com as coleções que as stories precisam que `useCollection()` resolva. */
+/** The app stores, with the collections stories need `useCollection()` to resolve. */
 export function createMockStores(
   collections: MockCollection[] = [{ collection: 'mapgrid' }]
 ): Record<string, () => unknown> {

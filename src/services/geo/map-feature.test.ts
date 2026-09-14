@@ -9,55 +9,55 @@ import {
 
 const point = (coordinates: [number, number]) => ({ type: 'Point', coordinates });
 
-describe('parseMarkerProperties — o maplibre devolve properties como any', () => {
-  it('lê o id e o rótulo que buildPointFeatureCollection gravou', () => {
+describe('parseMarkerProperties — maplibre hands back properties as any', () => {
+  it('reads the id and label that buildPointFeatureCollection wrote', () => {
     expect(parseMarkerProperties({ id: 7, formattedTitle: 'Brasília' })).toEqual({
       id: 7,
       formattedTitle: 'Brasília',
     });
   });
 
-  it('aceita id em texto, porque a chave primária da coleção pode ser uuid', () => {
+  it('accepts a string id, because a collection’s primary key may be a uuid', () => {
     expect(parseMarkerProperties({ id: 'abc-123', formattedTitle: 'X' })?.id).toBe('abc-123');
   });
 
-  it('recusa rótulo ausente, porque um popup sem texto é pior que clique ignorado', () => {
+  it('rejects a missing label, because a popup with no text is worse than an ignored click', () => {
     expect(parseMarkerProperties({ id: 1 })).toBeNull();
     expect(parseMarkerProperties({ id: 1, formattedTitle: 42 })).toBeNull();
   });
 
-  it('recusa id ausente, que destacaria a linha errada da grade', () => {
+  it('rejects a missing id, which would highlight the wrong grid row', () => {
     expect(parseMarkerProperties({ formattedTitle: 'X' })).toBeNull();
     expect(parseMarkerProperties({ id: null, formattedTitle: 'X' })).toBeNull();
   });
 
-  it('recusa o que não é objeto, sem lançar', () => {
+  it('rejects anything that is not an object, without throwing', () => {
     expect(parseMarkerProperties(null)).toBeNull();
     expect(parseMarkerProperties(undefined)).toBeNull();
-    expect(parseMarkerProperties('texto')).toBeNull();
+    expect(parseMarkerProperties('text')).toBeNull();
   });
 });
 
-describe('parseClusterProperties — o agrupamento é do maplibre, não nosso', () => {
-  it('lê o id do cluster e quantos itens ele reúne', () => {
+describe('parseClusterProperties — clustering is maplibre’s, not ours', () => {
+  it('reads the cluster id and how many items it gathers', () => {
     expect(parseClusterProperties({ cluster_id: 12, point_count: 5 })).toEqual({
       clusterId: 12,
       pointCount: 5,
     });
   });
 
-  it('recusa cluster_id ausente, que faria getClusterExpansionZoom rejeitar', () => {
+  it('rejects a missing cluster_id, which would make getClusterExpansionZoom reject', () => {
     expect(parseClusterProperties({ point_count: 5 })).toBeNull();
-    expect(parseClusterProperties({ cluster_id: 'doze', point_count: 5 })).toBeNull();
+    expect(parseClusterProperties({ cluster_id: 'twelve', point_count: 5 })).toBeNull();
   });
 
-  it('recusa point_count ausente, que viraria um rótulo "undefined" no marcador', () => {
+  it('rejects a missing point_count, which would render as an "undefined" marker label', () => {
     expect(parseClusterProperties({ cluster_id: 12 })).toBeNull();
   });
 });
 
-describe('parseMarkerFeature — geometria e propriedades juntas', () => {
-  it('devolve o marcador completo', () => {
+describe('parseMarkerFeature — geometry and properties together', () => {
+  it('returns the complete marker', () => {
     const marker = parseMarkerFeature({
       geometry: point([-47.9, -15.7]),
       properties: { id: 1, formattedTitle: 'Brasília' },
@@ -66,7 +66,7 @@ describe('parseMarkerFeature — geometria e propriedades juntas', () => {
     expect(marker).toEqual({ id: 1, formattedTitle: 'Brasília', coordinates: [-47.9, -15.7] });
   });
 
-  it('devolve null quando a geometria não é um ponto, sem olhar as propriedades', () => {
+  it('returns null when the geometry is not a point, without looking at the properties', () => {
     expect(
       parseMarkerFeature({
         geometry: { type: 'LineString', coordinates: [[0, 0]] },
@@ -75,14 +75,14 @@ describe('parseMarkerFeature — geometria e propriedades juntas', () => {
     ).toBeNull();
   });
 
-  it('devolve null quando a feature vem sem propriedades', () => {
+  it('returns null when the feature arrives without properties', () => {
     expect(parseMarkerFeature({ geometry: point([0, 0]), properties: null })).toBeNull();
     expect(parseMarkerFeature({ geometry: point([0, 0]) })).toBeNull();
   });
 });
 
 describe('parseClusterFeature', () => {
-  it('devolve o cluster completo', () => {
+  it('returns the complete cluster', () => {
     expect(
       parseClusterFeature({
         geometry: point([-46.6, -23.5]),
@@ -92,8 +92,8 @@ describe('parseClusterFeature', () => {
   });
 });
 
-describe('parseClusterFeatures — a lista devolvida por querySourceFeatures', () => {
-  it('preserva a ordem dos clusters válidos', () => {
+describe('parseClusterFeatures — the list querySourceFeatures returns', () => {
+  it('preserves the order of the valid clusters', () => {
     const clusters = parseClusterFeatures([
       { geometry: point([1, 1]), properties: { cluster_id: 1, point_count: 2 } },
       { geometry: point([2, 2]), properties: { cluster_id: 2, point_count: 3 } },
@@ -102,7 +102,7 @@ describe('parseClusterFeatures — a lista devolvida por querySourceFeatures', (
     expect(clusters.map((cluster) => cluster.clusterId)).toEqual([1, 2]);
   });
 
-  it('descarta o que não parseia em vez de interromper o desenho dos demais', () => {
+  it('drops what does not parse instead of interrupting the drawing of the rest', () => {
     const clusters = parseClusterFeatures([
       { geometry: point([1, 1]), properties: { cluster_id: 1, point_count: 2 } },
       { geometry: point([2, 2]), properties: { point_count: 3 } },
@@ -113,7 +113,7 @@ describe('parseClusterFeatures — a lista devolvida por querySourceFeatures', (
     expect(clusters.map((cluster) => cluster.clusterId)).toEqual([1, 4]);
   });
 
-  it('devolve lista vazia quando nada agrupa', () => {
+  it('returns an empty list when nothing clusters', () => {
     expect(parseClusterFeatures([])).toEqual([]);
   });
 });

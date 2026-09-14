@@ -1,15 +1,15 @@
 # Pages
 
-Nível Atomic Design de **pages** — componentes de página/contêiner com lógica de negócio (stores, router, dados).
+The **pages** level of Atomic Design — page/container components carrying business logic (stores, router, data).
 
-Neste projeto (extensão de layout para Directus) as páginas ainda não são necessárias: os templates (`mapgrid-layout`) já compõem os organismos e recebem os dados via props. Quando houver necessidade de um container com lógica (ex.: tela cheia do mapa), os componentes devem morar aqui seguindo o padrão storytype:
+In this project (a layout extension for Directus) pages are not needed yet: the templates (`mapgrid-layout`) already compose the organisms and receive their data through props. When a container with logic is needed (a full-screen map, say), its components belong here, following the storytype pattern:
 
 ```
-nome-da-pagina/
-  NomeDaPagina.vue
-  NomeDaPagina.types.ts
-  NomeDaPagina.mock.ts
-  NomeDaPagina.stories.ts
-  NomeDaPagina.test.ts
+page-name/
+  PageName.vue
+  PageName.types.ts
+  PageName.mock.ts
+  PageName.stories.ts
+  PageName.test.ts
   index.ts
 ```

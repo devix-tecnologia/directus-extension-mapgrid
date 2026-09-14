@@ -2,9 +2,9 @@ import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/
 import type { MapComponentType } from './MapComponent.types';
 
 /**
- * As props do mapa para uma das coleções do catálogo. Uma story por coleção
- * cobre um comportamento diferente do mesmo componente: pontos espalhados,
- * aglomerados, dos dois lados da linha de data e itens sem ponto.
+ * The map's props for one of the catalogue's collections. One story per
+ * collection covers a different behaviour of the same component: scattered
+ * points, clustered ones, both sides of the date line, and items with no point.
  */
 export const mapPropsFor = (kindId: string = DEFAULT_KIND_ID): MapComponentType['props'] => {
   const kind = mappableKind(kindId);

@@ -7,16 +7,17 @@ export interface MapgridLayoutType {
 }
 
 /**
- * O layout recebe o preset inteiro campo a campo, porque é assim que o Directus
- * espalha o retorno do `setup` nas props do componente. Herdar de `LayoutOptions`
- * mantém uma declaração só: acrescentar uma opção é editar o contrato.
+ * The layout receives the whole preset field by field, because that is how
+ * Directus spreads the `setup` return into the component's props. Extending
+ * `LayoutOptions` keeps a single declaration: adding an option means editing
+ * the contract.
  */
 export interface MapgridLayoutProps extends LayoutOptions {
   items: GeoItem[];
   loading?: boolean;
   collection: string;
   selectedItems: GeoItem[];
-  /** Permissões da coleção, resolvidas pelo layout e repassadas à grade. */
+  /** Collection permissions, resolved by the layout and passed down to the grid. */
   canEdit?: boolean;
   canDelete?: boolean;
 }

@@ -1,6 +1,6 @@
 import type { MapCameraOptions, PointCoordinates } from '../../contract/index';
 
-/** Brasília. Centro de partida quando o preset não define um. */
+/** Brasília. The starting centre when the preset does not define one. */
 export const DEFAULT_MAP_CENTER: PointCoordinates = [-47.9292, -15.7801];
 export const DEFAULT_MAP_ZOOM = 4;
 
@@ -15,25 +15,25 @@ export interface LngLatBoundsLike {
 }
 
 /**
- * O centro do preset, ou o padrão. Longitude e latitude só valem juntas: meio
- * par posicionaria o mapa num lugar que o usuário não escolheu, então a metade
- * preenchida é descartada.
+ * The preset's centre, or the default. Longitude and latitude only count
+ * together: half a pair would place the map somewhere the user did not choose,
+ * so the filled half is discarded.
  */
 export const resolveMapCenter = (options: MapCameraOptions): PointCoordinates =>
   options.mapCenterLng != null && options.mapCenterLat != null
     ? [options.mapCenterLng, options.mapCenterLat]
     : [...DEFAULT_MAP_CENTER];
 
-/** O zoom do preset, ou o padrão. */
+/** The preset's zoom, or the default. */
 export const resolveMapZoom = (options: MapCameraOptions): number =>
   options.mapZoom ?? DEFAULT_MAP_ZOOM;
 
 /**
- * A mesma longitude, deslocada em voltas inteiras até cair perto da referência.
+ * The same longitude, shifted by whole turns until it lands near the reference.
  *
- * O mapa rola infinitamente no eixo leste-oeste, então o ponto em -179° e o
- * clique em +179° estão a dois graus de distância na tela e a 358° na conta.
- * Sem isso o popup abre numa cópia do mundo que não está à vista.
+ * The map scrolls endlessly along the east-west axis, so a point at -179° and a
+ * click at +179° are two degrees apart on screen and 358° apart in arithmetic.
+ * Without this the popup opens on a copy of the world that is off screen.
  */
 export const longitudeNearest = (longitude: number, reference: number): number => {
   let adjusted = longitude;
@@ -43,16 +43,16 @@ export const longitudeNearest = (longitude: number, reference: number): number =
   return adjusted;
 };
 
-/** O mesmo ponto, com a longitude trazida para perto da referência. */
+/** The same point, with its longitude brought near the reference. */
 export const coordinatesNearest = (
   coordinates: PointCoordinates,
   referenceLongitude: number
 ): PointCoordinates => [longitudeNearest(coordinates[0], referenceLongitude), coordinates[1]];
 
 /**
- * Se o ponto está fora do que se vê. Serve para decidir entre deslocar o mapa e
- * deixá-lo parado: mover a câmera para um ponto que já está à vista só faz o
- * mapa tremer sem motivo.
+ * Whether the point is outside the visible area. Used to decide between panning
+ * the map and leaving it still: moving the camera to a point already in view
+ * only makes the map jitter for no reason.
  */
 export const isOutsideBounds = (
   coordinates: PointCoordinates,
