@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveFieldTemplate, serializeItemRow, serializeValue } from './value-formatter.js';
+import { resolveFieldTemplate, serializeItemRow, serializeValue } from './value-formatter';
 
 describe('serializeValue — o que a célula da grade mostra', () => {
   it('mostra texto e número como são', () => {

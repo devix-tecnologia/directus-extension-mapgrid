@@ -1,4 +1,4 @@
-import type { PointCoordinates } from '../../contract/index.js';
+import type { PointCoordinates } from '../../contract/index';
 
 export interface PointGeometry {
   type: 'Point';

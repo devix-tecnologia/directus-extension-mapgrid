@@ -9,8 +9,8 @@
 import maplibregl, { type FilterSpecification } from 'maplibre-gl';
 import { nextTick, onMounted, onUnmounted, type Ref, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { GeoItem, PointCoordinates } from '../../../contract/index.js';
-import { itemPointCoordinates } from '../../../contract/index.js';
+import type { GeoItem, PointCoordinates } from '../../../contract/index';
+import { itemPointCoordinates } from '../../../contract/index';
 import {
   buildPointFeatureCollection,
   coordinatesNearest,
@@ -27,8 +27,8 @@ import {
   parseMarkerFeature,
   resolveMapCenter,
   resolveMapZoom,
-} from '../../../services/geo/index.js';
-import { resolveFieldTemplate } from '../../../services/value-formatter/index.js';
+} from '../../../services/geo/index';
+import { resolveFieldTemplate } from '../../../services/value-formatter/index';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import type { MapComponentEmits, MapComponentProps } from './MapComponent.types';
 

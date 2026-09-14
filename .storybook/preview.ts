@@ -7,9 +7,9 @@ import {
   createMockApi,
   createMockStores,
   registerDirectusMockComponents,
-} from '../src/mocks/directus-mocks.js';
-import { fieldsFor, MAPPABLE_KINDS } from '../src/mocks/mappable-mocks.js';
-import { MESSAGES } from '../src/shared/messages.js';
+} from '../src/mocks/directus-mocks';
+import { fieldsFor, MAPPABLE_KINDS } from '../src/mocks/mappable-mocks';
+import { MESSAGES } from '../src/shared/messages';
 
 /**
  * Em escopo de módulo para o decorator poder trocar o locale. Os componentes

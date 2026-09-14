@@ -1,1 +1,1 @@
-export { resolveFieldTemplate, serializeItemRow, serializeValue } from './value-formatter.js';
+export { resolveFieldTemplate, serializeItemRow, serializeValue } from './value-formatter';

@@ -7,12 +7,12 @@ export {
   GEO_FIT_BOUNDS_MAX_ZOOM,
   GEO_POINT_LAYER_ID,
   GEO_SOURCE_ID,
-} from './geo.js';
+} from './geo';
 export type {
   GeoJsonFeature,
   GeoJsonFeatureCollection,
   PointGeometry,
-} from './geo.types.js';
+} from './geo.types';
 export {
   coordinatesNearest,
   DEFAULT_MAP_CENTER,
@@ -22,7 +22,7 @@ export {
   longitudeNearest,
   resolveMapCenter,
   resolveMapZoom,
-} from './map-camera.js';
+} from './map-camera';
 export {
   type ClusterFeature,
   type ClusterProperties,
@@ -34,4 +34,4 @@ export {
   parseMarkerFeature,
   parseMarkerProperties,
   type QueriedFeature,
-} from './map-feature.js';
+} from './map-feature';

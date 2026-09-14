@@ -1,4 +1,4 @@
-import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks.js';
+import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks';
 import type { MapgridLayoutType } from './MapgridLayout.types';
 
 /** As props do layout inteiro para uma das coleções do catálogo. */

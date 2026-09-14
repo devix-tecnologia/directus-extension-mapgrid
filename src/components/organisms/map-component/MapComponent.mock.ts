@@ -1,4 +1,4 @@
-import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks.js';
+import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks';
 import type { MapComponentType } from './MapComponent.types';
 
 /**

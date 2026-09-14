@@ -5,7 +5,7 @@
  * edição num arquivo só.
  */
 
-import { isRecord } from './is-record.js';
+import { isRecord } from './is-record';
 
 /** Id do layout — o que o `layout` de um preset aponta. */
 export const MAPGRID_LAYOUT_ID = 'mapgrid';

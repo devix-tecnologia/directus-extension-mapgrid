@@ -1,5 +1,5 @@
-import { COLLECTION_NAME } from '../helper-collection.js';
-import { apiRequest, type DirectusCollectionResponse, unwrapItems } from './directus-api.js';
+import { COLLECTION_NAME } from '../helper-collection';
+import { apiRequest, type DirectusCollectionResponse, unwrapItems } from './directus-api';
 
 export interface Preset {
   id?: string;

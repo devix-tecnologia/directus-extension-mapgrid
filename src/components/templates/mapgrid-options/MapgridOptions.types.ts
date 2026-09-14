@@ -1,5 +1,5 @@
 import type { Field } from '@directus/types';
-import type { LayoutOptions } from '../../../contract/index.js';
+import type { LayoutOptions } from '../../../contract/index';
 
 export interface MapgridOptionsType {
   models: MapgridOptionsModels;

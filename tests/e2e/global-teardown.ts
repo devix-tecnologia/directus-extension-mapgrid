@@ -1,8 +1,4 @@
-import {
-  COLLECTION_NAME,
-  deleteTestCollection,
-  EMPTY_COLLECTION_NAME,
-} from '../helper-collection.js';
+import { COLLECTION_NAME, deleteTestCollection, EMPTY_COLLECTION_NAME } from '../helper-collection';
 
 export async function globalTeardown(): Promise<void> {
   await deleteTestCollection(EMPTY_COLLECTION_NAME);

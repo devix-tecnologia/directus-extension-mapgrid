@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
-import { COLLECTION_NAME, EMPTY_COLLECTION_NAME } from '../helper-collection.js';
-import { testEnv } from '../test-env.js';
-import { type CameraState, projectToScreenPoint } from './helpers/map-projection.js';
+import { COLLECTION_NAME, EMPTY_COLLECTION_NAME } from '../helper-collection';
+import { testEnv } from '../test-env';
+import { type CameraState, projectToScreenPoint } from './helpers/map-projection';
 
 const FOCUSED_ZOOM_THRESHOLD = 10;
 const CAMERA_SETTLE_POLL_MS = 700;

@@ -39,10 +39,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { GeoItem } from '../../../contract/index.js';
-import type { ResolvedHeader } from '../../../services/table/index.js';
-import { MESSAGES } from '../../../shared/messages.js';
-import { ValueCell } from '../../atoms/value-cell/index.js';
+import type { GeoItem } from '../../../contract/index';
+import type { ResolvedHeader } from '../../../services/table/index';
+import { MESSAGES } from '../../../shared/messages';
+import { ValueCell } from '../../atoms/value-cell/index';
 import type { TableComponentEmits, TableComponentProps } from './TableComponent.types';
 
 const props = withDefaults(defineProps<TableComponentProps>(), {

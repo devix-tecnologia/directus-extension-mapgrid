@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
+import { directusComponentStubs } from '../../../mocks/directus-mocks';
 import DeleteAction from './DeleteAction.vue';
 
 describe('DeleteAction', () => {

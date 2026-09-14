@@ -1,4 +1,4 @@
-import type { MapCameraOptions, PointCoordinates } from '../../contract/index.js';
+import type { MapCameraOptions, PointCoordinates } from '../../contract/index';
 
 /** Brasília. Centro de partida quando o preset não define um. */
 export const DEFAULT_MAP_CENTER: PointCoordinates = [-47.9292, -15.7801];

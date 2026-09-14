@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MESSAGES, type MessageLocale } from './messages.js';
+import { MESSAGES, type MessageLocale } from './messages';
 
 /**
  * Os textos de um idioma indexados por chave solta. `Object.entries` devolve a

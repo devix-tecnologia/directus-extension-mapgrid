@@ -4,10 +4,10 @@ import {
   type DirectusSingleResponse,
   isDirectusHealthy,
   setAccessToken,
-} from './helpers/directus-api.js';
-import { waitForCondition } from './helpers/wait.js';
-import { testEnv } from './test-env.js';
-import { logger } from './test-logger.js';
+} from './helpers/directus-api';
+import { waitForCondition } from './helpers/wait';
+import { testEnv } from './test-env';
+import { logger } from './test-logger';
 
 interface AdminSession {
   access_token: string;

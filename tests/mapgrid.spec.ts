@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { type GeoItem, itemPointCoordinates } from '../src/contract/index.js';
+import { type GeoItem, itemPointCoordinates } from '../src/contract/index';
 import {
   buildPointFeatureCollection,
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
-} from '../src/services/geo/index.js';
+} from '../src/services/geo/index';
 import {
   resolveFieldTemplate,
   serializeItemRow,
   serializeValue,
-} from '../src/services/value-formatter/index.js';
+} from '../src/services/value-formatter/index';
 import {
   COLLECTION_NAME,
   deleteTestCollection,
@@ -19,15 +19,15 @@ import {
   populateTestItems,
   TEST_ITEMS,
   type TestItem,
-} from './helper-collection.js';
+} from './helper-collection';
 import {
   apiRequest,
   type DirectusCollectionResponse,
   type DirectusSingleResponse,
   getAccessToken,
   unwrapItems,
-} from './helpers/directus-api.js';
-import { setupTestEnvironment } from './setup.js';
+} from './helpers/directus-api';
+import { setupTestEnvironment } from './setup';
 
 describe('MapGrid Extension - Integration Tests', () => {
   beforeAll(async () => {

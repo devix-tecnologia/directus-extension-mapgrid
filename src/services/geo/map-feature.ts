@@ -5,7 +5,7 @@
  * Este módulo converte esse `any` nas formas que o componente usa, em vez de
  * afirmá-las com `as` e descobrir o erro lá dentro da biblioteca.
  */
-import { isRecord, type PointCoordinates, parsePointCoordinates } from '../../contract/index.js';
+import { isRecord, type PointCoordinates, parsePointCoordinates } from '../../contract/index';
 
 /** Uma feature como o maplibre a devolve: geometria e propriedades opacas. */
 export interface QueriedFeature {

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  COLUMN_KEYS,
-  configuredColumns,
-  normalizeLayoutOptions,
-} from './layout-options.contract.js';
+import { COLUMN_KEYS, configuredColumns, normalizeLayoutOptions } from './layout-options.contract';
 
 describe('normalizeLayoutOptions — o preset vem do banco, não de um objeto já tipado', () => {
   it('converte números que voltaram como texto, que é como a interface grava um v-input', () => {

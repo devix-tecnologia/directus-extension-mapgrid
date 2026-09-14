@@ -5,7 +5,7 @@ import {
   parseClusterProperties,
   parseMarkerFeature,
   parseMarkerProperties,
-} from './map-feature.js';
+} from './map-feature';
 
 const point = (coordinates: [number, number]) => ({ type: 'Point', coordinates });
 

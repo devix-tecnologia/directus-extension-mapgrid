@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { itemPointCoordinates, parsePointCoordinates } from './geolocation.contract.js';
+import { itemPointCoordinates, parsePointCoordinates } from './geolocation.contract';
 
 describe('parsePointCoordinates — o campo é JSON na coleção, então nada garante que seja um ponto', () => {
   it('lê um ponto do Directus na ordem [longitude, latitude]', () => {

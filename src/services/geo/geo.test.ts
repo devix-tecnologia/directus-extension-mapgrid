@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { GeoItem } from '../../contract/index.js';
-import { buildPointFeatureCollection } from './geo.js';
+import type { GeoItem } from '../../contract/index';
+import { buildPointFeatureCollection } from './geo';
 
 const itemAt = (id: number, coordinates: [number, number], nome: string): GeoItem => ({
   id,

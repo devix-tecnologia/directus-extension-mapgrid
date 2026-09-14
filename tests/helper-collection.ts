@@ -3,9 +3,9 @@ import {
   type DirectusCollectionResponse,
   resourceExists,
   unwrapItems,
-} from './helpers/directus-api.js';
-import { waitForCondition } from './helpers/wait.js';
-import { logger } from './test-logger.js';
+} from './helpers/directus-api';
+import { waitForCondition } from './helpers/wait';
+import { logger } from './test-logger';
 
 const COLLECTION_NAME = 'test_mapgrid_items';
 export const EMPTY_COLLECTION_NAME = 'test_mapgrid_empty';

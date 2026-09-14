@@ -5,9 +5,9 @@ import { computed, ref, toRefs, toValue } from 'vue';
 import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
 import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
-import type { GeoItem } from './contract/index.js';
-import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index.js';
-import type { LayoutOptions, LayoutQuery } from './types.js';
+import type { GeoItem } from './contract/index';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index';
+import type { LayoutOptions, LayoutQuery } from './types';
 
 /**
  * Campos de controle do Directus. Nao servem como titulo nem como coluna, e um

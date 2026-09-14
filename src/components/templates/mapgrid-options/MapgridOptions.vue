@@ -79,9 +79,9 @@
 <script setup lang="ts">
 import { computed, type WritableComputedRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { ColumnKey } from '../../../contract/index.js';
-import { COLUMN_KEYS } from '../../../contract/index.js';
-import { MESSAGES } from '../../../shared/messages.js';
+import type { ColumnKey } from '../../../contract/index';
+import { COLUMN_KEYS } from '../../../contract/index';
+import { MESSAGES } from '../../../shared/messages';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const props = defineProps<MapgridOptionsProps>();

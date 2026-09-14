@@ -10,7 +10,17 @@ const config: StorybookConfig = {
   addons: ['@storybook/addon-docs'],
   framework: {
     name: '@storybook/vue3-vite',
-    options: {},
+    options: {
+      /*
+       * O motor padrão, `vue-docgen-api`, está depreciado e sai no Storybook 11.
+       * Ele também resolve imports por conta própria, e não entende a convenção
+       * do TypeScript em que o especificador termina em `.js` e o arquivo em
+       * disco é `.ts` — daí ele procurar `contract/index.js.js` e desistir das
+       * props de quem importa assim. O `vue-component-meta` usa o language
+       * service do próprio TypeScript, então resolve igual ao compilador.
+       */
+      docgen: 'vue-component-meta',
+    },
   },
   core: {
     disableTelemetry: true,

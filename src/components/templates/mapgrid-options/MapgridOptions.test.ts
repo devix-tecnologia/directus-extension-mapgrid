@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
-import { optionsPropsFor } from './MapgridOptions.mock.js';
+import { directusComponentStubs } from '../../../mocks/directus-mocks';
+import { optionsPropsFor } from './MapgridOptions.mock';
 import MapgridOptions from './MapgridOptions.vue';
 
 const mountOptions = (props: Partial<ReturnType<typeof optionsPropsFor>> = {}) =>

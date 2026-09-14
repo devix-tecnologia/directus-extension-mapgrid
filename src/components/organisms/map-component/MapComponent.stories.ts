@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { expect, waitFor } from 'storybook/test';
-import { mappableKind } from '../../../mocks/mappable-mocks.js';
-import { mapPropsFor } from './MapComponent.mock.js';
+import { mappableKind } from '../../../mocks/mappable-mocks';
+import { mapPropsFor } from './MapComponent.mock';
 import MapComponent from './MapComponent.vue';
 
 /**

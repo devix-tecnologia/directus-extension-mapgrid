@@ -45,10 +45,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { GeoItem } from '../../../contract/index.js';
-import { configuredColumns } from '../../../contract/index.js';
-import type { Header } from '../../../services/table/index.js';
-import { MESSAGES } from '../../../shared/messages.js';
+import type { GeoItem } from '../../../contract/index';
+import { configuredColumns } from '../../../contract/index';
+import type { Header } from '../../../services/table/index';
+import { MESSAGES } from '../../../shared/messages';
 import MapComponent from '../../organisms/map-component/MapComponent.vue';
 import TableComponent from '../../organisms/table-component/TableComponent.vue';
 import type { MapgridLayoutEmits, MapgridLayoutProps } from './MapgridLayout.types';

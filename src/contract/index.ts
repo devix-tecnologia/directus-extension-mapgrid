@@ -1,3 +1,3 @@
-export * from './geolocation.contract.js';
-export * from './is-record.js';
-export * from './layout-options.contract.js';
+export * from './geolocation.contract';
+export * from './is-record';
+export * from './layout-options.contract';

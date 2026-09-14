@@ -1,5 +1,5 @@
-import type { GeoItem } from '../../contract/index.js';
-import { parsePointCoordinates } from '../../contract/index.js';
+import type { GeoItem } from '../../contract/index';
+import { parsePointCoordinates } from '../../contract/index';
 
 /** `{{campo}}`. Compilado uma vez: `resolveFieldTemplate` roda por item exibido. */
 const PLACEHOLDER_PATTERN = /\{\{([^}]+)\}\}/;

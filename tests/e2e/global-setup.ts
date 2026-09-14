@@ -3,9 +3,9 @@ import {
   EMPTY_COLLECTION_NAME,
   ensureTestCollection,
   ensureTestData,
-} from '../helper-collection.js';
-import { ensureMapGridPreset } from '../helpers/mapgrid-preset.js';
-import { setupTestEnvironment } from '../setup.js';
+} from '../helper-collection';
+import { ensureMapGridPreset } from '../helpers/mapgrid-preset';
+import { setupTestEnvironment } from '../setup';
 
 export async function globalSetup(): Promise<void> {
   await setupTestEnvironment();

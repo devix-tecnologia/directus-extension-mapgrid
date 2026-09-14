@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { MESSAGES } from '../../../shared/messages.js';
+import { MESSAGES } from '../../../shared/messages';
 import type { MapToolbarEmits } from './MapToolbar.types';
 
 const emit = defineEmits<MapToolbarEmits>();

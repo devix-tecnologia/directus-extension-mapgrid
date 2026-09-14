@@ -8,9 +8,9 @@
  * componente. Uma story por tipo cobre o comportamento que cada um exercita.
  */
 
-import type { CollectionFieldSummary } from '../components/templates/mapgrid-options/MapgridOptions.types.js';
-import type { GeoItem, MapCameraOptions, PointCoordinates } from '../contract/index.js';
-import type { Header } from '../services/table/table.types.js';
+import type { CollectionFieldSummary } from '../components/templates/mapgrid-options/MapgridOptions.types';
+import type { GeoItem, MapCameraOptions, PointCoordinates } from '../contract/index';
+import type { Header } from '../services/table/table.types';
 
 export interface MappableKind {
   /** Nome da coleção no Directus. */

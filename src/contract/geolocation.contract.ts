@@ -5,7 +5,7 @@
  * meio preenchido, ou `null`. Quem lê precisa parsear, não asseverar.
  */
 
-import { isRecord } from './is-record.js';
+import { isRecord } from './is-record';
 
 /** Longitude e latitude, na ordem que o GeoJSON e o maplibre usam. */
 export type PointCoordinates = [number, number];

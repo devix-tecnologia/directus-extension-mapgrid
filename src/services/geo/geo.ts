@@ -1,7 +1,7 @@
-import type { GeoItem } from '../../contract/index.js';
-import { itemPointCoordinates } from '../../contract/index.js';
-import { resolveFieldTemplate } from '../value-formatter/index.js';
-import type { GeoJsonFeature, GeoJsonFeatureCollection } from './geo.types.js';
+import type { GeoItem } from '../../contract/index';
+import { itemPointCoordinates } from '../../contract/index';
+import { resolveFieldTemplate } from '../value-formatter/index';
+import type { GeoJsonFeature, GeoJsonFeatureCollection } from './geo.types';
 
 export const GEO_SOURCE_ID = 'points';
 export const GEO_CLUSTER_LAYER_ID = 'clusters';

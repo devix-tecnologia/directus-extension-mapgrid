@@ -7,7 +7,7 @@ import {
   longitudeNearest,
   resolveMapCenter,
   resolveMapZoom,
-} from './map-camera.js';
+} from './map-camera';
 
 describe('resolveMapCenter — o centro só é válido com as duas coordenadas', () => {
   it('usa o centro do preset quando as duas estão preenchidas', () => {

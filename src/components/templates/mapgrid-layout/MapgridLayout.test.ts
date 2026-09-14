@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import { directusComponentStubs } from '../../../mocks/directus-mocks.js';
-import { mappableKind } from '../../../mocks/mappable-mocks.js';
-import { layoutPropsFor } from './MapgridLayout.mock.js';
+import { directusComponentStubs } from '../../../mocks/directus-mocks';
+import { mappableKind } from '../../../mocks/mappable-mocks';
+import { layoutPropsFor } from './MapgridLayout.mock';
 import MapgridLayout from './MapgridLayout.vue';
 
 /**

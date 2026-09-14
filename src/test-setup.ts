@@ -1,7 +1,7 @@
 import { config } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
-import { tooltipDirective } from './mocks/directus-mocks.js';
-import { MESSAGES } from './shared/messages.js';
+import { tooltipDirective } from './mocks/directus-mocks';
+import { MESSAGES } from './shared/messages';
 
 /**
  * O app do Directus instala o vue-i18n; aqui ele é instalado à mão, senão o

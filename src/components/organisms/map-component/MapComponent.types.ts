@@ -1,4 +1,4 @@
-import type { GeoItem, MapCameraOptions } from '../../../contract/index.js';
+import type { GeoItem, MapCameraOptions } from '../../../contract/index';
 
 export interface MapComponentType {
   models: MapComponentModels;

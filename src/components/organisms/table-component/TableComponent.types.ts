@@ -1,5 +1,5 @@
-import type { GeoItem } from '../../../contract/index.js';
-import type { Header } from '../../../services/table/table.types.js';
+import type { GeoItem } from '../../../contract/index';
+import type { Header } from '../../../services/table/table.types';
 
 export interface TableComponentType {
   models: TableComponentModels;

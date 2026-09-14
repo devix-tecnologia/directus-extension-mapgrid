@@ -1,4 +1,4 @@
-import type { GeoItem } from '../../../contract/index.js';
+import type { GeoItem } from '../../../contract/index';
 
 export interface DeleteActionType {
   models: DeleteActionModels;

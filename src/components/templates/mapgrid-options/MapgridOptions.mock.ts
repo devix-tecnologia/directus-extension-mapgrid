@@ -3,7 +3,7 @@ import {
   fieldsFor,
   layoutOptionsFor,
   mappableKind,
-} from '../../../mocks/mappable-mocks.js';
+} from '../../../mocks/mappable-mocks';
 import type { MapgridOptionsType } from './MapgridOptions.types';
 
 /** As props do painel de opções para uma das coleções do catálogo. */

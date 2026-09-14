@@ -1,4 +1,4 @@
-import type { GeoItem, LayoutOptions } from '../../../contract/index.js';
+import type { GeoItem, LayoutOptions } from '../../../contract/index';
 
 export interface MapgridLayoutType {
   models: MapgridLayoutModels;
