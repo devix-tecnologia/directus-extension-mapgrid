@@ -153,6 +153,9 @@ export const layoutOptionsFor = (kindId: string = DEFAULT_KIND_ID) => {
     geolocation: kind.geolocationField,
     zoomOnClick: false,
     ...kind.camera,
+    fields: [...kind.columns],
+    // still emitted so a fixture can stand in for a preset written before
+    // `fields` existed, which is what the contract migration reads
     coluna1,
     coluna2,
     coluna3,

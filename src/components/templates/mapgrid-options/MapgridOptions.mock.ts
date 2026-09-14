@@ -15,6 +15,7 @@ export const optionsPropsFor = (kindId: string = DEFAULT_KIND_ID): MapgridOption
 
 /** One sample payload per event, so the story documents what the panel emits. */
 const sampleEmits: MapgridOptionsType['emits'] = {
+  'update:fields': [['name', 'city']],
   'update:title': ['{{name}}'],
   'update:geolocation': ['location'],
   'update:mapCenterLng': [-47.9292],

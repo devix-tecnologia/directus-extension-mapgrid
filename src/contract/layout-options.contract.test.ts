@@ -52,6 +52,48 @@ describe('normalizeLayoutOptions — the preset comes from the database, not fro
   });
 });
 
+describe('normalizeLayoutOptions — presets written before fields existed', () => {
+  it('derives fields from the legacy numbered columns, in order', () => {
+    const options = normalizeLayoutOptions({ coluna1: 'name', coluna2: 'city', coluna3: 'state' });
+
+    expect(options.fields).toEqual(['name', 'city', 'state']);
+  });
+
+  it('prefers a stored fields list over the legacy columns, so a new choice wins', () => {
+    const options = normalizeLayoutOptions({
+      fields: ['status', 'owner'],
+      coluna1: 'name',
+      coluna2: 'city',
+    });
+
+    expect(options.fields).toEqual(['status', 'owner']);
+  });
+
+  it('carries more than five fields, which the numbered columns could never hold', () => {
+    const options = normalizeLayoutOptions({
+      fields: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+    });
+
+    expect(options.fields).toHaveLength(7);
+  });
+
+  it('drops blanks and non-strings from a stored list instead of rendering empty columns', () => {
+    const options = normalizeLayoutOptions({ fields: ['name', '  ', 42, null, 'city'] });
+
+    expect(options.fields).toEqual(['name', 'city']);
+  });
+
+  it('trims each field name, which would otherwise miss the lookup on the collection', () => {
+    expect(normalizeLayoutOptions({ fields: [' name '] }).fields).toEqual(['name']);
+  });
+
+  it('treats a fields value that is not a list as absent, falling back to the legacy columns', () => {
+    const options = normalizeLayoutOptions({ fields: 'name,city', coluna1: 'name' });
+
+    expect(options.fields).toEqual(['name']);
+  });
+});
+
 describe('configuredColumns — a user can leave gaps between the columns', () => {
   it('returns the columns in the order they were declared', () => {
     const columns = configuredColumns({ coluna1: 'name', coluna2: 'status', coluna3: 'city' });

@@ -6,8 +6,12 @@ import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
 import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 import type { GeoItem } from './contract/index';
+import { fieldsToFetch, normalizeLayoutOptions } from './contract/index';
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index';
 import type { LayoutOptions, LayoutQuery } from './types';
+
+/** How many string fields to offer as columns before the user picks their own. */
+const DEFAULT_COLUMN_COUNT = 5;
 
 /**
  * Directus bookkeeping fields. They serve neither as a title nor as a column,
@@ -76,8 +80,8 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const api = useApi();
 
     const { collection, filter, search } = toRefs(props);
-    const { fields: fieldsInCollection } = useCollection(collection);
-    const { sort, limit, page, fields } = useLayoutQuery();
+    const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
+    const { sort, limit, page, fields: queryFields } = useLayoutQuery();
 
     const detectedFields = computed<DetectedField[]>(() =>
       (fieldsInCollection.value ?? []).map(toDetectedField)
@@ -96,7 +100,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       sort,
       limit,
       page,
-      fields,
+      fields: queryFields,
       filter,
       search,
     });
@@ -123,26 +127,32 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       const mapCenterLng = createViewOption('mapCenterLng', defaultLng);
       const mapCenterLat = createViewOption('mapCenterLat', defaultLat);
       const mapZoom = createViewOption('mapZoom', DEFAULT_MAP_ZOOM);
-      const columnKeys = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
-      const [coluna1, coluna2, coluna3, coluna4, coluna5] = columnKeys.map((key, index) =>
-        createViewOption(
-          key,
-          computed(() => detectedStringFields.value[index])
-        )
-      );
+
+      /*
+       * The columns the grid shows. Reads `fields` when the preset has it, and
+       * otherwise the numbered `coluna1..5` a preset written by an earlier
+       * version still carries — `normalizeLayoutOptions` does that migration.
+       * Only `fields` is ever written back.
+       */
+      const fields = computed<string[]>({
+        get() {
+          const stored = normalizeLayoutOptions(layoutOptions.value).fields;
+          if (stored && stored.length > 0) return stored;
+          return detectedStringFields.value.slice(0, DEFAULT_COLUMN_COUNT);
+        },
+        set(newValue) {
+          layoutOptions.value = { ...layoutOptions.value, fields: newValue };
+        },
+      });
 
       return {
+        fields,
         title,
         zoomOnClick,
         geolocation,
         mapCenterLng,
         mapCenterLat,
         mapZoom,
-        coluna1,
-        coluna2,
-        coluna3,
-        coluna4,
-        coluna5,
       };
 
       function createViewOption<Key extends keyof LayoutOptions>(
@@ -167,8 +177,18 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       const limit = computed(() => layoutQuery.value?.limit || 25);
       const sort = computed(() => layoutQuery.value?.sort || []);
 
+      /*
+       * Only what is actually needed. This used to request every field of the
+       * collection to show a handful, so each page carried columns nobody was
+       * looking at.
+       */
       const fields = computed(() =>
-        fieldsInCollection.value ? fieldsInCollection.value.map((field) => field.field) : []
+        fieldsToFetch({
+          displayed: layoutOptionBindings.fields.value ?? [],
+          primaryKey: primaryKeyField.value?.field ?? 'id',
+          geolocation: layoutOptionBindings.geolocation.value,
+          titleTemplate: layoutOptionBindings.title.value,
+        })
       );
 
       return { sort, limit, page, fields };
@@ -183,7 +203,6 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       totalCount,
       page,
       limit,
-      fields,
       fieldsInCollection,
       selectedItems,
       deleteSelectedItems,

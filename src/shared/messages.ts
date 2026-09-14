@@ -29,6 +29,8 @@ export const MESSAGES = {
     optionZoomOnClickLabel: 'Zoom when clicking table items',
     optionColumns: 'Table Columns',
     optionColumnPlaceholder: 'Column {number}',
+    optionColumnsAdd: 'Add field',
+    optionColumnsEmpty: 'No fields chosen yet — the grid shows only the actions column.',
     optionNone: '---',
   },
   'pt-BR': {
@@ -55,6 +57,8 @@ export const MESSAGES = {
     optionZoomOnClickLabel: 'Aproximar ao clicar num item da grade',
     optionColumns: 'Colunas da grade',
     optionColumnPlaceholder: 'Coluna {number}',
+    optionColumnsAdd: 'Adicionar campo',
+    optionColumnsEmpty: 'Nenhum campo escolhido ainda — a grade mostra só a coluna de ações.',
     optionNone: '---',
   },
 } as const;

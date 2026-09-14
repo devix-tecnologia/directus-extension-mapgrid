@@ -24,6 +24,7 @@ export interface MapgridOptionsProps extends LayoutOptions {
 }
 
 export interface MapgridOptionsEmits {
+  'update:fields': [value: string[]];
   'update:geolocation': [value: string | null];
   'update:title': [value: string];
   'update:mapCenterLng': [value: number];

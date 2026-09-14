@@ -56,7 +56,7 @@ describe('MapgridLayout — what shows while the items are not ready', () => {
 });
 
 describe('MapgridLayout — the grid columns come from the preset', () => {
-  it('builds one header per configured column', () => {
+  it('builds one header per configured field, plus the actions column', () => {
     const kind = mappableKind('landmarks');
     const wrapper = mountLayout();
     const table = wrapper.findComponent({ name: 'v-table' });
@@ -64,18 +64,20 @@ describe('MapgridLayout — the grid columns come from the preset', () => {
     expect(table.props('headers')).toHaveLength(kind.columns.length + 1);
   });
 
-  it('closes the gaps, so a blank column 2 does not open a headerless space', () => {
-    const wrapper = mountLayout({
-      coluna1: 'name',
-      coluna2: undefined,
-      coluna3: 'city',
-      coluna4: undefined,
-      coluna5: undefined,
-    });
+  it('builds the headers from fields, with no cap on how many', () => {
+    const wrapper = mountLayout({ fields: ['name', 'city', 'state', 'crew', 'code', 'status'] });
     const table = wrapper.findComponent({ name: 'v-table' });
     const values = (table.props('headers') as { value: string }[]).map((header) => header.value);
 
-    expect(values).toEqual(['name', 'city', 'actions']);
+    expect(values).toEqual(['name', 'city', 'state', 'crew', 'code', 'status', 'actions']);
+  });
+
+  it('renders no data column when nothing is configured, leaving only the actions column', () => {
+    const wrapper = mountLayout({ fields: [] });
+    const table = wrapper.findComponent({ name: 'v-table' });
+    const values = (table.props('headers') as { value: string }[]).map((header) => header.value);
+
+    expect(values).toEqual(['actions']);
   });
 });
 

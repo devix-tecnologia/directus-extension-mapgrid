@@ -46,7 +46,6 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
-import { configuredColumns } from '../../../contract/index';
 import type { Header } from '../../../services/table/index';
 import { MESSAGES } from '../../../shared/messages';
 import MapComponent from '../../organisms/map-component/MapComponent.vue';
@@ -78,7 +77,7 @@ const selectedItems = computed<GeoItem[]>({
 });
 
 const headers = computed<Header[]>(() =>
-  configuredColumns(props).map((column) => ({ text: column, value: column }))
+  (props.fields ?? []).map((field) => ({ text: field, value: field }))
 );
 
 const handleFocusOnItem = (item: GeoItem): void => {

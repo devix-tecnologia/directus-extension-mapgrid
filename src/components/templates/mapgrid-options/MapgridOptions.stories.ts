@@ -64,6 +64,7 @@ export const SemConfiguracao: Story = {
     mapCenterLng: undefined,
     mapCenterLat: undefined,
     mapZoom: undefined,
+    fields: [],
     coluna1: undefined,
     coluna2: undefined,
     coluna3: undefined,

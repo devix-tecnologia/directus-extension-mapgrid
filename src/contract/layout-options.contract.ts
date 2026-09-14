@@ -20,6 +20,8 @@ export const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5
 export type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 export interface LayoutOptions {
+  /** The fields the grid shows, in order. */
+  fields?: string[];
   /** Marker popup template, over the item's fields. Empty → the id. */
   title?: string;
   /** The collection's geolocation field. Empty → detected from the collection. */
@@ -62,6 +64,18 @@ const toBoolean = (value: unknown): boolean | undefined =>
   typeof value === 'boolean' ? value : undefined;
 
 /**
+ * A stored field list, cleaned up. Anything that is not usable text is dropped
+ * rather than kept: a blank entry would render as a column with no header and
+ * no value, which reads as a bug rather than as a choice.
+ */
+const toFieldList = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .map((entry) => toTrimmedText(entry))
+    .filter((entry): entry is string => entry !== undefined);
+};
+
+/**
  * The preset arrives from Directus as database data, not as `LayoutOptions`: a
  * numeric field edited in the interface can come back as a string, and an old
  * preset can carry keys that no longer exist. Converts each field and drops
@@ -82,6 +96,14 @@ export const normalizeLayoutOptions = (raw: unknown): LayoutOptions => {
   for (const key of COLUMN_KEYS) {
     options[key] = toTrimmedText(source[key]);
   }
+
+  /*
+   * `fields` is the current format and wins when present. `coluna1..5` is what
+   * presets written before it still carry, and is read — never written — so a
+   * collection configured by an earlier version keeps its columns instead of
+   * silently coming up empty.
+   */
+  options.fields = toFieldList(source.fields) ?? configuredColumns(options);
 
   return options;
 };

@@ -329,6 +329,44 @@ const vInputStub: Component = {
   `,
 };
 
+/**
+ * The app's field picker, as the tabular layout uses it: it renders the
+ * collection's field tree and emits the chosen keys. The real one reads the
+ * fields store; here the caller passes what it wants offered.
+ */
+const vFieldListStub: Component = {
+  name: 'v-field-list',
+  props: {
+    collection: { type: String, default: '' },
+    disabledFields: { type: Array, default: () => [] },
+    field: { type: String, default: '' },
+  },
+  emits: ['add'],
+  template: `
+    <div class="v-field-list v-field-list-mock"><slot /></div>
+  `,
+};
+
+/**
+ * The app's popover. The real one opens on the activator and teleports its
+ * content; here the content stays in place and the activator's `toggle` is a
+ * no-op, because what a test or a story needs is the content mounted and
+ * reachable, not the floating behaviour.
+ */
+const vMenuStub: Component = {
+  name: 'v-menu',
+  props: {
+    placement: { type: String, default: 'bottom' },
+    showArrow: { type: Boolean, default: false },
+  },
+  template: `
+    <div class="v-menu v-menu-mock">
+      <slot name="activator" :toggle="() => {}" :active="true" />
+      <div class="v-menu-mock__content"><slot /></div>
+    </div>
+  `,
+};
+
 export const directusComponentStubs: Record<string, Component> = {
   'v-button': vButtonStub,
   'v-icon': vIconStub,
@@ -345,6 +383,8 @@ export const directusComponentStubs: Record<string, Component> = {
   'v-checkbox': vCheckboxStub,
   'v-collection-field-template': vCollectionFieldTemplateStub,
   'v-progress-circular': vProgressCircularStub,
+  'v-field-list': vFieldListStub,
+  'v-menu': vMenuStub,
 };
 
 export const tooltipDirective: Directive = {

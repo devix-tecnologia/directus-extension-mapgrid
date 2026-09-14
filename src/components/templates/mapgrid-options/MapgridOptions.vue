@@ -61,26 +61,37 @@
 
   <v-detail icon="view_column" :header="t('optionColumns')">
     <div class="field-group">
-      <div v-for="(column, idx) in columnRefs" :key="idx" class="field">
-        <v-select
-          v-model="column.value"
-          :collection="collection"
-          :items="[{ name: t('optionNone'), field: null }, ...fieldsInCollection]"
-          item-text="name"
-          item-value="field"
-          :placeholder="t('optionColumnPlaceholder', { number: idx + 1 })"
-          :show-deselect="true"
-        />
+      <div v-for="field in selectedFields" :key="field" class="chosen-field" :data-field="field">
+        <span class="chosen-field__name">{{ field }}</span>
+        <button type="button" class="chosen-field__remove" @click="removeField(field)">
+          <v-icon name="close" small />
+        </button>
       </div>
+
+      <p v-if="selectedFields.length === 0" class="chosen-field__empty">
+        {{ t('optionColumnsEmpty') }}
+      </p>
+
+      <v-menu placement="bottom-start" show-arrow>
+        <template #activator="{ toggle }">
+          <v-button secondary small @click="toggle">
+            <v-icon name="add" small />
+            {{ t('optionColumnsAdd') }}
+          </v-button>
+        </template>
+        <v-field-list
+          :collection="collection"
+          :disabled-fields="selectedFields"
+          @add="addField"
+        />
+      </v-menu>
     </div>
   </v-detail>
 </template>
 
 <script setup lang="ts">
-import { computed, type WritableComputedRef } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { ColumnKey } from '../../../contract/index';
-import { COLUMN_KEYS } from '../../../contract/index';
 import { MESSAGES } from '../../../shared/messages';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
@@ -135,20 +146,32 @@ const zoomOnClick = computed<boolean | undefined, unknown>({
   set: (value) => emit('update:zoomOnClick', Boolean(value)),
 });
 
-const setColumn = (key: ColumnKey, value: string | null): void => {
-  if (key === 'coluna1') return void emit('update:coluna1', value);
-  if (key === 'coluna2') return void emit('update:coluna2', value);
-  if (key === 'coluna3') return void emit('update:coluna3', value);
-  if (key === 'coluna4') return void emit('update:coluna4', value);
-  emit('update:coluna5', value);
+/**
+ * The chosen columns, in order. A list rather than five numbered slots: the
+ * grid has no reason to cap at five, and the order is the user's.
+ */
+const selectedFields = computed<string[]>(() => props.fields ?? []);
+
+/**
+ * `v-field-list` emits the keys it collected. Adding one that is already there
+ * would draw the same column twice, so a repeat is simply ignored — the picker
+ * already greys those out via `disabled-fields`, and this guards the case where
+ * it does not.
+ */
+const addField = (added: string[] | string): void => {
+  const keys = Array.isArray(added) ? added : [added];
+  const fresh = keys.filter((key) => key !== '' && !selectedFields.value.includes(key));
+  if (fresh.length === 0) return;
+
+  emit('update:fields', [...selectedFields.value, ...fresh]);
 };
 
-const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =>
-  computed<string | null>({
-    get: () => props[key] ?? null,
-    set: (value) => setColumn(key, value),
-  })
-);
+const removeField = (field: string): void => {
+  emit(
+    'update:fields',
+    selectedFields.value.filter((candidate) => candidate !== field)
+  );
+};
 
 /**
  * The fields that can hold a point. They come from the prop, not from a

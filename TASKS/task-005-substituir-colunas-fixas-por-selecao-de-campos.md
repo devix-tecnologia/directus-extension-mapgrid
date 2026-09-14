@@ -1,6 +1,6 @@
 # Task 005 — substituir as colunas fixas por seleção de campos
 
-Status: todo
+Status: in-progress
 Type: refactor
 Assignee:
 
@@ -43,37 +43,39 @@ preset já é normalizado.
 ## Tasks
 
 ### Fase 1: contrato aceitar os dois formatos
-- [ ] Acrescentar `fields?: string[]` a `LayoutOptions`
-- [ ] Em `normalizeLayoutOptions`, quando `fields` não existir, derivá-lo de
+- [x] Acrescentar `fields?: string[]` a `LayoutOptions`
+- [x] Em `normalizeLayoutOptions`, quando `fields` não existir, derivá-lo de
       `coluna1..5` na ordem, fechando os buracos
-- [ ] Manter `coluna1..5` na leitura, marcados como obsoletos, e parar de
+- [x] Manter `coluna1..5` na leitura, marcados como obsoletos, e parar de
       escrevê-los
-- [ ] Testes cobrindo preset antigo, preset novo e preset com os dois
+- [x] Testes cobrindo preset antigo, preset novo e preset com os dois
 
 ### Fase 2: exibição passar a usar `fields`
-- [ ] `MapgridLayout` monta os cabeçalhos a partir de `fields`, não de
+- [x] `MapgridLayout` monta os cabeçalhos a partir de `fields`, não de
       `configuredColumns`
 - [ ] Remover `configuredColumns`, `COLUMN_KEYS`, `ColumnKey` e `ColumnOptions`
-      quando não houver mais leitor
-- [ ] Ajustar `layoutOptionsFor` no catálogo de mocks
+      quando não houver mais leitor — ainda usados pela migração do contrato
+- [x] Ajustar `layoutOptionsFor` no catálogo de mocks
 
-### Fase 3: seleção pelo cabeçalho
-- [ ] Ligar o seletor de campos do `v-table` a `fields`, no lugar dos cinco
-      `v-select` do painel de opções
-- [ ] Remover `setColumn` e os cinco eventos `update:colunaN`
-- [ ] Persistir a ordem escolhida
-- [ ] Avaliar `widthMap` para largura por coluna, como o layout tabular faz
+### Fase 3: seleção por `v-field-list`
+- [x] Usar `v-field-list` — o mesmo componente que o layout tabular do Directus
+      usa — no lugar dos cinco `v-select`
+- [x] Remover `setColumn` e os cinco eventos `update:colunaN`
+- [x] Persistir a ordem escolhida
+- [ ] Avaliar `widthMap` para largura por coluna, e reordenação por
+      `v-model:headers` + `allow-header-reorder` no `v-table`
 
 ### Fase 4: parar de buscar a coleção inteira
-- [ ] `useLayoutQuery().fields` passa a pedir à API só os campos exibidos, mais
+- [x] `useLayoutQuery().fields` passa a pedir à API só os campos exibidos, mais
       a chave primária e o campo de geolocalização
-- [ ] Conferir que o popup do mapa continua resolvendo seu template, que pode
+- [x] Conferir que o popup do mapa continua resolvendo seu template, que pode
       citar campo que não está na grade
 
 ### Fase 5: verificação
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm check:stories`
-- [ ] Abrir um preset gravado antes da mudança e confirmar que as colunas
-      continuam aparecendo
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm check:stories`
+- [ ] `pnpm test:e2e` — escrito em `tests/e2e/mapgrid-columns.spec.ts`, mas
+      **não executado**: o ambiente onde foi desenvolvido não alcança a porta
+      publicada do container do Directus
 - [ ] Atualizar a seção de configuração do README nos dois idiomas
 
 ## Notes
