@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import type { GeoItem } from '../../../services/geo/index.js';
+import type { GeoItem } from '../../../contract/index.js';
 import type { ResolvedHeader } from '../../../services/table/index.js';
 import { ValueCell } from '../../atoms/value-cell/index.js';
 import type { TableComponentEmits, TableComponentProps } from './TableComponent.types';

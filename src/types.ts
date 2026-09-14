@@ -1,18 +1,6 @@
 import type { Filter } from '@directus/types';
 
-export interface LayoutOptions {
-  title?: string;
-  geolocation?: string;
-  zoomOnClick?: boolean;
-  mapCenterLng?: number;
-  mapCenterLat?: number;
-  mapZoom?: number;
-  coluna1?: string;
-  coluna2?: string;
-  coluna3?: string;
-  coluna4?: string;
-  coluna5?: string;
-}
+export type { LayoutOptions } from './contract/index.js';
 
 export interface LayoutQuery {
   fields: string[];

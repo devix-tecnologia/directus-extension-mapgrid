@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { type GeoItem, itemPointCoordinates } from '../src/contract/index.js';
 import {
   buildPointFeatureCollection,
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
-  type GeoItem,
-  getItemCoordinates,
 } from '../src/services/geo/index.js';
 import {
   resolveFieldTemplate,
@@ -69,7 +68,7 @@ describe('MapGrid Extension - Integration Tests', () => {
     for (const item of items) {
       expect(item.location?.type).toBe('Point');
       expect(item.location?.coordinates).toHaveLength(2);
-      expect(getItemCoordinates(item, 'location')).toHaveLength(2);
+      expect(itemPointCoordinates(item, 'location')).toHaveLength(2);
     }
   });
 

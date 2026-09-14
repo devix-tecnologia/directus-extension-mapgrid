@@ -1,31 +1,20 @@
+import {
+  DEFAULT_KIND_ID,
+  fieldsFor,
+  layoutOptionsFor,
+  mappableKind,
+} from '../../../mocks/mappable-mocks.js';
 import type { MapgridOptionsType } from './MapgridOptions.types';
 
-export const generateMockData = (): MapgridOptionsType => {
-  const props: MapgridOptionsType['props'] = {
-    collection: 'mapgrid',
-    layoutOptions: {},
-    fieldsInCollection: [
-      { name: 'Nome', field: 'nome' },
-      { name: 'Localização', field: 'localizacao', meta: { interface: 'map' } },
-    ],
-    title: '{{nome}}',
-    geolocation: 'localizacao',
-    coluna1: 'id',
-    coluna2: 'nome',
-    coluna3: 'localizacao',
-    zoomOnClick: true,
-    mapCenterLng: -47.9292,
-    mapCenterLat: -15.7801,
-    mapZoom: 4,
-  };
+/** As props do painel de opções para uma das coleções do catálogo. */
+export const optionsPropsFor = (kindId: string = DEFAULT_KIND_ID): MapgridOptionsType['props'] => ({
+  ...layoutOptionsFor(kindId),
+  collection: mappableKind(kindId).id,
+  fieldsInCollection: fieldsFor(kindId),
+});
 
-  const models: MapgridOptionsType['models'] = {};
-
-  const emits = {} as MapgridOptionsType['emits'];
-
-  return {
-    props,
-    models,
-    emits,
-  };
-};
+export const generateMockData = (): MapgridOptionsType => ({
+  props: optionsPropsFor(),
+  models: {},
+  emits: {} as MapgridOptionsType['emits'],
+});

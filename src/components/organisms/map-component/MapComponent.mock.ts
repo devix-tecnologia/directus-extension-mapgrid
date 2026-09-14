@@ -1,26 +1,28 @@
-import { mockGeoItems } from '../../../mocks/directus-mocks.js';
+import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks.js';
 import type { MapComponentType } from './MapComponent.types';
 
-export const generateMockData = (): MapComponentType => {
-  const props: MapComponentType['props'] = {
-    items: mockGeoItems,
-    geolocation: 'localizacao',
-    title: '{{nome}}',
-    zoomOnClick: true,
-    centerLng: -46.6333,
-    centerLat: -23.5505,
-    initialZoom: 10,
-  };
-
-  const models: MapComponentType['models'] = {};
-
-  const emits: MapComponentType['emits'] = {
-    'select-item': [1],
-  };
+/**
+ * As props do mapa para uma das coleções do catálogo. Uma story por coleção
+ * cobre um comportamento diferente do mesmo componente: pontos espalhados,
+ * aglomerados, dos dois lados da linha de data e itens sem ponto.
+ */
+export const mapPropsFor = (kindId: string = DEFAULT_KIND_ID): MapComponentType['props'] => {
+  const kind = mappableKind(kindId);
+  const options = layoutOptionsFor(kindId);
 
   return {
-    props,
-    models,
-    emits,
+    items: kind.items,
+    geolocation: kind.geolocationField,
+    title: kind.titleTemplate,
+    zoomOnClick: options.zoomOnClick,
+    mapCenterLng: options.mapCenterLng,
+    mapCenterLat: options.mapCenterLat,
+    mapZoom: options.mapZoom,
   };
 };
+
+export const generateMockData = (): MapComponentType => ({
+  props: mapPropsFor(),
+  models: {},
+  emits: { 'select-item': [1] },
+});

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { expect, waitFor } from 'storybook/test';
-import { mockGeoItems } from '../../../mocks/directus-mocks.js';
+import { mockGeoItems } from '../../../mocks/mappable-mocks.js';
 import MapComponent from './MapComponent.vue';
 
 const meta: Meta<typeof MapComponent> = {

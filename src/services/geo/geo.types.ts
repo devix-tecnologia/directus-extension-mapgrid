@@ -1,4 +1,4 @@
-export type PointCoordinates = [number, number];
+import type { PointCoordinates } from '../../contract/index.js';
 
 export interface PointGeometry {
   type: 'Point';
@@ -15,15 +15,3 @@ export interface GeoJsonFeatureCollection {
   type: 'FeatureCollection';
   features: GeoJsonFeature[];
 }
-
-export interface GeolocationData {
-  type?: string;
-  coordinates?: PointCoordinates;
-}
-
-export interface RowItem {
-  id: string | number;
-  [key: string]: unknown;
-}
-
-export type GeoItem = RowItem;

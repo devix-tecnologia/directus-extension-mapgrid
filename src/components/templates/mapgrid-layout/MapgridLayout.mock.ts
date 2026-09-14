@@ -1,36 +1,31 @@
-import { mockGeoItems } from '../../../mocks/directus-mocks.js';
-import type { GeoItem } from '../../../services/geo/index.js';
+import { DEFAULT_KIND_ID, layoutOptionsFor, mappableKind } from '../../../mocks/mappable-mocks.js';
 import type { MapgridLayoutType } from './MapgridLayout.types';
 
-export const generateMockData = (): MapgridLayoutType => {
-  const props: MapgridLayoutType['props'] = {
-    items: mockGeoItems,
+/** As props do layout inteiro para uma das coleções do catálogo. */
+export const layoutPropsFor = (kindId: string = DEFAULT_KIND_ID): MapgridLayoutType['props'] => {
+  const kind = mappableKind(kindId);
+
+  return {
+    ...layoutOptionsFor(kindId),
+    items: kind.items,
     loading: false,
-    collection: 'mapgrid',
-    title: '{{nome}}',
-    geolocation: 'localizacao',
-    mapCenterLng: -46.6333,
-    mapCenterLat: -23.5505,
-    mapZoom: 10,
-    coluna1: 'id',
-    coluna2: 'nome',
-    coluna3: 'localizacao',
-    zoomOnClick: true,
-    selectedItems: mockGeoItems.slice(0, 1),
+    collection: kind.id,
+    selectedItems: [],
     canEdit: true,
     canDelete: true,
   };
+};
 
-  const models: MapgridLayoutType['models'] = {};
-
-  const emits: MapgridLayoutType['emits'] = {
-    'update:selectedItems': [mockGeoItems],
-    'edit-item': [mockGeoItems[0] as GeoItem],
-  };
+export const generateMockData = (): MapgridLayoutType => {
+  const props = layoutPropsFor();
+  const firstItem = props.items[0];
 
   return {
     props,
-    models,
-    emits,
+    models: {},
+    emits: {
+      'update:selectedItems': [props.items],
+      'edit-item': firstItem ? [firstItem] : [{ id: 0 }],
+    },
   };
 };

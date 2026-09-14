@@ -15,9 +15,9 @@
         :geolocation="geolocation ?? ''"
         :title="title ?? ''"
         :zoom-on-click="zoomOnClick"
-        :center-lng="mapCenterLng"
-        :center-lat="mapCenterLat"
-        :initial-zoom="mapZoom"
+        :map-center-lng="mapCenterLng"
+        :map-center-lat="mapCenterLat"
+        :map-zoom="mapZoom"
         @select-item="handleSelectItem"
       />
       <TableComponent
@@ -39,7 +39,8 @@
 <script setup lang="ts">
 import { useSync } from '@directus/extensions-sdk';
 import { computed, ref } from 'vue';
-import type { GeoItem } from '../../../services/geo/index.js';
+import type { GeoItem } from '../../../contract/index.js';
+import { configuredColumns } from '../../../contract/index.js';
 import type { Header } from '../../../services/table/index.js';
 import MapComponent from '../../organisms/map-component/MapComponent.vue';
 import TableComponent from '../../organisms/table-component/TableComponent.vue';
@@ -57,17 +58,9 @@ const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
 
 const selectedItems = useSync(props, 'selectedItems', emit);
 
-const headers = computed<Header[]>(() => {
-  const columns = [
-    props.coluna1,
-    props.coluna2,
-    props.coluna3,
-    props.coluna4,
-    props.coluna5,
-  ].filter((column): column is string => Boolean(column));
-
-  return columns.map((column) => ({ text: column, value: column }));
-});
+const headers = computed<Header[]>(() =>
+  configuredColumns(props).map((column) => ({ text: column, value: column }))
+);
 
 const handleFocusOnItem = (item: GeoItem): void => {
   mapComponent.value?.focusOnItem(item);

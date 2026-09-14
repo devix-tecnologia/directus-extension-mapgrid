@@ -1,7 +1,5 @@
 export {
   buildPointFeatureCollection,
-  DEFAULT_MAP_CENTER,
-  DEFAULT_MAP_ZOOM,
   GEO_ANIMATION_DURATION,
   GEO_CLUSTER_LAYER_ID,
   GEO_CLUSTER_MAX_ZOOM,
@@ -9,13 +7,19 @@ export {
   GEO_FIT_BOUNDS_MAX_ZOOM,
   GEO_POINT_LAYER_ID,
   GEO_SOURCE_ID,
-  getItemCoordinates,
 } from './geo.js';
 export type {
-  GeoItem,
   GeoJsonFeature,
   GeoJsonFeatureCollection,
-  PointCoordinates,
   PointGeometry,
-  RowItem,
 } from './geo.types.js';
+export {
+  coordinatesNearest,
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  isOutsideBounds,
+  type LngLatBoundsLike,
+  longitudeNearest,
+  resolveMapCenter,
+  resolveMapZoom,
+} from './map-camera.js';

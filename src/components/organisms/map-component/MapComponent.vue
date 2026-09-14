@@ -9,10 +9,11 @@
 import maplibregl, { type FilterSpecification } from 'maplibre-gl';
 import { nextTick, onMounted, onUnmounted, type Ref, ref, watchEffect } from 'vue';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { GeoItem, PointCoordinates } from '../../../contract/index.js';
+import { itemPointCoordinates, parsePointCoordinates } from '../../../contract/index.js';
 import {
   buildPointFeatureCollection,
-  DEFAULT_MAP_CENTER,
-  DEFAULT_MAP_ZOOM,
+  coordinatesNearest,
   GEO_ANIMATION_DURATION,
   GEO_CLUSTER_LAYER_ID,
   GEO_CLUSTER_MAX_ZOOM,
@@ -20,9 +21,9 @@ import {
   GEO_FIT_BOUNDS_MAX_ZOOM,
   GEO_POINT_LAYER_ID,
   GEO_SOURCE_ID,
-  type GeoItem,
-  getItemCoordinates,
-  type PointCoordinates,
+  isOutsideBounds,
+  resolveMapCenter,
+  resolveMapZoom,
 } from '../../../services/geo/index.js';
 import { resolveFieldTemplate } from '../../../services/value-formatter/index.js';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
@@ -90,7 +91,7 @@ const fitBoundsToItems = (): void => {
 
   const bounds = new maplibregl.LngLatBounds();
   for (const item of props.items) {
-    const coords = getItemCoordinates(item, props.geolocation);
+    const coords = itemPointCoordinates(item, props.geolocation);
     if (coords) {
       bounds.extend(coords);
     }
@@ -195,15 +196,7 @@ const panToVisibleArea = (coords: PointCoordinates): void => {
   const instance = getMap();
   if (!instance) return;
 
-  const bounds = instance.getBounds();
-  const [lng, lat] = coords;
-  const isOutside =
-    lng < bounds.getWest() ||
-    lng > bounds.getEast() ||
-    lat < bounds.getSouth() ||
-    lat > bounds.getNorth();
-
-  if (isOutside) {
+  if (isOutsideBounds(coords, instance.getBounds())) {
     instance.easeTo({ center: coords, duration: GEO_ANIMATION_DURATION });
   }
 };
@@ -226,7 +219,7 @@ const resetMapView = (): void => {
 
 const focusOnItem = (item: GeoItem): void => {
   const instance = getMap();
-  const coords = getItemCoordinates(item, props.geolocation);
+  const coords = itemPointCoordinates(item, props.geolocation);
   if (!instance || !coords) return;
 
   const label = resolveFieldTemplate(item, props.title);
@@ -291,15 +284,13 @@ const registerMapEvents = (): void => {
       const feature = event.features?.[0];
       if (!feature) return;
 
-      const coords = (feature.geometry as GeoJSON.Point).coordinates.slice() as PointCoordinates;
+      const point = parsePointCoordinates(feature.geometry);
+      if (!point) return;
+
       const title = feature.properties?.formattedTitle as string;
       const id = feature.properties?.id as string | number;
 
-      while (Math.abs(event.lngLat.lng - coords[0]) > 180) {
-        coords[0] += event.lngLat.lng > coords[0] ? 360 : -360;
-      }
-
-      openPopupAt(coords, title);
+      openPopupAt(coordinatesNearest(point, event.lngLat.lng), title);
       emit('select-item', id);
     });
 
@@ -346,11 +337,6 @@ const registerMapEvents = (): void => {
   syncCameraMetadata(instance);
 };
 
-const resolveMapCenter = (): PointCoordinates =>
-  props.centerLng != null && props.centerLat != null
-    ? [props.centerLng, props.centerLat]
-    : [...DEFAULT_MAP_CENTER];
-
 const initializeMap = (): void => {
   if (!mapContainer.value) return;
 
@@ -373,8 +359,8 @@ const initializeMap = (): void => {
       },
       layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
     },
-    center: resolveMapCenter(),
-    zoom: props.initialZoom ?? DEFAULT_MAP_ZOOM,
+    center: resolveMapCenter(props),
+    zoom: resolveMapZoom(props),
   });
 
   registerMapEvents();

@@ -1,4 +1,5 @@
-import type { LayoutOptions } from '../../../types.js';
+import type { Field } from '@directus/types';
+import type { LayoutOptions } from '../../../contract/index.js';
 
 export interface MapgridOptionsType {
   models: MapgridOptionsModels;
@@ -8,25 +9,21 @@ export interface MapgridOptionsType {
 
 export type MapgridOptionsModels = Record<string, never>;
 
-export interface MapgridOptionsProps {
+/**
+ * O painel de opções só lê dos campos da coleção o nome, a chave e a interface —
+ * o suficiente para montar os selects. Declarar esse recorte com `Pick` em vez de
+ * redesenhar um objeto mantém o alinhamento com o `Field` do Directus.
+ */
+export type CollectionFieldSummary = Pick<Field, 'name' | 'field'> & {
+  meta?: Pick<NonNullable<Field['meta']>, 'interface'> | null;
+};
+
+export interface MapgridOptionsProps extends LayoutOptions {
   collection: string;
-  layoutOptions: LayoutOptions;
-  fieldsInCollection: Array<{ name: string; field: string; meta?: { interface?: string } }>;
-  title?: string;
-  geolocation?: string;
-  mapCenterLng?: number;
-  mapCenterLat?: number;
-  mapZoom?: number;
-  coluna1?: string;
-  coluna2?: string;
-  coluna3?: string;
-  coluna4?: string;
-  coluna5?: string;
-  zoomOnClick?: boolean;
+  fieldsInCollection: CollectionFieldSummary[];
 }
 
 export interface MapgridOptionsEmits {
-  'update:layoutOptions': [value: LayoutOptions];
   'update:geolocation': [value: string | null];
   'update:title': [value: string];
   'update:mapCenterLng': [value: number];

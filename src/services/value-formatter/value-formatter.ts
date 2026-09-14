@@ -1,37 +1,48 @@
-import type { GeoItem } from '../geo/geo.types.js';
+import type { GeoItem } from '../../contract/index.js';
+import { parsePointCoordinates } from '../../contract/index.js';
 
-interface PointLikeValue {
-  coordinates: [number, number];
-}
+/** `{{campo}}`. Compilado uma vez: `resolveFieldTemplate` roda por item exibido. */
+const PLACEHOLDER_PATTERN = /\{\{([^}]+)\}\}/;
+const PLACEHOLDER_PATTERN_GLOBAL = /\{\{([^}]+)\}\}/g;
 
-const PLACEHOLDER_PATTERN_SOURCE = '\\{\\{([^}]+)\\}\\}';
+/**
+ * Um ponto na célula da grade é mostrado como "latitude, longitude" — a ordem
+ * que se lê, invertida em relação à ordem do GeoJSON.
+ */
+const formatPointCoordinates = ([longitude, latitude]: [number, number]): string =>
+  `${latitude}, ${longitude}`;
 
-const hasPointCoordinates = (value: object): value is PointLikeValue => 'coordinates' in value;
-
-const formatGeographicCoordinates = (value: PointLikeValue): string =>
-  `${value.coordinates[1]}, ${value.coordinates[0]}`;
-
+/** Qualquer valor de um item como texto de uma célula. */
 export const serializeValue = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   if (typeof value !== 'object') return String(value);
   if (Array.isArray(value)) return value.join(', ');
-  if (hasPointCoordinates(value)) return formatGeographicCoordinates(value);
+
+  const point = parsePointCoordinates(value);
+  if (point) return formatPointCoordinates(point);
+
   return JSON.stringify(value);
 };
 
+/**
+ * O template do popup, resolvido sobre um item. Aceita tanto `{{campo}}` quanto
+ * o nome cru de um campo, porque as opções do layout permitem os dois. Sempre
+ * cai no id quando nada resolve, para o popup nunca abrir em branco.
+ */
 export const resolveFieldTemplate = (item: GeoItem, template: string): string => {
   if (!template) return String(item.id);
 
-  const templateContainsPlaceholders = new RegExp(PLACEHOLDER_PATTERN_SOURCE).test(template);
-  if (!templateContainsPlaceholders && template in item) return serializeValue(item[template]);
+  const hasPlaceholders = PLACEHOLDER_PATTERN.test(template);
+  if (!hasPlaceholders && template in item) return serializeValue(item[template]);
 
-  const resolvedTemplate = template.replace(
-    new RegExp(PLACEHOLDER_PATTERN_SOURCE, 'g'),
-    (_placeholder, fieldName: string) => serializeValue(item[fieldName])
+  const resolved = template.replace(PLACEHOLDER_PATTERN_GLOBAL, (_match, fieldName: string) =>
+    serializeValue(item[fieldName])
   );
-  return resolvedTemplate.trim() || String(item.id);
+
+  return resolved.trim() || String(item.id);
 };
 
+/** O valor de um campo do item, pronto para a célula. */
 export const serializeItemRow = (item: GeoItem | null | undefined, field: string): string => {
   if (!item) return '';
   if (!(field in item)) return '';

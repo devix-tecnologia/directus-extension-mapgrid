@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { expect, waitFor } from 'storybook/test';
 import { defineComponent } from 'vue';
-import type { GeoItem } from '../../../services/geo/index.js';
+import type { GeoItem } from '../../../contract/index.js';
 import { generateMockData } from './MapgridLayout.mock';
 import MapgridLayout from './MapgridLayout.vue';
 

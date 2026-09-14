@@ -77,18 +77,15 @@
 </template>
 
 <script setup lang="ts">
-import { useCollection, useSync } from '@directus/extensions-sdk';
-import { computed, toRefs, toValue, type WritableComputedRef } from 'vue';
+import { useSync } from '@directus/extensions-sdk';
+import { computed, type WritableComputedRef } from 'vue';
+import type { ColumnKey } from '../../../contract/index.js';
+import { COLUMN_KEYS } from '../../../contract/index.js';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
-
-const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5'] as const;
 
 const props = defineProps<MapgridOptionsProps>();
 
 const emit = defineEmits<MapgridOptionsEmits>();
-
-const { collection: collectionKey } = toRefs(props);
-const collection = useCollection(collectionKey);
 
 const title = useSync(props, 'title', emit);
 const geolocation = useSync(props, 'geolocation', emit);
@@ -128,7 +125,7 @@ const zoomOnClick = computed<boolean | undefined, unknown>({
   set: (value) => emit('update:zoomOnClick', Boolean(value)),
 });
 
-const setColumn = (key: (typeof COLUMN_KEYS)[number], value: string | null): void => {
+const setColumn = (key: ColumnKey, value: string | null): void => {
   if (key === 'coluna1') return void emit('update:coluna1', value);
   if (key === 'coluna2') return void emit('update:coluna2', value);
   if (key === 'coluna3') return void emit('update:coluna3', value);
@@ -143,8 +140,13 @@ const columnRefs: WritableComputedRef<string | null>[] = COLUMN_KEYS.map((key) =
   })
 );
 
+/**
+ * Os campos que podem guardar um ponto. Vêm da prop, e não de um `useCollection`
+ * próprio: o layout já resolveu a coleção uma vez, e buscá-la de novo aqui era
+ * uma segunda fonte da verdade que podia discordar da primeira.
+ */
 const geolocationFields = computed(() =>
-  toValue(collection.fields).filter((field) => field.meta?.interface === 'map')
+  props.fieldsInCollection.filter((field) => field.meta?.interface === 'map')
 );
 </script>
 

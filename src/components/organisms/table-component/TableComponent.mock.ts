@@ -1,34 +1,31 @@
-import { mockGeoItems, mockHeaders } from '../../../mocks/directus-mocks.js';
-import type { GeoItem } from '../../../services/geo/index.js';
+import { DEFAULT_KIND_ID, headersFor, mappableKind } from '../../../mocks/mappable-mocks.js';
 import type { TableComponentType } from './TableComponent.types';
 
-const firstItem: GeoItem = {
-  id: 1,
-  nome: 'Praça São Paulo',
-  localizacao: { type: 'Point', coordinates: [-46.6333, -23.5505] },
-};
+/** As props da grade para uma das coleções do catálogo. */
+export const tablePropsFor = (kindId: string = DEFAULT_KIND_ID): TableComponentType['props'] => {
+  const kind = mappableKind(kindId);
 
-export const generateMockData = (): TableComponentType => {
-  const props: TableComponentType['props'] = {
-    items: mockGeoItems,
-    headers: mockHeaders,
-    collection: 'mapgrid',
-    selectedItems: [firstItem],
+  return {
+    items: kind.items,
+    headers: headersFor(kindId),
+    collection: kind.id,
+    selectedItems: [],
     canEdit: true,
     canDelete: true,
   };
+};
 
-  const models: TableComponentType['models'] = {};
-
-  const emits: TableComponentType['emits'] = {
-    'focus-on-item': [firstItem],
-    'edit-item': [firstItem],
-    'update:selectedItems': [mockGeoItems],
-  };
+export const generateMockData = (): TableComponentType => {
+  const props = tablePropsFor();
+  const firstItem = props.items[0];
 
   return {
     props,
-    models,
-    emits,
+    models: {},
+    emits: {
+      'focus-on-item': firstItem ? [firstItem] : [{ id: 0 }],
+      'edit-item': firstItem ? [firstItem] : [{ id: 0 }],
+      'update:selectedItems': [props.items],
+    },
   };
 };
