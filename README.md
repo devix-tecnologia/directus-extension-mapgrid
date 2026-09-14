@@ -137,6 +137,7 @@ pnpm typecheck        # Run TypeScript type checking
 # Testing
 pnpm test             # Run unit tests
 pnpm test:watch       # Run tests in watch mode
+pnpm check:stories    # Open every story in a browser, fail on console output
 pnpm test:integration # Run integration tests (requires Docker)
 pnpm test:e2e         # Run E2E tests (requires Docker)
 pnpm test:e2e:debug   # Run E2E tests in debug mode
@@ -190,6 +191,8 @@ tests/
 │   ├── global-setup.ts           # Seeds the global MapGrid preset before the suite
 │   └── helpers/
 │       └── map-projection.ts     # Web Mercator projection for canvas clicks
+├── stories/                      # Storybook console check (Playwright, no Docker)
+│   └── console.spec.ts           # Fails if any story writes to the browser console
 ├── helpers/                      # Shared API/wait/preset helpers
 ├── helper-collection.ts          # Test collection creation with Map field
 ├── setup.ts                      # Docker environment setup/teardown
@@ -204,6 +207,12 @@ tests/
 ```bash
 # Unit tests (no Docker required)
 pnpm test
+
+# Storybook console check (no Docker required)
+# Starts Storybook, opens every story in Chromium and fails on any console
+# warning or error. Catches what build-storybook and unit tests cannot see:
+# undeclared props reaching a component, plugins breaking at render time.
+pnpm check:stories
 
 # Integration tests (requires Docker)
 # Tests extension logic against a real Directus instance

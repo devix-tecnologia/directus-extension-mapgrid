@@ -74,6 +74,7 @@
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "check:stories": "playwright test --config=playwright.stories.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "VERBOSE=true node tests/run-docker-tests.js integration",
