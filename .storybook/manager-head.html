@@ -1,0 +1,28 @@
+<meta charset="UTF-8" />
+
+<script>
+  // Suprime warnings internos do Storybook/React que poluem o console e não
+  // afetam as stories (avisos de deprecação e de renderização em subtrees ocultas).
+  const IGNORED_MESSAGES = [
+    'Rendering was performed in a subtree hidden by content-visibility',
+    "The 'ariaLabel' prop on 'PopoverProvider'",
+  ];
+
+  const originalWarn = console.warn.bind(console);
+  const originalError = console.error.bind(console);
+
+  const shouldIgnore = (args) =>
+    args.some(
+      (arg) =>
+        typeof arg === 'string' &&
+        IGNORED_MESSAGES.some((message) => arg.includes(message)),
+    );
+
+  console.warn = (...args) => {
+    if (!shouldIgnore(args)) originalWarn(...args);
+  };
+
+  console.error = (...args) => {
+    if (!shouldIgnore(args)) originalError(...args);
+  };
+</script>

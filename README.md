@@ -1,12 +1,14 @@
 # Directus - MapGrid Layout Extension
 
-[![Build](https://img.shields.io/github/actions/workflow/status/devix-tecnologia/directus-extension-mapgrid/ci.yml?branch=main)](https://github.com/devix-tecnologia/directus-extension-mapgrid/actions)
+[![Build](https://img.shields.io/github/actions/workflow/status/devix-tecnologia/directus-extension-mapgrid/release.yml?branch=main)](https://github.com/devix-tecnologia/directus-extension-mapgrid/actions)
 [![Version](https://img.shields.io/npm/v/@devix-tecnologia/directus-extension-mapgrid)](https://www.npmjs.com/package/@devix-tecnologia/directus-extension-mapgrid)
 [![License](https://img.shields.io/npm/l/@devix-tecnologia/directus-extension-mapgrid)](https://github.com/devix-tecnologia/directus-extension-mapgrid/blob/main/License.txt)
 
 A Layout-type extension for Directus that displays content in both map and grid formats simultaneously. Developed by [Devix Tecnologia](https://devix.co).
 
 ![Extension visualization screen](https://raw.githubusercontent.com/devix-tecnologia/directus-extension-mapgrid/develop/docs/tela.jpg)
+
+> [🇧🇷 Guia de uso em português](#-guia-de-uso-pt-br) | [🇺🇸 Usage guide in English](#-usage-guide-en)
 
 ## Features
 
@@ -16,22 +18,83 @@ A Layout-type extension for Directus that displays content in both map and grid 
 - **Clustering**: Automatic clustering for dense map areas
 - **Customizable Columns**: Configure which fields to display in the table
 - **Zoom Controls**: Zoom to items on click or pan to visible area
+- **Reset View**: Re-fit the map to the current result set at any time
 
-## Installation
+---
+
+## 🇧🇷 Guia de uso (PT-BR)
+
+Extensão de layout para o Directus que exibe o conteúdo de uma coleção simultaneamente em **mapa** e **grade** (grid).
+
+### Instalação
 
 ```bash
 npm install @devix-tecnologia/directus-extension-mapgrid
 ```
 
-## Configuration
+### Usando a extensão
 
-1. Ensure your collection has a field of type **Map** (geolocation)
-2. Enable the Layout in the Directus settings by selecting **MapGrid** from the dropdown
-3. Configure the layout options:
-   - **Geolocation**: Select the map field from your collection
-   - **Popup Pin Map**: Configure the template for map markers
-   - **Map Center**: Set the default center coordinates and zoom level
-   - **Table Columns**: Select which fields to display in the grid
+- Garanta que a coleção possua um campo do tipo **"Map"** e selecione esse campo nas Opções do Layout (campo **Geolocation**).
+- Ative o layout no menu de configurações à direita selecionando **"MapGrid"** na lista de layouts.
+- Configure as opções do layout:
+  - **Geolocation**: campo de mapa da sua coleção
+  - **Popup Pin Map**: template exibido no popup dos marcadores
+  - **Map Center**: coordenadas e zoom iniciais do mapa
+  - **Table Columns**: quais campos aparecem na grade
+
+### Rodando o Directus com Docker Compose
+
+- Baixe este projeto ou copie o arquivo `docker-compose.yaml` e inicie uma instalação limpa.
+- Com o Docker instalado na sua máquina ([saiba mais](https://docs.docker.com/get-docker/)), execute:
+
+```bash
+docker compose up
+```
+
+### Links importantes
+
+- [Directus Quickstart](https://docs.directus.io/getting-started/quickstart.html) (na aba Docker Installation)
+- [Como criar uma extensão](https://docs.directus.io/extensions/creating-extensions.html)
+- [Acessar serviços do Directus](https://docs.directus.io/extensions/services/introduction.html)
+- [Acessar itens armazenados de coleções](https://docs.directus.io/extensions/services/accessing-items.html)
+
+---
+
+## 🇺🇸 Usage guide (EN)
+
+### Installation
+
+```bash
+npm install @devix-tecnologia/directus-extension-mapgrid
+```
+
+### Using the extension
+
+- Make sure your collection has a field of type **"Map"** and select that field in the Layout Options (**Geolocation** field).
+- Enable the layout from the settings menu on the right by selecting **"MapGrid"** from the layout dropdown.
+- Configure the layout options:
+  - **Geolocation**: Select the map field from your collection
+  - **Popup Pin Map**: Configure the template for map markers
+  - **Map Center**: Set the default center coordinates and zoom level
+  - **Table Columns**: Select which fields to display in the grid
+
+### Running Directus with Docker Compose
+
+- Download this project or copy the `docker-compose.yaml` file and start a fresh installation.
+- With Docker installed on your machine ([learn more](https://docs.docker.com/get-docker/)), run:
+
+```bash
+docker compose up
+```
+
+### Important links
+
+- [Directus Quickstart](https://docs.directus.io/getting-started/quickstart.html) (under the Docker Installation tab)
+- [How to Create an Extension](https://docs.directus.io/extensions/creating-extensions.html)
+- [Access Directus Services](https://docs.directus.io/extensions/services/introduction.html)
+- [Access Stored Collection Items](https://docs.directus.io/extensions/services/accessing-items.html)
+
+---
 
 ## Development
 
@@ -87,10 +150,14 @@ pnpm test:all         # Run all tests
 ```
 src/
 ├── components/
-│   ├── atoms/           # Atomic components (DeleteAction)
-│   ├── molecules/       # Molecular components (MapGridOptions)
+│   ├── atoms/           # Atomic components (DeleteAction, ValueCell)
+│   ├── molecules/       # Molecular components (MapToolbar)
 │   ├── organisms/       # Organism components (MapComponent, TableComponent)
-│   └── templates/       # Template components (MapGridLayout)
+│   └── templates/       # Template components (MapgridLayout, MapgridOptions)
+├── services/
+│   ├── geo/             # GeoJSON building and coordinate extraction
+│   ├── table/           # Table header types
+│   └── value-formatter/ # Field template resolution and value serialization
 ├── index.ts             # Extension entry point
 ├── types.ts             # TypeScript type definitions
 └── shims.d.ts           # Vue module declarations
@@ -149,6 +216,12 @@ pnpm test:e2e
 # Run all tests
 pnpm test:all
 ```
+
+## Engineering Standards
+
+Technical standard records live under [dev-docs/padroes/](dev-docs/padroes/). The codebase follows
+the Total TypeScript principles: honest types over assertions, derived types over duplicated shapes,
+and compiler/linter strictness kept on rather than silenced.
 
 ## Contributing
 
