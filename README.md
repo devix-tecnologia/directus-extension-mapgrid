@@ -40,9 +40,18 @@ npm install @devix-tecnologia/directus-extension-mapgrid
    - **Geolocation**: the map field to read on each item
    - **Popup Pin Map**: the template shown in a marker's popup
    - **Map Center**: the starting coordinates and zoom
-   - **Table Columns**: which fields appear in the grid
+   - **Table Columns**: add the fields the grid shows, in the order you want them
 
 The layout detects sensible defaults from the collection, so it is usable before any of these are set.
+
+There is no limit on how many columns the grid can show, and the layout only asks the API for the
+fields it actually needs: the columns, the primary key, the geolocation field, and any field cited
+by the popup template.
+
+> **Upgrading from 1.5 or earlier.** Columns used to live in five numbered keys (`coluna1` …
+> `coluna5`). Presets written back then keep working: the layout reads the old keys and converts
+> them the first time it loads, preserving the order and closing any gaps. Nothing needs to be
+> reconfigured, and from then on only the new format is written.
 
 ### Running Directus with Docker Compose
 
@@ -188,9 +197,18 @@ npm install @devix-tecnologia/directus-extension-mapgrid
    - **Geolocalização**: o campo de mapa a ler em cada item
    - **Popup do marcador**: o template exibido no popup
    - **Centro do mapa**: coordenadas e zoom iniciais
-   - **Colunas da grade**: quais campos aparecem na grade
+   - **Colunas da grade**: acrescente os campos que a grade mostra, na ordem que quiser
 
 O layout detecta padrões razoáveis a partir da coleção, então já é utilizável antes de qualquer uma dessas opções ser preenchida.
+
+Não há limite de quantas colunas a grade exibe, e o layout só pede à API os campos de que realmente
+precisa: as colunas, a chave primária, o campo de geolocalização e os campos citados no template do
+popup.
+
+> **Vindo da 1.5 ou anterior.** As colunas ficavam em cinco chaves numeradas (`coluna1` …
+> `coluna5`). Presets gravados naquele formato continuam funcionando: o layout lê as chaves antigas
+> e as converte no primeiro carregamento, preservando a ordem e fechando os espaços vazios. Nada
+> precisa ser reconfigurado, e daí em diante só o formato novo é gravado.
 
 ### Rodando o Directus com Docker Compose
 

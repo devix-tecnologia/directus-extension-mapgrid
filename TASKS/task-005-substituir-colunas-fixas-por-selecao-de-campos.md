@@ -75,8 +75,14 @@ preset já é normalizado.
 - [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm check:stories`
 - [ ] `pnpm test:e2e` — escrito em `tests/e2e/mapgrid-columns.spec.ts`, mas
       **não executado**: o ambiente onde foi desenvolvido não alcança a porta
-      publicada do container do Directus
-- [ ] Atualizar a seção de configuração do README nos dois idiomas
+      publicada do container do Directus. Os dois pontos que mais provavelmente
+      precisam de ajuste contra o DOM real são o seletor do item dentro do
+      `v-field-list` e o texto do botão de adicionar campo.
+
+### Fase 6: destravar o pipeline de e2e
+- [x] Corrigir a corrida do healthcheck do Postgres, que derrubava o Directus
+      com `ECONNREFUSED` antes de a suíte começar
+- [x] Atualizar a seção de configuração do README nos dois idiomas
 
 ## Notes
 

@@ -11,7 +11,12 @@ services:
     networks:
       - mapgrid-directus-test-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U directus -d directus']
+      # -h 127.0.0.1 forca TCP de proposito. Durante o initdb o entrypoint sobe
+      # um servidor temporario com listen_addresses vazio, atendendo so no
+      # socket Unix — e um pg_isready sem host responde "pronto" ali, antes de a
+      # porta existir. O Directus entao conectava por TCP, levava ECONNREFUSED e
+      # morria, derrubando o pipeline de e2e uma vez a cada duas.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U directus -d directus']
       interval: 5s
       timeout: 5s
       retries: 20
