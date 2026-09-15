@@ -71,6 +71,65 @@ services:
       retries: 50
       start_period: 60s
 
+  # O runner dos testes, dentro da mesma rede.
+  #
+  # Roda o Playwright num container em vez de na maquina, e alcanca o Directus
+  # pelo nome do servico — `http://directus:8055` — sem depender de porta
+  # publicada no host. Em ambiente que nao enxerga a porta publicada, esse e o
+  # unico caminho; e mesmo onde enxerga, remove a dependencia de qual porta o
+  # Docker sorteou. Abordagem emprestada do directus-extension-inframe.
+  #
+  # A instalacao acontece dentro do container porque node_modules da maquina e
+  # de outra arquitetura e sistema, e nao serve para o Linux da imagem.
+  #
+  # A versao do pnpm e fixada de proposito, e nao deixada a cargo do corepack:
+  # o corepack baixa a mais recente, e a 12 aplica uma politica de idade minima
+  # de publicacao que recusa o lockfile sempre que alguma dependencia transitiva
+  # tiver sido publicada nas ultimas horas. Fixar na mesma versao da maquina faz
+  # o container instalar exatamente o que o lockfile descreve.
+  tests:
+    image: mcr.microsoft.com/playwright:v1.62.1-noble
+    container_name: directus-mapgrid-tests-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
+    profiles: ['runner']
+    environment:
+      CI: 'true'
+      DIRECTUS_URL: 'http://directus:8055'
+    depends_on:
+      directus:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:rw
+      # Volumes nomeados cobrindo node_modules e o store do pnpm.
+      #
+      # O node_modules precisa ser coberto porque o `pnpm install` de dentro do
+      # container escreveria por cima do da maquina, trocando os binarios por
+      # versoes de Linux e quebrando todo comando local depois — foi o que
+      # aconteceu na primeira tentativa, com `directus-extension: command not
+      # found` na execucao seguinte.
+      #
+      # Sao nomeados, e nao anonimos, para sobreviverem ao `--rm`: com volume
+      # anonimo cada execucao rebaixava os 919 pacotes do zero, o que dominava o
+      # tempo total.
+      - mapgrid-test-node-modules:/workspace/node_modules
+      - mapgrid-test-pnpm-store:/root/.local/share/pnpm/store
+      - /dev/shm:/dev/shm
+    networks:
+      - mapgrid-directus-test-network
+    command:
+      - bash
+      - -lc
+      - |
+        npm i -g pnpm@10.15.0 && \
+        pnpm install --frozen-lockfile && \
+        pnpm exec playwright test --config=playwright.config.ts
+
+volumes:
+  mapgrid-test-node-modules:
+    name: directus-mapgrid-node-modules-${TEST_SUITE_ID:-main}
+  mapgrid-test-pnpm-store:
+    name: directus-mapgrid-pnpm-store-${TEST_SUITE_ID:-main}
+
 networks:
   mapgrid-directus-test-network:
     driver: bridge

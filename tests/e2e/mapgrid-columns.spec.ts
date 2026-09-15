@@ -5,6 +5,7 @@ import {
   ensureMapGridPreset,
   readMapGridPresetOptions,
 } from '../helpers/mapgrid-preset';
+import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
 
 /**
@@ -46,6 +47,16 @@ async function visibleColumns(page: Page): Promise<string[]> {
 }
 
 test.describe('MapGrid columns', () => {
+  /*
+   * The api helpers keep the access token in a module-level variable, and
+   * Playwright runs globalSetup in a separate process from the workers — so the
+   * token that global setup obtained is not visible here. Any spec that calls
+   * the Directus API from inside a test has to authenticate on its own.
+   */
+  test.beforeAll(async () => {
+    await setupTestEnvironment();
+  });
+
   test('a preset written before `fields` existed keeps showing its columns', async ({ page }) => {
     await ensureLegacyMapGridPreset();
     await login(page);
