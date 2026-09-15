@@ -9,6 +9,7 @@
 		"./.storybook/**/*.ts",
 		"./playwright.config.ts",
 		"./playwright.stories.config.ts",
+		"./playwright.screenshot.config.ts",
 		"./vitest.config.ts",
 		"./vitest.integration.config.ts"
 	],

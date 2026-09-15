@@ -93,6 +93,7 @@ pnpm typecheck        # Typecheck the source and the tests
 pnpm test             # Unit tests
 pnpm test:watch       # Unit tests in watch mode
 pnpm check:stories    # Open every story in a browser, fail on console output
+pnpm screenshot       # Regenerate docs/tela.jpg from a running Directus
 pnpm test:integration # Integration tests (requires Docker)
 pnpm test:e2e         # End-to-end tests (requires Docker)
 pnpm test:all         # Everything above that needs Docker
@@ -150,9 +151,10 @@ Technical standard records live under [dev-docs/padroes/](dev-docs/padroes/). Th
 The README shows a screenshot of the running layout (`docs/tela.jpg`) right at
 the top, and it is the first thing anyone sees on GitHub and on the npm page. Any
 change that alters how a component looks has to refresh that screenshot as part
-of the same work — a stale image advertises a product that no longer exists. The
-README is two complete documents, one per language, so behaviour described in
-prose has to be corrected in both.
+of the same work — a stale image advertises a product that no longer exists.
+`pnpm screenshot` regenerates it against a real Directus, so this is a command
+rather than a chore. The README is two complete documents, one per language, so
+behaviour described in prose has to be corrected in both.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -257,6 +259,7 @@ pnpm typecheck        # Checa os tipos do código e dos testes
 pnpm test             # Testes unitários
 pnpm test:watch       # Testes unitários em modo watch
 pnpm check:stories    # Abre cada story num navegador e falha se houver console
+pnpm screenshot       # Refaz docs/tela.jpg a partir de um Directus em execução
 pnpm test:integration # Testes de integração (requer Docker)
 pnpm test:e2e         # Testes ponta a ponta (requer Docker)
 pnpm test:all         # Tudo acima que precisa de Docker
@@ -315,8 +318,10 @@ O README exibe logo no topo uma captura do layout em funcionamento
 (`docs/tela.jpg`), e ela é a primeira coisa que alguém vê no GitHub e na página
 do npm. Toda mudança que altere a aparência de um componente precisa refazer essa
 captura como parte do mesmo trabalho — uma imagem desatualizada anuncia um
-produto que não existe mais. O README são dois documentos completos, um por
-idioma, então comportamento descrito em texto precisa ser corrigido nos dois.
+produto que não existe mais. O `pnpm screenshot` refaz a imagem contra um
+Directus de verdade, então isso é um comando e não uma tarefa manual. O README
+são dois documentos completos, um por idioma, então comportamento descrito em
+texto precisa ser corrigido nos dois.
 
 1. Faça um fork do repositório
 2. Crie sua branch (`git checkout -b feature/recurso-incrivel`)

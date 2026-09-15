@@ -83,9 +83,9 @@ preset já é normalizado.
 - [x] Corrigir a corrida do healthcheck do Postgres, que derrubava o Directus
       com `ECONNREFUSED` antes de a suíte começar
 - [x] Atualizar a seção de configuração do README nos dois idiomas
-- [ ] Refazer `docs/tela.jpg`: a captura atual mostra o painel com "Col 1" e um
-      select, interface que esta task removeu. O README exibe essa imagem logo
-      no topo, então ela mostra hoje um produto que não existe mais
+- [x] Refazer `docs/tela.jpg`: a captura nova mostra o seletor de campos com os
+      chips `name` e `status` e o botão de adicionar, no lugar dos cinco selects
+      numerados. Gerada por `pnpm screenshot`, que passa a ser um comando
 
 ## Notes
 
