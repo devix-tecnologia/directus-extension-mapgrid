@@ -2,7 +2,7 @@
 
 Status: done
 Type: chore
-Assignee: developer
+Assignee: sidartaveloso
 
 ## Description
 
