@@ -9,7 +9,8 @@ Assignee: harrison.sanches
 Percorrer os registros da grade a partir do mapa: avançar e voltar pelo balão do
 marcador, pelos mesmos atalhos de teclado, e em reprodução automática com
 parada. Ao chegar no último registro da página atual, avançar a paginação
-sozinho e continuar.
+sozinho e continuar. A câmera ganha um controle de acompanhamento com três
+estados, para a pessoa escolher se o mapa persegue a posição atual e como.
 
 O caso que motiva: uma coleção de posições de rastreamento veicular. Com sort por
 data/hora, apertar play faz a câmera percorrer o trajeto na ordem em que ele
@@ -33,10 +34,38 @@ troca também é a hora de corrigir uma falha que existe hoje: o rótulo vem do 
 do item e entra sem escape no HTML, então um registro com `<img onerror=...>` no
 campo do título executa script.
 
+**O controle de câmera absorve parte do `zoomOnClick`.** A opção booleana que
+existe hoje mistura duas coisas: se a câmera se move e se ela também aproxima.
+Com `zoomOnClick` ligado, focar um item faz `flyTo` com zoom fixo 15; desligado,
+faz `panToVisibleArea`, que só move quando o ponto está fora da área visível —
+ou seja, o estado "seguir" descrito abaixo **já está implementado**, escondido
+atrás de um booleano. Ao introduzir o controle de três estados, `zoomOnClick`
+deve deixar de decidir movimento e passar a significar apenas "aproximar ao
+focar", que é uma escolha ortogonal.
+
 **A página é somente leitura no layout.** Em `src/index.ts`, `page` é
 `computed(() => layoutQuery.value?.page || 1)`. Para a reprodução virar a página
 sozinha, ela precisa ser gravável, escrevendo em `layoutQuery`. `totalPages` já
 está disponível para saber onde parar.
+
+## Controle de câmera: nomes propostos
+
+O pedido chamou de "autofoco". Proponho não usar esse nome: em fotografia
+autofoco é nitidez de lente, e o que se descreve aqui é enquadramento. Aplicativos
+de navegação chamam isso de *follow mode*. Sugestão, aberta a discussão:
+
+**Controle:** `cameraTracking` — "Acompanhamento da câmera" / "Camera tracking".
+
+| Estado | pt-BR | en-US | Comportamento | Ícone |
+| --- | --- | --- | --- | --- |
+| `off` | Livre | Free | O mapa fica onde a pessoa deixou | `gps_off` |
+| `follow` | Seguir | Follow | Move só quando o ponto sai da área visível | `gps_not_fixed` |
+| `center` | Centralizar | Keep centred | Mantém o ponto sempre no centro | `gps_fixed` |
+
+Os três ícones são o idioma consagrado dos aplicativos de navegação e já vêm no
+Material Symbols que o projeto carrega, então o controle único pode ser um botão
+que cicla entre os três estados, no `MapToolbar` — que já é a superfície de
+controles do mapa.
 
 ## Tasks
 
@@ -64,7 +93,18 @@ está disponível para saber onde parar.
 - [ ] Avaliar desligar o agrupamento durante a reprodução: um ponto dentro de um
       cluster não aparece sozinho, e a reprodução ficaria invisível
 
-### Fase 4: virar a página
+### Fase 4: acompanhamento da câmera
+- [ ] Módulo puro que, dado o estado, o ponto e os limites visíveis, decide se a
+      câmera se move e para onde — `off` não move, `follow` move só fora dos
+      limites (é o `isOutsideBounds` que já existe), `center` move sempre
+- [ ] Controle único no `MapToolbar` ciclando entre os três estados, com ícone e
+      rótulo por estado
+- [ ] Persistir o estado nas opções do layout, com `follow` como padrão, que é o
+      comportamento de hoje
+- [ ] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
+- [ ] Textos em en-US e pt-BR
+
+### Fase 5: virar a página
 - [ ] Tornar `page` gravável no `setup` do layout
 - [ ] Ao chegar no fim da página, avançar e seguir do primeiro item da próxima
 - [ ] Cobrir a espera pela busca: a reprodução pausa enquanto a página carrega,
@@ -74,11 +114,27 @@ está disponível para saber onde parar.
       reprodução — avaliar aumentar o limite ou buscar a próxima página antes de
       precisar dela
 
-### Fase 5: verificação
-- [ ] Unitários dos módulos puros e dos componentes
-- [ ] Stories cobrindo navegação, reprodução e virada de página, usando o
-      catálogo de `mappable-mocks`
-- [ ] `pnpm check:stories` limpo
+### Fase 6: verificação
+
+Toda função desta task tem de ter story com `play`, e não só teste unitário. O
+mapa é WebGL: no happy-dom ele nem inicializa, então é no navegador do Storybook
+que o comportamento de câmera pode ser exercitado de verdade.
+
+O componente já entrega os dois ganchos de que o `play` precisa, sem depender de
+detalhe interno do maplibre: `data-center` e `data-zoom` no container, e
+`getCameraState()` no `defineExpose`. É por eles que a asserção deve passar.
+
+- [ ] `play` de navegação: clicar em próximo avança um registro, o balão troca e
+      a linha destacada na grade acompanha
+- [ ] `play` de atalho de teclado, disparando a tecla e conferindo o mesmo efeito
+- [ ] `play` de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
+      que parou onde deveria
+- [ ] `play` de virada de página, com uma coleção do catálogo maior que uma página
+- [ ] `play` por estado da câmera: em `off` o centro não muda; em `follow` só muda
+      quando o ponto sai dos limites; em `center` muda a cada passo
+- [ ] Unitários dos módulos puros
+- [ ] `pnpm check:stories` limpo — ele já abre cada story e falha a qualquer
+      mensagem de console, então o `play` roda nele sem configuração nova
 - [ ] e2e percorrendo uma coleção com mais registros que uma página
 
 ## Notes
