@@ -71,6 +71,10 @@ quais tipos a interface de mapa oferece antes de decidir o escopo.
 - [ ] Mock do settings store no `directus-mocks`, junto dos outros
 - [ ] `pnpm check:stories` limpo
 - [ ] e2e contra um Directus com basemap configurado em Project Settings
+- [ ] Refazer `docs/tela.jpg`: o basemap é o fundo da tela inteira, então
+      qualquer mudança aqui invalida a captura por completo
+- [ ] Documentar nos dois idiomas que o basemap vem do Project Settings, para
+      quem vir uma tela diferente da do README entender por quê
 
 ## Notes
 

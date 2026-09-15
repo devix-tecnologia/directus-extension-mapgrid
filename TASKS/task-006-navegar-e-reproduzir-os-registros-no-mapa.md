@@ -136,6 +136,10 @@ detalhe interno do maplibre: `data-center` e `data-zoom` no container, e
 - [ ] `pnpm check:stories` limpo — ele já abre cada story e falha a qualquer
       mensagem de console, então o `play` roda nele sem configuração nova
 - [ ] e2e percorrendo uma coleção com mais registros que uma página
+- [ ] Refazer `docs/tela.jpg` com o balão mostrando os botões de navegação e a
+      barra do mapa com o controle de acompanhamento e os de reprodução
+- [ ] Descrever os controles novos nas duas versões do README, que são dois
+      documentos completos e não um com trechos traduzidos
 
 ## Notes
 
