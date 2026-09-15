@@ -1,14 +1,14 @@
 {
   "users": {
-    "sidarta": {
-      "id": "sidarta",
-      "name": "Sidarta Veloso",
-      "email": "sidartaveloso@gmail.com"
-    },
     "harrison.sanches": {
+      "email": "harrison.sanches@gmail.com",
       "id": "harrison.sanches",
-      "name": "Harrison Sanches",
-      "email": "hsanches.dev@gmail.com"
+      "name": "Harrison Sanches"
+    },
+    "sidartaveloso": {
+      "email": "sidartaveloso@gmail.com",
+      "id": "sidartaveloso",
+      "name": "Sidarta Veloso"
     }
   }
 }

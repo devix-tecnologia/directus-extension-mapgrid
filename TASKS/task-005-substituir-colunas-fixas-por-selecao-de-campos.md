@@ -2,7 +2,7 @@
 
 Status: in-progress
 Type: refactor
-Assignee: sidarta
+Assignee: sidartaveloso
 
 ## Description
 
