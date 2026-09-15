@@ -222,15 +222,23 @@ const vIconStub: Component = {
   `,
 };
 
+/**
+ * O `v-detail` do app recebe `label`, e nao `header`. O stub aceitava `header` e
+ * renderizava o titulo assim mesmo, o que escondeu por muito tempo que no
+ * Directus real as secoes do painel de opcoes apareciam todas rotuladas como
+ * "Toggle" — o texto padrao do componente quando `label` nao vem. Espelhar o
+ * contrato real e o que impede o stub de mentir de novo.
+ */
 const vDetailStub: Component = {
   name: 'v-detail',
   props: {
     icon: { type: String, default: '' },
-    header: { type: String, default: '' },
+    label: { type: String, default: '' },
+    startOpen: { type: Boolean, default: false },
   },
   template: `
-    <details class="v-detail">
-      <summary class="v-detail__summary">{{ header }}</summary>
+    <details class="v-detail" :open="startOpen">
+      <summary class="v-detail__summary">{{ label }}</summary>
       <div class="v-detail__content"><slot /></div>
     </details>
   `,

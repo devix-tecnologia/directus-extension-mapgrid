@@ -1,11 +1,11 @@
 <template>
-  <v-detail icon="info" :header="t('optionPopup')">
+  <v-detail icon="info" :label="t('optionPopup')">
     <div class="field">
       <v-collection-field-template v-model="title" :collection="collection" />
     </div>
   </v-detail>
 
-  <v-detail icon="place" :header="t('optionGeolocation')">
+  <v-detail icon="place" :label="t('optionGeolocation')">
     <div class="field">
       <v-select
         v-model="geolocation"
@@ -19,7 +19,7 @@
     </div>
   </v-detail>
 
-  <v-detail icon="map" :header="t('optionMapCenter')">
+  <v-detail icon="map" :label="t('optionMapCenter')">
     <div class="field">
       <v-input
         v-model="centerLng"
@@ -50,7 +50,7 @@
     </div>
   </v-detail>
 
-  <v-detail icon="zoom_in" :header="t('optionZoomOnClick')">
+  <v-detail icon="zoom_in" :label="t('optionZoomOnClick')">
     <div class="field">
       <v-checkbox
         v-model="zoomOnClick"
@@ -59,7 +59,7 @@
     </div>
   </v-detail>
 
-  <v-detail icon="view_column" :header="t('optionColumns')">
+  <v-detail icon="view_column" :label="t('optionColumns')">
     <div class="field-group">
       <div v-for="field in selectedFields" :key="field" class="chosen-field" :data-field="field">
         <span class="chosen-field__name">{{ field }}</span>

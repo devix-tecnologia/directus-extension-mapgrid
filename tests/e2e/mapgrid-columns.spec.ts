@@ -35,6 +35,34 @@ async function openCollection(page: Page): Promise<void> {
   await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
 }
 
+/**
+ * Opens the layout options panel in the right sidebar.
+ *
+ * Directus collapses that sidebar by default, so the options a layout
+ * contributes are not in the DOM until its section is expanded. The section
+ * header is a button whose accessible name is the icon ligature plus the
+ * expand state — "layers expand_more" when closed.
+ */
+async function openLayoutOptions(page: Page): Promise<void> {
+  const header = page.getByRole('button', { name: /^layers/ });
+  await expect(header).toBeVisible({ timeout: 30_000 });
+
+  const isClosed = (await header.getAttribute('aria-expanded')) !== 'true';
+  if (isClosed) await header.click();
+
+  // Inside the panel each group is a `v-detail`, also collapsed by default, so
+  // the columns section has to be opened on its own before its picker exists.
+  // Its header is exposed as text rather than as a button, so it is matched by
+  // its label and not by role.
+  const columnsSection = page.getByText(/table columns|colunas da grade/i).first();
+  await expect(columnsSection).toBeVisible({ timeout: 30_000 });
+  await columnsSection.click();
+
+  await expect(page.getByRole('button', { name: /add field|adicionar campo/i })).toBeVisible({
+    timeout: 30_000,
+  });
+}
+
 /** The data columns the grid is showing, in order, without the actions column. */
 async function visibleColumns(page: Page): Promise<string[]> {
   const headers = page.locator('.v-table thead th');
@@ -55,6 +83,16 @@ test.describe('MapGrid columns', () => {
    */
   test.beforeAll(async () => {
     await setupTestEnvironment();
+  });
+
+  /*
+   * These tests rewrite the collection's preset, which every spec shares — the
+   * global setup seeds one and the layout spec depends on it. Without putting it
+   * back, the sibling spec runs against whatever preset was left behind and
+   * fails for reasons that have nothing to do with it.
+   */
+  test.afterAll(async () => {
+    await ensureMapGridPreset();
   });
 
   test('a preset written before `fields` existed keeps showing its columns', async ({ page }) => {
@@ -89,8 +127,16 @@ test.describe('MapGrid columns', () => {
 
     const before = await visibleColumns(page);
 
+    await openLayoutOptions(page);
     await page.getByRole('button', { name: /add field|adicionar campo/i }).click();
-    await page.locator('.v-field-list .v-list-item', { hasText: 'status' }).first().click();
+    // v-field-list shows each field's display name, not its key — "Status" for
+    // the `status` field. Fields already chosen render without a pointer
+    // cursor, because `disabled-fields` greys them out.
+    await page
+      .getByRole('listitem')
+      .filter({ hasText: /^Status$/ })
+      .first()
+      .click();
 
     await expect
       .poll(async () => (await readMapGridPresetOptions()).fields, { timeout: 20_000 })
