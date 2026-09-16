@@ -79,7 +79,23 @@ preset já é normalizado.
       precisam de ajuste contra o DOM real são o seletor do item dentro do
       `v-field-list` e o texto do botão de adicionar campo.
 
-### Fase 6: destravar o pipeline de e2e
+### Fase 6: tornar o restante do layoutQuery gravável
+
+Esta task já transformou `fields` num binding gravável e mexeu em
+`useLayoutQuery`. `page`, `limit` e `sort` continuam somente leitura ali, três
+computeds de uma linha cada — e as tasks 006 e 008 precisam justamente deles:
+a 006 vira a página sozinha durante a reprodução, a 008 grava a ordenação ao
+clicar no cabeçalho.
+
+São ~15 linhas. Fazer aqui, onde a função já está aberta, evita que três tasks
+disputem o mesmo arquivo e conflitem entre si.
+
+- [ ] `page`, `limit` e `sort` viram computeds graváveis, escrevendo em
+      `layoutQuery`, no mesmo padrão que `fields` já usa
+- [ ] Testes do contrato para os três, como já existe para `fields`
+- [ ] Nenhum consumidor novo aqui: quem usa são as tasks 006 e 008
+
+### Fase 7: destravar o pipeline de e2e
 - [x] Corrigir a corrida do healthcheck do Postgres, que derrubava o Directus
       com `ECONNREFUSED` antes de a suíte começar
 - [x] Atualizar a seção de configuração do README nos dois idiomas

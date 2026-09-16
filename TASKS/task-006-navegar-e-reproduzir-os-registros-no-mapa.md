@@ -104,6 +104,28 @@ controles do mapa.
 - [ ] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
 - [ ] Textos em en-US e pt-BR
 
+### Fase 4b: a barra do mapa como um todo
+
+Veio da task-008, que propunha levar controles do painel lateral para o mapa.
+Ficou aqui porque é a mesma decisão: quem desenha a barra do mapa desenha ela
+inteira. Esta task já acrescenta o controle de acompanhamento de câmera e os
+botões de reprodução — decidir isoladamente onde eles ficam, e depois mover
+outros controles para o mesmo lugar, sai torto.
+
+Duas evidências de que o painel lateral está apertado: na captura do README os
+títulos das seções quebram em duas linhas (`Popup Pin Map`, `Table Columns`) e as
+seções se espremem em duas colunas.
+
+- [ ] Decidir o que sai do painel para o mapa. Candidatos: o centro do mapa, que
+      hoje pede digitar coordenadas quando arrastar e fixar seria mais direto, e
+      o zoom ao clicar na linha
+- [ ] Avaliar o `ButtonControl` do Directus
+      (`app/src/utils/geometry/controls.ts`), que é um botão sobre o mapa no
+      padrão do MapLibre, contra o posicionamento absoluto por CSS que o
+      `MapToolbar` usa hoje
+- [ ] Definir o que sobra no painel: provavelmente só configuração de coleção,
+      como o campo de geolocalização e o template do popup
+
 ### Fase 5: virar a página
 - [ ] Tornar `page` gravável no `setup` do layout
 - [ ] Ao chegar no fim da página, avançar e seguir do primeiro item da próxima
@@ -143,9 +165,10 @@ detalhe interno do maplibre: `data-center` e `data-zoom` no container, e
 
 ## Notes
 
-Depende da task-005, que troca as colunas fixas por `layoutQuery.fields` e mexe
-em `useLayoutQuery`, o mesmo ponto onde a Fase 4 precisa tornar `page` gravável.
-Vale começar depois que ela fechar, ou combinar antes quem mexe ali.
+Depende da task-005, que além de trocar as colunas fixas por `layoutQuery.fields`
+passou a tornar `page`, `limit` e `sort` graváveis — justamente o que a Fase 5
+precisa para virar a página. Começar depois que ela fechar evita conflito no
+mesmo arquivo.
 
 Um atalho de teclado por registro tem limite prático: em reprodução rápida, cada
 passo dispara um `flyTo` com animação de um segundo (`GEO_ANIMATION_DURATION`).
