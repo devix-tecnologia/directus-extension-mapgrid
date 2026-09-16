@@ -16,10 +16,13 @@ export interface TableComponentProps {
   selectedItems: GeoItem[];
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Ordenação atual, no formato do Directus: `nome` asc, `-nome` desc. */
+  sort?: string[];
 }
 
 export interface TableComponentEmits {
   'focus-on-item': [item: GeoItem];
   'edit-item': [item: GeoItem];
   'update:selectedItems': [items: GeoItem[]];
+  'update:sort': [sort: string[]];
 }

@@ -90,9 +90,9 @@ clicar no cabeçalho.
 São ~15 linhas. Fazer aqui, onde a função já está aberta, evita que três tasks
 disputem o mesmo arquivo e conflitem entre si.
 
-- [ ] `page`, `limit` e `sort` viram computeds graváveis, escrevendo em
+- [x] `page`, `limit` e `sort` viram computeds graváveis, escrevendo em
       `layoutQuery`, no mesmo padrão que `fields` já usa
-- [ ] Testes do contrato para os três, como já existe para `fields`
+- [x] Testes do contrato para os três, como já existe para `fields`
 - [ ] Nenhum consumidor novo aqui: quem usa são as tasks 006 e 008
 
 ### Fase 7: destravar o pipeline de e2e

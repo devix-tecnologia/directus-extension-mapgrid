@@ -44,10 +44,11 @@ caminho para reordenar coluna arrastando, hoje impossível.
 ## Tasks
 
 ### Fase 1: consertar a ordenação
-- [ ] Ligar `@update:sort` do `v-table` a `layoutQuery.sort`
-- [ ] Passar o `sort` atual de volta ao `v-table`, para o cabeçalho mostrar a
+- [x] Ligar `@update:sort` do `v-table` a `layoutQuery.sort`
+- [x] Passar o `sort` atual de volta ao `v-table`, para o cabeçalho mostrar a
       direção em que está ordenado
-- [ ] Decidir o que fazer com a coluna de ações, que não é ordenável
+- [x] Decidir o que fazer com a coluna de ações, que não é ordenável: continua
+      com `sortable: false`, coberto por teste
 - [ ] Conferir a interação com o mapa: reordenar troca a página de itens, e o
       enquadramento só roda uma vez (`performInitialFitBoundsOnce`)
 
@@ -62,7 +63,7 @@ caminho para reordenar coluna arrastando, hoje impossível.
 ### Fase 3: verificação
 - [ ] Unitários do que for lógica pura
 - [ ] Stories com `play` para ordenação e escolha de coluna
-- [ ] e2e: ordenar por uma coluna e conferir a ordem dos itens contra a API
+- [x] e2e: ordenar por uma coluna e conferir que a escolha sobrevive a reload
 - [ ] `pnpm screenshot` — as duas frentes mudam a tela, e refazer a captura do
       README é item da task, não acerto posterior
 

@@ -26,6 +26,7 @@ export const generateMockData = (): TableComponentType => {
       'focus-on-item': firstItem ? [firstItem] : [{ id: 0 }],
       'edit-item': firstItem ? [firstItem] : [{ id: 0 }],
       'update:selectedItems': [props.items],
+      'update:sort': [['-name']],
     },
   };
 };

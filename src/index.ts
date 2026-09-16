@@ -6,7 +6,7 @@ import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
 import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 import type { GeoItem } from './contract/index';
-import { fieldsToFetch, normalizeLayoutOptions } from './contract/index';
+import { fieldsToFetch, normalizeLayoutOptions, useWritableLayoutQuery } from './contract/index';
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
@@ -173,9 +173,9 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     }
 
     function useLayoutQuery() {
-      const page = computed(() => layoutQuery.value?.page || 1);
-      const limit = computed(() => layoutQuery.value?.limit || 25);
-      const sort = computed(() => layoutQuery.value?.sort || []);
+      // page, limit and sort are two-way: the grid writes the sort when a header
+      // is clicked, and playback writes the page when it runs off the end of one
+      const { page, limit, sort } = useWritableLayoutQuery(layoutQuery);
 
       /*
        * Only what is actually needed. This used to request every field of the
@@ -203,6 +203,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       totalCount,
       page,
       limit,
+      sort,
       fieldsInCollection,
       selectedItems,
       deleteSelectedItems,

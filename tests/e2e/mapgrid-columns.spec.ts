@@ -74,6 +74,43 @@ async function visibleColumns(page: Page): Promise<string[]> {
     .filter((label) => label !== '' && label.toLowerCase() !== 'actions');
 }
 
+test.describe('MapGrid sorting', () => {
+  test.beforeAll(async () => {
+    await setupTestEnvironment();
+  });
+
+  test.afterAll(async () => {
+    await ensureMapGridPreset();
+  });
+
+  test('clicking a column header orders the rows, and the choice is stored', async ({ page }) => {
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+
+    const firstCell = () => page.locator('.v-table tbody tr td').nth(1);
+    await expect(firstCell()).toBeVisible({ timeout: 30_000 });
+
+    // the preset seeds sort by name ascending, so the first row is alphabetical
+    const ascending = (await firstCell().innerText()).trim();
+
+    // a second click on the same header reverses it
+    await page.locator('.v-table thead th', { hasText: 'name' }).first().click();
+    await page.locator('.v-table thead th', { hasText: 'name' }).first().click();
+
+    await expect
+      .poll(async () => (await firstCell().innerText()).trim(), { timeout: 20_000 })
+      .not.toBe(ascending);
+
+    // and it survives a reload, which is what writing to layoutQuery buys
+    const reversed = (await firstCell().innerText()).trim();
+    await page.reload();
+    await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
+
+    expect((await firstCell().innerText()).trim()).toBe(reversed);
+  });
+});
+
 test.describe('MapGrid columns', () => {
   /*
    * The api helpers keep the access token in a module-level variable, and

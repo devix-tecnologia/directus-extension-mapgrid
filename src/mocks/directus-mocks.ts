@@ -21,8 +21,10 @@ export const vTableStub: Component = {
     fixedHeader: { type: Boolean, default: false },
     modelValue: { default: () => [] },
     canDelete: { type: Boolean, default: true },
+    /** Campos de ordenação no formato do Directus: `nome` asc, `-nome` desc. */
+    sort: { type: Array, default: () => [] },
   },
-  emits: ['click:row', 'update:modelValue'],
+  emits: ['click:row', 'update:modelValue', 'update:sort'],
   data() {
     return {
       localSelected: Object.assign([], this.modelValue ?? []),

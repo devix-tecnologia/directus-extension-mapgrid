@@ -55,6 +55,41 @@ describe('TableComponent — clicking a row takes the map to the item', () => {
   });
 });
 
+describe('TableComponent — sorting by the column header', () => {
+  it('passes the current sort down, so the header shows which way it is ordered', () => {
+    const wrapper = mountTable({ sort: ['-name'] });
+
+    expect(wrapper.findComponent({ name: 'v-table' }).props('sort')).toEqual(['-name']);
+  });
+
+  it('emits the new sort when the header reports one, instead of swallowing the click', async () => {
+    const wrapper = mountTable();
+
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:sort', ['status']);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('update:sort')?.[0]).toEqual([['status']]);
+  });
+
+  it('accepts a descending sort, which is the second click on the same header', async () => {
+    const wrapper = mountTable({ sort: ['status'] });
+
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:sort', ['-status']);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('update:sort')?.[0]).toEqual([['-status']]);
+  });
+
+  it('leaves the actions column unsortable, because there is nothing to order by', () => {
+    const headers = mountTable().findComponent({ name: 'v-table' }).props('headers') as {
+      value: string;
+      sortable: boolean;
+    }[];
+
+    expect(headers.find((header) => header.value === 'actions')?.sortable).toBe(false);
+  });
+});
+
 describe('TableComponent — collection permissions', () => {
   it('hides the edit icon when the permission is absent', () => {
     const wrapper = mountTable({ canEdit: false });

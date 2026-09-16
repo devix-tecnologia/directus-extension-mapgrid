@@ -34,7 +34,9 @@
         :selected-items="selectedItems"
         :can-edit="canEdit"
         :can-delete="canDelete"
+        :sort="sort"
         @update:selected-items="selectedItems = $event"
+        @update:sort="emit('update:sort', $event)"
         @focus-on-item="handleFocusOnItem"
         @edit-item="editItem"
       />

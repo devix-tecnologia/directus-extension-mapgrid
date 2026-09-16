@@ -20,11 +20,14 @@ export interface MapgridLayoutProps extends LayoutOptions {
   /** Collection permissions, resolved by the layout and passed down to the grid. */
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Ordenação atual da consulta, no formato do Directus. */
+  sort?: string[];
 }
 
 export interface MapgridLayoutEmits {
   'update:selectedItems': [items: GeoItem[]];
   'edit-item': [item: GeoItem];
+  'update:sort': [sort: string[]];
 }
 
 export type MapgridLayoutModels = Record<string, never>;

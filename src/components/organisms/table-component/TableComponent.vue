@@ -8,8 +8,10 @@
       :show-select="true"
       :show-resize="true"
       :can-delete="canDelete"
+      :sort="sort ?? []"
       fixed-header
       @click:row="handleRowClick"
+      @update:sort="emit('update:sort', $event)"
     >
       <template #[`item.actions`]="{ item }">
         <div class="actions">

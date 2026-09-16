@@ -26,6 +26,7 @@ export const generateMockData = (): MapgridLayoutType => {
     emits: {
       'update:selectedItems': [props.items],
       'edit-item': firstItem ? [firstItem] : [{ id: 0 }],
+      'update:sort': [['-name']],
     },
   };
 };
