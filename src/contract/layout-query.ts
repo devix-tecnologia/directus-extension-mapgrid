@@ -20,6 +20,16 @@ export interface WritableLayoutQuery {
   page: WritableComputedRef<number>;
   limit: WritableComputedRef<number>;
   sort: WritableComputedRef<string[]>;
+  /**
+   * The columns the grid shows.
+   *
+   * This lives in the query, and not in the layout options, because that is
+   * where Directus itself keeps it — its tabular layout stores the displayed
+   * columns in `layoutQuery.fields` and derives what to actually fetch from
+   * them. Undefined means nothing was chosen, so the caller can fall back to a
+   * legacy preset or to what it detected from the collection.
+   */
+  fields: WritableComputedRef<string[] | undefined>;
 }
 
 export const useWritableLayoutQuery = (
@@ -46,6 +56,10 @@ export const useWritableLayoutQuery = (
     sort: computed({
       get: () => layoutQuery.value?.sort ?? [],
       set: (value) => write('sort', value),
+    }),
+    fields: computed({
+      get: () => layoutQuery.value?.fields,
+      set: (value) => write('fields', value ?? []),
     }),
   };
 };

@@ -28,6 +28,26 @@ describe('useWritableLayoutQuery — reading', () => {
   });
 });
 
+describe('useWritableLayoutQuery — fields is where Directus keeps the displayed columns', () => {
+  it('reads the stored fields', () => {
+    expect(useWritableLayoutQuery(queryRef({ fields: ['name', 'city'] })).fields.value).toEqual([
+      'name',
+      'city',
+    ]);
+  });
+
+  it('returns undefined when nothing was stored, so the caller can fall back', () => {
+    expect(useWritableLayoutQuery(queryRef()).fields.value).toBeUndefined();
+  });
+
+  it('writes the fields back, which is what choosing a column has to persist', () => {
+    const source = queryRef({ page: 1 });
+    useWritableLayoutQuery(source).fields.value = ['name', 'status'];
+
+    expect(source.value?.fields).toEqual(['name', 'status']);
+  });
+});
+
 describe('useWritableLayoutQuery — writing', () => {
   it('writes the page back to the preset, so pagination survives a reload', () => {
     const source = queryRef({ page: 1, limit: 25 });

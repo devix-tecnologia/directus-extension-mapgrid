@@ -2,7 +2,7 @@
 
 Status: pending
 Type: feat
-Assignee: harrison.sanches
+Assignee: sidartaveloso
 
 ## Description
 

@@ -72,6 +72,20 @@ export async function ensureLegacyMapGridPreset(
   await apiRequest('POST', '/presets', legacyMapGridPresetFor(collection));
 }
 
+/** The layout query currently stored for a collection, where the columns live. */
+export async function readMapGridPresetQuery(
+  collection: string = COLLECTION_NAME
+): Promise<Record<string, unknown>> {
+  const query = `filter[collection][_eq]=${collection}&fields=layout_query&limit=1`;
+  const response = await apiRequest<DirectusCollectionResponse<Pick<Preset, 'layout_query'>>>(
+    'GET',
+    `/presets?${query}`
+  );
+
+  const [preset] = unwrapItems(response);
+  return preset?.layout_query?.mapgrid ?? {};
+}
+
 /** The layout options currently stored for a collection, as the API returns them. */
 export async function readMapGridPresetOptions(
   collection: string = COLLECTION_NAME

@@ -4,6 +4,7 @@ import {
   ensureLegacyMapGridPreset,
   ensureMapGridPreset,
   readMapGridPresetOptions,
+  readMapGridPresetQuery,
 } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
@@ -175,8 +176,10 @@ test.describe('MapGrid columns', () => {
       .first()
       .click();
 
+    // the chosen columns live in layout_query.fields, the same place the
+    // Directus tabular layout keeps them
     await expect
-      .poll(async () => (await readMapGridPresetOptions()).fields, { timeout: 20_000 })
+      .poll(async () => (await readMapGridPresetQuery()).fields, { timeout: 20_000 })
       .toContain('status');
 
     await page.reload();

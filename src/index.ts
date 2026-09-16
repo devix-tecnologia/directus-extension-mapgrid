@@ -81,6 +81,14 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
+    /*
+     * Criado antes de qualquer uso: tanto `useLayoutQuery()` quanto
+     * `createLayoutOptions()` leem daqui, e uma `const` referenciada antes da
+     * linha que a declara derruba o `setup` inteiro por zona morta temporal —
+     * o layout nao monta e nem o mapa aparece.
+     */
+    const writableQuery = useWritableLayoutQuery(layoutQuery);
+
     const { sort, limit, page, fields: queryFields } = useLayoutQuery();
 
     const detectedFields = computed<DetectedField[]>(() =>
@@ -129,19 +137,27 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       const mapZoom = createViewOption('mapZoom', DEFAULT_MAP_ZOOM);
 
       /*
-       * The columns the grid shows. Reads `fields` when the preset has it, and
-       * otherwise the numbered `coluna1..5` a preset written by an earlier
-       * version still carries — `normalizeLayoutOptions` does that migration.
-       * Only `fields` is ever written back.
+       * The columns the grid shows, stored in `layoutQuery.fields` — the same
+       * place the Directus tabular layout keeps them. They were in
+       * `layoutOptions` at first, which is not where Directus looks.
+       *
+       * Three sources, in order: what the user chose, the numbered
+       * `coluna1..5` a preset written by an earlier version still carries, and
+       * finally what was detected from the collection. Only the first is ever
+       * written back.
        */
       const fields = computed<string[]>({
         get() {
-          const stored = normalizeLayoutOptions(layoutOptions.value).fields;
-          if (stored && stored.length > 0) return stored;
+          const chosen = writableQuery.fields.value;
+          if (chosen && chosen.length > 0) return chosen;
+
+          const legacy = normalizeLayoutOptions(layoutOptions.value).fields;
+          if (legacy && legacy.length > 0) return legacy;
+
           return detectedStringFields.value.slice(0, DEFAULT_COLUMN_COUNT);
         },
         set(newValue) {
-          layoutOptions.value = { ...layoutOptions.value, fields: newValue };
+          writableQuery.fields.value = newValue;
         },
       });
 
@@ -175,7 +191,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     function useLayoutQuery() {
       // page, limit and sort are two-way: the grid writes the sort when a header
       // is clicked, and playback writes the page when it runs off the end of one
-      const { page, limit, sort } = useWritableLayoutQuery(layoutQuery);
+      const { page, limit, sort } = writableQuery;
 
       /*
        * Only what is actually needed. This used to request every field of the
