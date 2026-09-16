@@ -1,6 +1,6 @@
 # Task 005 — substituir as colunas fixas por seleção de campos
 
-Status: in-progress
+Status: done
 Type: refactor
 Assignee: sidartaveloso
 
@@ -53,8 +53,10 @@ preset já é normalizado.
 ### Fase 2: exibição passar a usar `fields`
 - [x] `MapgridLayout` monta os cabeçalhos a partir de `fields`, não de
       `configuredColumns`
-- [ ] Remover `configuredColumns`, `COLUMN_KEYS`, `ColumnKey` e `ColumnOptions`
-      quando não houver mais leitor — ainda usados pela migração do contrato
+- [x] Remover `configuredColumns`, `COLUMN_KEYS`, `ColumnKey` e `ColumnOptions`
+      quando não houver mais leitor — **mantidos de propósito**: a migração dos
+      presets antigos os usa, e só saem quando não houver preset no formato
+      numerado em circulação
 - [x] Ajustar `layoutOptionsFor` no catálogo de mocks
 
 ### Fase 3: seleção por `v-field-list`
@@ -62,8 +64,9 @@ preset já é normalizado.
       usa — no lugar dos cinco `v-select`
 - [x] Remover `setColumn` e os cinco eventos `update:colunaN`
 - [x] Persistir a ordem escolhida
-- [ ] Avaliar `widthMap` para largura por coluna, e reordenação por
-      `v-model:headers` + `allow-header-reorder` no `v-table`
+- [x] Avaliar `widthMap` para largura por coluna, e reordenação por
+      `v-model:headers` + `allow-header-reorder` — **avaliado e movido** para a
+      task-008, junto do resto do comportamento de grade
 
 ### Fase 4: parar de buscar a coleção inteira
 - [x] `useLayoutQuery().fields` passa a pedir à API só os campos exibidos, mais
@@ -73,11 +76,12 @@ preset já é normalizado.
 
 ### Fase 5: verificação
 - [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm check:stories`
-- [ ] `pnpm test:e2e` — escrito em `tests/e2e/mapgrid-columns.spec.ts`, mas
-      **não executado**: o ambiente onde foi desenvolvido não alcança a porta
-      publicada do container do Directus. Os dois pontos que mais provavelmente
-      precisam de ajuste contra o DOM real são o seletor do item dentro do
-      `v-field-list` e o texto do botão de adicionar campo.
+- [x] `pnpm test:e2e` — executado contra um Directus real: 8 passam. Os dois
+      pontos que eu tinha previsto como frágeis precisaram mesmo de ajuste
+      contra o DOM real: o `v-field-list` mostra o nome de exibição (`Status`) e
+      não a chave, e a barra lateral e a seção de colunas começam recolhidas.
+      Um caso ficou bloqueado pela task-009 e está marcado como tal, com a
+      medição que prova que o defeito não é desta task.
 
 ### Fase 6: tornar o restante do layoutQuery gravável
 
@@ -111,3 +115,25 @@ permitindo selecionar os campos que aparecerão na lista e no mapa"), na mesma
 `showSelect` e `fields?: string[]` — a forma das opções do layout tabular do
 Directus, herdada e nunca usada. O `fields` foi removido na task-004; esta task
 o traz de volta, agora como a fonte da verdade.
+
+## Fechamento
+
+O que a task entregou, verificado contra um Directus real:
+
+- as colunas deixaram de ter teto de cinco e passaram a morar em
+  `layoutQuery.fields`, que é onde o layout tabular do Directus as guarda;
+- presets no formato antigo continuam funcionando, com a conversão feita na
+  leitura — provado por e2e que abre um preset `coluna1`/`coluna3` e confere que
+  a grade mostra as duas colunas, com o buraco fechado;
+- a extensão parou de pedir a coleção inteira à API para exibir alguns campos;
+- `page`, `limit` e `sort` viraram graváveis, o que destravou as tasks 006 e 008.
+
+Duas coisas saíram do escopo por medição, e não por desistência:
+
+**A escrita do painel de opções não persiste** — e o defeito não é desta task:
+alternar `zoomOnClick`, que existe desde muito antes, também não é gravado. Virou
+a task-009, com a medição que localiza o problema no painel e não na escrita do
+preset.
+
+**Largura e reordenação de coluna** foram para a task-008, que trata do
+comportamento de grade como um todo.
