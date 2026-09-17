@@ -88,8 +88,8 @@ importers:
         specifier: ^0.2.6
         version: 0.2.6
       taskin:
-        specifier: ^4.3.0
-        version: 4.3.0(@types/node@26.2.0)
+        specifier: ^4.4.0
+        version: 4.4.0(@types/node@26.2.0)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -921,23 +921,23 @@ packages:
   '@one-ini/wasm@0.1.1':
     resolution: {integrity: sha512-XuySG1E38YScSJoMlqovLru4KTUNSjgVTIjyh7qMX6aNN5HY5Ct5LhRJdxO79JtTzKfzV/bnWpz+zquYrISsvw==}
 
-  '@opentask/taskin-file-system-provider@3.2.4':
-    resolution: {integrity: sha512-jD4RFkZmFPkXhX/kJhFlpgwQsGCh7ATdJqIoahquPVX4C2xfCozuS9VXVEz/5/hkx0nAQiwgjqSnHkvt0G9t/w==}
+  '@opentask/taskin-file-system-provider@3.3.0':
+    resolution: {integrity: sha512-IXXOq0JHs2D5swdaQ+uBbOEejGQnmjN2d/zaMZvkhYrj+FmJSuJS7Lhq7zarazOPWvvKOBFzGlV15gHcKsTqVA==}
 
-  '@opentask/taskin-git-utils@3.0.3':
-    resolution: {integrity: sha512-B+En7BSB7MFvMtEt4UUADCchSiqIHHflDI1XDfPEOaROIV+wiDE5IrhEIDgTYqnVL1WVLIJtwcLYby/Bm9YTEQ==}
+  '@opentask/taskin-git-utils@3.0.4':
+    resolution: {integrity: sha512-lv3fJ3/WBOZ3jswxxy1lMm/hRTUGK0aCF+aANhIJ9bqOGxTfAbr8Im8Hl8EfQRhknsZmqJ2zyaL1TL8/zqvAgg==}
 
-  '@opentask/taskin-task-manager@3.1.0':
-    resolution: {integrity: sha512-BKq4gsSqouTF+KRx6lovjCdenRtWNmu0gznU+Kv90OsZXUrj7Fs2iJxbT1amnGqy8NKnqyt7u59YFkMrgVWxOg==}
+  '@opentask/taskin-task-manager@3.2.0':
+    resolution: {integrity: sha512-OntH8UQ1Y+iQTFNUQxp+0LNRyWKkA8Q2HEs/gxRNyrJ+E9E/eXoWIHh4GvBhmHm/7LUDP6oR49n1q6u2NtntXQ==}
 
-  '@opentask/taskin-task-server-mcp@0.4.0':
-    resolution: {integrity: sha512-jQVlxYn9ww6RS+ugYu/23RBFPONwdtBtRaeKWUyavzJVAj+C+ZjaZkdnvobWR7bZFMtJNd3f4XaVjfi621AmlA==}
+  '@opentask/taskin-task-server-mcp@0.5.0':
+    resolution: {integrity: sha512-dH13Rw37lie9l97fPA6uklcUgikDGAaCXE+r8zZu6IAs0czp50s+qweBfjKJ0wd7RuGVAYpcm8JbkGvV1+US9w==}
 
-  '@opentask/taskin-task-server-ws@0.3.3':
-    resolution: {integrity: sha512-bzsSZAxG4ZRDhaEcQw+GyD8XD+4/MB/QF+It4PTgPb+tEiY2itM3/PNEQs99Wi+tql4/dqwjMRW+WUPUd58yxA==}
+  '@opentask/taskin-task-server-ws@0.3.4':
+    resolution: {integrity: sha512-TFSlaIwBufHWX8WaS3r2VpRCU19pTpB5rLWzkXYdoZ8URellJ8z2T7GKTpsySAQ4VD6wilN0t+zqNhGYoAewDw==}
 
-  '@opentask/taskin-types@2.2.0':
-    resolution: {integrity: sha512-WCs6ejzpcrka26FXqALbg5oL0zJRh2bb4LMXes6KtD0VbiPsR7n991P3Vwi71OnocnAoEFhLscBoyzxYOnP5Lg==}
+  '@opentask/taskin-types@2.3.0':
+    resolution: {integrity: sha512-ewqu9f+a/coGL1mmw7oc041t2HkzjWLjbb1QnT3qRNnrtDW2tNk6fzpGGTGCdoM3N4YfcJBy8lkc84pwULuWlA==}
 
   '@opentask/taskin-utils@1.1.1':
     resolution: {integrity: sha512-yIKCH7d2Olj7nNX2/H4zDdx7nzvdMWwZsS63HP+USNijj66qzbw+VKKgxHXiH5GK+ThHbPf44lTmuyiD6Ru6Uw==}
@@ -2800,8 +2800,8 @@ packages:
     resolution: {integrity: sha512-2dYz766i9HprMBasCMvHMuazJ7u4WzhJwo5kb3iPSiW/iRYV6uPari3zHoqZlnuaR7V1bEiNMxikhp37rdBXbw==}
     engines: {node: '>=12'}
 
-  ip-address@10.7.1:
-    resolution: {integrity: sha512-4OUAqU9Z1i3vCnS05hzGiFnEMDpQ+62pAD/MVQOp83fYyNC8GleCqaS0QikQBmcWCrKFiUs/B8ztRRiYOAXuCA==}
+  ip-address@10.7.2:
+    resolution: {integrity: sha512-7H/2gFSIitxc0hG3nOI1glS8QLo/EHBFFLk8vEUjXY/xu0AdL8jZ9U1IzO2PUm0d2D/ofQcAifb0g6OBkt8U7w==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -4261,8 +4261,8 @@ packages:
     resolution: {integrity: sha512-51LAVKUSZSVfI05vjPESNc5vwqqZpbXCsU+/+wxlOrUjk2SnFTt97v9ZgQrD4YmxYW1Px6w2KjaDitCfkvgxMQ==}
     engines: {node: '>=8.0.0'}
 
-  taskin@4.3.0:
-    resolution: {integrity: sha512-nTIxIezWMwldiw1yXVTZsqhf09BglvqZyjhCE3ACC4mG9hTszFmCj1MBohdeb73a7IWuXsa7HH3l43gc0uxwxw==}
+  taskin@4.4.0:
+    resolution: {integrity: sha512-8gCUDumP4x5OsFc/FthREhXuAt+BWn+7KwwCIRIRmJlp5oCW4PG5NnE9LQ8O6JCoQg/QRaWXXJqMpi08tcDMKg==}
     hasBin: true
 
   temp-dir@3.0.0:
@@ -4712,6 +4712,9 @@ packages:
 
   zod@4.0.14:
     resolution: {integrity: sha512-nGFJTnJN6cM2v9kXL+SOBq3AtjQby3Mv5ySGFof5UGRHrRioSJ5iG680cYNjE/yWk671nROcpPj4hAS8nyLhSw==}
+
+  zod@4.6.5:
+    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
 snapshots:
 
@@ -5439,7 +5442,7 @@ snapshots:
       '@types/react': 19.2.18
       react: 19.2.8
 
-  '@modelcontextprotocol/sdk@1.30.0(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.30.0(zod@4.6.5)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.8)
       ajv: 8.20.0
@@ -5456,8 +5459,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
+      zod: 4.6.5
+      zod-to-json-schema: 3.25.2(zod@4.6.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -5536,44 +5539,45 @@ snapshots:
 
   '@one-ini/wasm@0.1.1': {}
 
-  '@opentask/taskin-file-system-provider@3.2.4':
+  '@opentask/taskin-file-system-provider@3.3.0':
     dependencies:
-      '@opentask/taskin-git-utils': 3.0.3
-      '@opentask/taskin-task-manager': 3.1.0
-      '@opentask/taskin-types': 2.2.0
+      '@opentask/taskin-git-utils': 3.0.4
+      '@opentask/taskin-task-manager': 3.2.0
+      '@opentask/taskin-types': 2.3.0
       '@opentask/taskin-utils': 1.1.1
 
-  '@opentask/taskin-git-utils@3.0.3':
+  '@opentask/taskin-git-utils@3.0.4':
     dependencies:
-      '@opentask/taskin-types': 2.2.0
+      '@opentask/taskin-types': 2.3.0
 
-  '@opentask/taskin-task-manager@3.1.0':
+  '@opentask/taskin-task-manager@3.2.0':
     dependencies:
-      '@opentask/taskin-types': 2.2.0
+      '@opentask/taskin-types': 2.3.0
+      zod: 4.6.5
 
-  '@opentask/taskin-task-server-mcp@0.4.0(zod@3.25.76)':
+  '@opentask/taskin-task-server-mcp@0.5.0(zod@4.6.5)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
-      '@opentask/taskin-file-system-provider': 3.2.4
-      '@opentask/taskin-task-manager': 3.1.0
-      '@opentask/taskin-types': 2.2.0
+      '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
+      '@opentask/taskin-file-system-provider': 3.3.0
+      '@opentask/taskin-task-manager': 3.2.0
+      '@opentask/taskin-types': 2.3.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
       - zod
 
-  '@opentask/taskin-task-server-ws@0.3.3':
+  '@opentask/taskin-task-server-ws@0.3.4':
     dependencies:
-      '@opentask/taskin-task-manager': 3.1.0
-      '@opentask/taskin-types': 2.2.0
+      '@opentask/taskin-task-manager': 3.2.0
+      '@opentask/taskin-types': 2.3.0
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@opentask/taskin-types@2.2.0':
+  '@opentask/taskin-types@2.3.0':
     dependencies:
-      zod: 3.25.76
+      zod: 4.6.5
 
   '@opentask/taskin-utils@1.1.1':
     dependencies:
@@ -7077,7 +7081,7 @@ snapshots:
     dependencies:
       debug: 4.4.3
       express: 5.2.1
-      ip-address: 10.7.1
+      ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
 
@@ -7457,7 +7461,7 @@ snapshots:
       from2: 2.3.0
       p-is-promise: 3.0.0
 
-  ip-address@10.7.1: {}
+  ip-address@10.7.2: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -8923,15 +8927,15 @@ snapshots:
 
   tarn@3.0.2: {}
 
-  taskin@4.3.0(@types/node@26.2.0):
+  taskin@4.4.0(@types/node@26.2.0):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
-      '@opentask/taskin-file-system-provider': 3.2.4
-      '@opentask/taskin-git-utils': 3.0.3
-      '@opentask/taskin-task-manager': 3.1.0
-      '@opentask/taskin-task-server-mcp': 0.4.0(zod@3.25.76)
-      '@opentask/taskin-task-server-ws': 0.3.3
-      '@opentask/taskin-types': 2.2.0
+      '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
+      '@opentask/taskin-file-system-provider': 3.3.0
+      '@opentask/taskin-git-utils': 3.0.4
+      '@opentask/taskin-task-manager': 3.2.0
+      '@opentask/taskin-task-server-mcp': 0.5.0(zod@4.6.5)
+      '@opentask/taskin-task-server-ws': 0.3.4
+      '@opentask/taskin-types': 2.3.0
       '@opentask/taskin-utils': 1.1.1
       '@types/express': 5.0.6
       '@types/inquirer': 9.0.10
@@ -8942,7 +8946,7 @@ snapshots:
       inquirer: 12.11.1(@types/node@26.2.0)
       play-sound: 1.1.6
       ws: 8.21.3
-      zod: 3.25.76
+      zod: 4.6.5
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - '@types/node'
@@ -9306,10 +9310,12 @@ snapshots:
 
   zhead@2.2.4: {}
 
-  zod-to-json-schema@3.25.2(zod@3.25.76):
+  zod-to-json-schema@3.25.2(zod@4.6.5):
     dependencies:
-      zod: 3.25.76
+      zod: 4.6.5
 
   zod@3.25.76: {}
 
   zod@4.0.14: {}
+
+  zod@4.6.5: {}
