@@ -82,6 +82,30 @@ caminho para reordenar coluna arrastando, hoje impossível.
 - [x] `pnpm screenshot` — as duas frentes mudam a tela, e refazer a captura do
       README é item da task, não acerto posterior
 
+## Evidência visual
+
+| Antes | Depois |
+| --- | --- |
+| ![Antes](../docs/evidencias/task-008/antes.jpg) | ![Depois](../docs/evidencias/task-008/depois.jpg) |
+
+O que mudou entre as duas capturas:
+
+**No painel lateral.** O "antes" traz a seção **Table Columns**, com os campos
+escolhidos como chips (`name ×`, `status ×`) e o botão **+ Add field** logo
+abaixo. No "depois" essa seção não existe mais: sobraram quatro seções, todas de
+configuração da coleção, e elas passam a caber lado a lado sem quebrar o título
+em duas linhas — a evidência de aperto que motivou a Fase 4b da task-006.
+
+**No cabeçalho da grade.** No "antes" o cabeçalho tem apenas os rótulos das
+colunas. No "depois" aparecem duas coisas novas: o **+** no fim da linha, que
+abre a lista de campos da coleção, e o ícone de ordenação ao lado de `name`,
+indicando por qual coluna a grade está ordenada. Cada cabeçalho passou a abrir um
+menu de contexto com ordem crescente, ordem decrescente e ocultar campo.
+
+As duas imagens saem do mesmo roteiro automatizado, `pnpm screenshot`, na mesma
+coleção de teste e no mesmo viewport de 1600x900 — a diferença entre elas é a
+mudança, e não o enquadramento. A do "depois" é a mesma que o README exibe.
+
 ## Notes
 
 Depende da task-005 em dois pontos: ela torna `sort` gravável, sem o que a Fase 1
