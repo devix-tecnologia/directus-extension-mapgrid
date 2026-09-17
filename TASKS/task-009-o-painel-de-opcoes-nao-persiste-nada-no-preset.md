@@ -32,6 +32,70 @@ emitido, que é emitido corretamente. O Storybook mostra o componente funcionand
 Nenhum dos dois passa pelo `useLayout` do Directus, que é quem liga o evento do
 painel de volta ao estado do layout. Só o e2e contra um Directus real revela.
 
+## Diagnóstico feito (2026-09-17)
+
+Rodada de investigação com tempo limitado, medindo contra um Directus real. As
+duas hipóteses levantadas na abertura desta task **foram descartadas**, e o
+caminho ficou bem mais estreito.
+
+**Hipótese 1 — o painel viria de outra instância do wrapper: falsa.** Em
+`app/src/modules/content/routes/collection.vue`, os três slots são renderizados
+dentro do mesmo `v-slot="{ layoutState }"`:
+
+```
+<component :is="`layout-actions-${layout}`" v-bind="layoutState" />
+<component :is="`layout-${layout}`"          v-bind="layoutState">
+<component :is="`layout-options-${layout}`"  v-bind="layoutState" />
+```
+
+O estado é um só. O painel enxerga exatamente o mesmo `layoutState` que o layout.
+
+**Hipótese 2 — `fields` seria sombreado por uma prop do wrapper: falsa.** As props
+são `collection`, `selection`, `layoutOptions`, `layoutQuery`, `layoutProps`,
+`filter`, `filterUser`, `filterSystem`, `search`, `showSelect`, `selectMode`,
+`readonly`, `resetPreset` e `clearFilters`. `fields` não está entre elas, então o
+handler do `useLayout` entra no ramo que escreve (`state[key] = value`).
+
+**O que de fato acontece**, instrumentando o nosso próprio caminho de escrita e
+lendo o console do navegador durante o e2e:
+
+```
+[DIAG] setter fields chamado com ["name","status"]
+[DIAG] write fields ["name","status"]
+[DIAG] apos write, layoutQuery = {"page":1,"limit":25,"sort":["name"]}
+```
+
+Ou seja: o evento chega, o nosso setter roda, e a atribuição é feita. A terceira
+linha não é o defeito — ler `layoutQuery.value` logo após atribuir devolve o
+valor antigo porque ele é uma prop, e o valor novo só volta pelo pai no tique
+seguinte. E volta mesmo: os chips na tela passam a mostrar o campo escolhido, o
+que só acontece se a memória recebeu.
+
+**Sobra uma pergunta só, e é a boa:** por que o mesmo caminho persiste para
+`sort` e não para `fields`. Ordenar pelo cabeçalho escreve pelo mesmo
+`useWritableLayoutQuery`, pelo mesmo `useSync(props, 'layoutQuery', emit)`, e
+sobrevive a um reload — provado por e2e. A escolha de coluna não.
+
+## Onde investigar em seguida
+
+O `usePreset` (`app/src/composables/use-preset.ts`) grava assim:
+
+```ts
+const layoutQuery = computed({
+  get: () => localPreset.value.layout_query?.[layout.value] || null,
+  set: (query) => updatePreset({ layout_query: assign({}, layout_query, { [layout.value]: query }) }),
+});
+```
+
+e o `updatePreset` chama um `autoSave` com `debounce`. A suspeita mais provável,
+dado tudo acima, é **escrita posterior com cópia velha**: se algum outro computed
+nosso gravar `layoutQuery` logo depois, a partir de um valor capturado antes,
+ele apaga o `fields` recém-escrito antes de o `autoSave` disparar. Explicaria a
+diferença entre `sort` e `fields` sem contradizer nenhuma medição.
+
+Próximo passo sugerido: registrar toda escrita em `layoutQuery` com carimbo de
+tempo, e ver se há uma segunda escrita entre a nossa e o salvamento.
+
 ## Onde investigar
 
 O `useLayout` do Directus (`packages/composables/src/use-layout.ts`) monta o
