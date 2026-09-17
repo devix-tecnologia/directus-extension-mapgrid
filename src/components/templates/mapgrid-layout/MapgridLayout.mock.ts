@@ -27,6 +27,7 @@ export const generateMockData = (): MapgridLayoutType => {
       'update:selectedItems': [props.items],
       'edit-item': firstItem ? [firstItem] : [{ id: 0 }],
       'update:sort': [['-name']],
+      'update:fields': [['name', 'city']],
     },
   };
 };

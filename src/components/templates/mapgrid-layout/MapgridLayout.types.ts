@@ -28,6 +28,8 @@ export interface MapgridLayoutEmits {
   'update:selectedItems': [items: GeoItem[]];
   'edit-item': [item: GeoItem];
   'update:sort': [sort: string[]];
+  /** As colunas escolhidas no cabecalho da grade, na ordem. */
+  'update:fields': [fields: string[]];
 }
 
 export type MapgridLayoutModels = Record<string, never>;

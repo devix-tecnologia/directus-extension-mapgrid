@@ -4,6 +4,7 @@ import {
   ensureLegacyMapGridPreset,
   ensureMapGridPreset,
   readMapGridPresetOptions,
+  readMapGridPresetQuery,
 } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
@@ -33,34 +34,6 @@ async function login(page: Page): Promise<void> {
 async function openCollection(page: Page): Promise<void> {
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
   await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
-}
-
-/**
- * Opens the layout options panel in the right sidebar.
- *
- * Directus collapses that sidebar by default, so the options a layout
- * contributes are not in the DOM until its section is expanded. The section
- * header is a button whose accessible name is the icon ligature plus the
- * expand state — "layers expand_more" when closed.
- */
-async function openLayoutOptions(page: Page): Promise<void> {
-  const header = page.getByRole('button', { name: /^layers/ });
-  await expect(header).toBeVisible({ timeout: 30_000 });
-
-  const isClosed = (await header.getAttribute('aria-expanded')) !== 'true';
-  if (isClosed) await header.click();
-
-  // Inside the panel each group is a `v-detail`, also collapsed by default, so
-  // the columns section has to be opened on its own before its picker exists.
-  // Its header is exposed as text rather than as a button, so it is matched by
-  // its label and not by role.
-  const columnsSection = page.getByText(/table columns|colunas da grade/i).first();
-  await expect(columnsSection).toBeVisible({ timeout: 30_000 });
-  await columnsSection.click();
-
-  await expect(page.getByRole('button', { name: /add field|adicionar campo/i })).toBeVisible({
-    timeout: 30_000,
-  });
 }
 
 /** The data columns the grid is showing, in order, without the actions column. */
@@ -94,13 +67,27 @@ test.describe('MapGrid sorting', () => {
     // the preset seeds sort by name ascending, so the first row is alphabetical
     const ascending = (await firstCell().innerText()).trim();
 
-    // a second click on the same header reverses it
+    /*
+     * Ordenar mora no menu de contexto do cabecalho, e nao no clique direto.
+     * Nao e escolha nossa: assim que o slot `header-context-menu` existe, o
+     * `v-table` do Directus troca o clique que ordena por abrir o menu — e por
+     * isso o proprio layout tabular poe "ordem crescente" e "decrescente" ali.
+     */
     await page.locator('.v-table thead th', { hasText: 'name' }).first().click();
-    await page.locator('.v-table thead th', { hasText: 'name' }).first().click();
+    await page.locator('[data-sort-desc="name"]').first().click();
 
     await expect
       .poll(async () => (await firstCell().innerText()).trim(), { timeout: 20_000 })
       .not.toBe(ascending);
+
+    /*
+     * Conferir no preset antes de recarregar. A gravacao do Directus e
+     * debounced: recarregar assim que a tela muda chega antes de ela acontecer,
+     * e o teste acusaria perda do que so ainda nao tinha sido gravado.
+     */
+    await expect
+      .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
+      .toEqual(['-name']);
 
     // and it survives a reload, which is what writing to layoutQuery buys
     const reversed = (await firstCell().innerText()).trim();
@@ -157,15 +144,18 @@ test.describe('MapGrid columns', () => {
     expect(columns.length).toBeGreaterThan(0);
   });
 
-  test('choosing a field in the options panel updates the grid at once', async ({ page }) => {
+  test('choosing a field in the grid header updates the grid, and it survives a reload', async ({
+    page,
+  }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
 
     const before = await visibleColumns(page);
+    expect(before).not.toContain('status');
 
-    await openLayoutOptions(page);
-    await page.getByRole('button', { name: /add field|adicionar campo/i }).click();
+    // o `+` do cabecalho, no mesmo lugar em que o layout tabular do Directus o poe
+    await page.locator('.v-table thead .add-field').first().click();
     await page
       .getByRole('listitem')
       .filter({ hasText: /^Status$/ })
@@ -173,21 +163,23 @@ test.describe('MapGrid columns', () => {
       .click();
 
     await expect.poll(async () => visibleColumns(page), { timeout: 20_000 }).toContain('status');
-    expect((await visibleColumns(page)).length).toBe(before.length + 1);
-  });
 
-  /*
-   * Bloqueado pela task-009, e nao por esta.
-   *
-   * A escolha aparece na grade na hora, mas nao chega ao preset — e o defeito
-   * nao e das colunas: alternar `zoomOnClick`, que existe desde muito antes,
-   * tambem nao persiste. Nenhuma escrita do painel de opcoes e gravada.
-   * Medido: apos escolher `status` e alternar o zoom, `layout_query` continua
-   * `{page,limit,sort}` e `layout_options` continua com o que a semente
-   * escreveu.
-   *
-   * Ordenar pelo cabecalho, que escreve pelo componente do layout e nao pelo
-   * painel, persiste normalmente — o teste ao lado prova.
-   */
-  test.fixme('a column chosen in the options panel survives a reload', async () => {});
+    /*
+     * E aqui esta o ganho de mover a escolha para o cabecalho: ela passa a ser
+     * escrita pelo componente do layout, em `layoutQuery.fields`, e nao pelo
+     * painel de opcoes — cujas escritas nao chegam ao preset, o defeito que a
+     * task-009 investiga. A ordenacao pelo cabecalho ja persistia por esse mesmo
+     * caminho; agora as colunas tambem.
+     */
+    // primeiro no preset, depois na tela: se so a segunda falhar, o defeito esta
+    // na leitura, e nao na gravacao
+    await expect
+      .poll(async () => (await readMapGridPresetQuery()).fields, { timeout: 20_000 })
+      .toContain('status');
+
+    await page.reload();
+    await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
+
+    expect(await visibleColumns(page)).toContain('status');
+  });
 });

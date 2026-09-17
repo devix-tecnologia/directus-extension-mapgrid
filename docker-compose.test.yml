@@ -49,6 +49,15 @@ services:
       PROJECT_OWNER: 'admin@example.com'
       PRESSURE_LIMITER_ENABLED: 'false'
       LOG_LEVEL: 'warn'
+      # Folga no pool de conexoes. Com a maquina ocupada por outras pilhas, o
+      # Directus morria no boot com "Knex: Timeout acquiring a connection" antes
+      # mesmo de responder o primeiro health check — e a suite inteira caia por
+      # isso, e nao pelo que ela mede. Os padroes sao apertados para um host
+      # sob carga; estes dobram a paciencia sem mudar o comportamento no resto.
+      DB_POOL__MIN: '1'
+      DB_POOL__MAX: '10'
+      DB_POOL__ACQUIRE_TIMEOUT_MILLIS: '120000'
+      DB_POOL__CREATE_TIMEOUT_MILLIS: '60000'
     volumes:
       - ./dist/index.js:/directus/extensions/directus-extension-mapgrid/dist/index.js:ro
       - ./package.json:/directus/extensions/directus-extension-mapgrid/package.json:ro
@@ -137,6 +146,17 @@ volumes:
     name: directus-mapgrid-pnpm-store-${TEST_SUITE_ID:-main}
 
 networks:
+  # A sub-rede e fixada de proposito, e nao deixada a cargo do docker.
+  #
+  # Quando o docker sorteia, ele costuma cair em 172.18.0.0/16 — e numa maquina
+  # que anuncia rota de saida no Tailscale o trafego entre conteineres nessa
+  # faixa e engolido: o nome resolve, o ping nao volta e a conexao expira sem
+  # erro. O Directus entao morre no boot com "Knex: Timeout acquiring a
+  # connection", e a suite inteira cai por um motivo que nao tem nada a ver com
+  # o que ela mede. Numa faixa 10.x o mesmo teste passa.
   mapgrid-directus-test-network:
     driver: bridge
     name: directus-mapgrid-test-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
+    ipam:
+      config:
+        - subnet: ${TEST_SUBNET:-10.77.77.0/24}

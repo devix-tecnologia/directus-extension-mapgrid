@@ -3,6 +3,8 @@ import { apiRequest, type DirectusCollectionResponse, unwrapItems } from './dire
 
 export interface Preset {
   id?: string;
+  user?: string | null;
+  role?: string | null;
   collection: string;
   layout: 'mapgrid';
   layout_query?: Record<string, Record<string, unknown>>;
@@ -72,17 +74,36 @@ export async function ensureLegacyMapGridPreset(
   await apiRequest('POST', '/presets', legacyMapGridPresetFor(collection));
 }
 
+/*
+ * Qual preset o Directus realmente le.
+ *
+ * A semente grava um preset global — sem `user` e sem `role`. Quando alguem
+ * muda uma opcao do layout pela interface, o Directus nao edita esse global: ele
+ * cria um preset novo, so daquela pessoa. Ler "o primeiro preset da colecao"
+ * devolve entao o global, que ficou parado no que a semente escreveu, e o teste
+ * conclui que nada foi gravado quando na verdade foi gravado em outra linha.
+ *
+ * A precedencia e a mesma que o Directus aplica: o da pessoa vence o do papel,
+ * que vence o global.
+ */
+const presetPrecedence = (preset: Preset): number => {
+  if (preset.user) return 2;
+  if (preset.role) return 1;
+  return 0;
+};
+
+async function readEffectivePreset(collection: string): Promise<Preset | undefined> {
+  const query = `filter[collection][_eq]=${collection}&fields=id,user,role,layout_query,layout_options&limit=-1`;
+  const response = await apiRequest<DirectusCollectionResponse<Preset>>('GET', `/presets?${query}`);
+
+  return unwrapItems(response).sort((a, b) => presetPrecedence(b) - presetPrecedence(a))[0];
+}
+
 /** The layout query currently stored for a collection, where the columns live. */
 export async function readMapGridPresetQuery(
   collection: string = COLLECTION_NAME
 ): Promise<Record<string, unknown>> {
-  const query = `filter[collection][_eq]=${collection}&fields=layout_query&limit=1`;
-  const response = await apiRequest<DirectusCollectionResponse<Pick<Preset, 'layout_query'>>>(
-    'GET',
-    `/presets?${query}`
-  );
-
-  const [preset] = unwrapItems(response);
+  const preset = await readEffectivePreset(collection);
   return preset?.layout_query?.mapgrid ?? {};
 }
 
@@ -90,12 +111,6 @@ export async function readMapGridPresetQuery(
 export async function readMapGridPresetOptions(
   collection: string = COLLECTION_NAME
 ): Promise<Record<string, unknown>> {
-  const query = `filter[collection][_eq]=${collection}&fields=layout_options&limit=1`;
-  const response = await apiRequest<DirectusCollectionResponse<Pick<Preset, 'layout_options'>>>(
-    'GET',
-    `/presets?${query}`
-  );
-
-  const [preset] = unwrapItems(response);
+  const preset = await readEffectivePreset(collection);
   return preset?.layout_options?.mapgrid ?? {};
 }

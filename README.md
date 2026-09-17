@@ -20,7 +20,7 @@ A Layout-type extension for Directus that displays a collection in map and grid 
 - **Grid**: the same items in a sortable, selectable table
 - **Synchronised selection**: click a row to highlight its marker, click a marker to highlight its row
 - **Clustering**: automatic grouping where points are dense
-- **Configurable columns**: choose which fields the grid shows
+- **Configurable columns**: add, remove and reorder the grid's columns from its header
 - **Zoom on click**: fly to an item, or only pan when it is off screen
 - **Reset view**: re-fit the map to the current result set at any time
 - **Bulk delete**: select rows and delete them from the layout header
@@ -40,9 +40,16 @@ npm install @devix-tecnologia/directus-extension-mapgrid
    - **Geolocation**: the map field to read on each item
    - **Popup Pin Map**: the template shown in a marker's popup
    - **Map Center**: the starting coordinates and zoom
-   - **Table Columns**: add the fields the grid shows, in the order you want them
 
 The layout detects sensible defaults from the collection, so it is usable before any of these are set.
+
+#### Columns
+
+Columns are chosen in the grid's own header, the way the Directus tabular layout does it — not in
+the sidebar. The **+** at the end of the header row opens the collection's field list; each column's
+context menu (**⋮**) hides it; dragging a header moves the column. Clicking a header sorts by it,
+and clicking again reverses the direction. Every one of those choices is stored in the preset, so
+it is still there on the next visit.
 
 There is no limit on how many columns the grid can show, and the layout only asks the API for the
 fields it actually needs: the columns, the primary key, the geolocation field, and any field cited
@@ -186,7 +193,7 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
 - **Grade**: os mesmos itens numa tabela ordenável e selecionável
 - **Seleção sincronizada**: clicar numa linha destaca o marcador, clicar num marcador destaca a linha
 - **Agrupamento**: junção automática onde os pontos são densos
-- **Colunas configuráveis**: escolha quais campos a grade mostra
+- **Colunas configuráveis**: acrescente, remova e reordene as colunas pelo cabeçalho da grade
 - **Zoom ao clicar**: voar até o item, ou apenas deslocar quando ele está fora da tela
 - **Reenquadrar**: reajustar o mapa ao resultado atual a qualquer momento
 - **Exclusão em lote**: selecionar linhas e excluí-las pelo cabeçalho do layout
@@ -206,9 +213,16 @@ npm install @devix-tecnologia/directus-extension-mapgrid
    - **Geolocalização**: o campo de mapa a ler em cada item
    - **Popup do marcador**: o template exibido no popup
    - **Centro do mapa**: coordenadas e zoom iniciais
-   - **Colunas da grade**: acrescente os campos que a grade mostra, na ordem que quiser
 
 O layout detecta padrões razoáveis a partir da coleção, então já é utilizável antes de qualquer uma dessas opções ser preenchida.
+
+#### Colunas
+
+As colunas se escolhem no próprio cabeçalho da grade, como no layout tabular do Directus — e não no
+painel lateral. O **+** no fim da linha de cabeçalho abre a lista de campos da coleção; o menu de
+contexto de cada coluna (**⋮**) a oculta; arrastar um cabeçalho move a coluna. Clicar num cabeçalho
+ordena por ele, e clicar de novo inverte a direção. Cada uma dessas escolhas fica gravada no preset,
+então continua lá na próxima visita.
 
 Não há limite de quantas colunas a grade exibe, e o layout só pede à API os campos de que realmente
 precisa: as colunas, a chave primária, o campo de geolocalização e os campos citados no template do

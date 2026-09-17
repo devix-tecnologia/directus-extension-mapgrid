@@ -59,34 +59,6 @@
     </div>
   </v-detail>
 
-  <v-detail icon="view_column" :label="t('optionColumns')">
-    <div class="field-group">
-      <div v-for="field in selectedFields" :key="field" class="chosen-field" :data-field="field">
-        <span class="chosen-field__name">{{ field }}</span>
-        <button type="button" class="chosen-field__remove" @click="removeField(field)">
-          <v-icon name="close" small />
-        </button>
-      </div>
-
-      <p v-if="selectedFields.length === 0" class="chosen-field__empty">
-        {{ t('optionColumnsEmpty') }}
-      </p>
-
-      <v-menu placement="bottom-start" show-arrow>
-        <template #activator="{ toggle }">
-          <v-button secondary small @click="toggle">
-            <v-icon name="add" small />
-            {{ t('optionColumnsAdd') }}
-          </v-button>
-        </template>
-        <v-field-list
-          :collection="collection"
-          :disabled-fields="selectedFields"
-          @add="addField"
-        />
-      </v-menu>
-    </div>
-  </v-detail>
 </template>
 
 <script setup lang="ts">
@@ -147,33 +119,6 @@ const zoomOnClick = computed<boolean | undefined, unknown>({
 });
 
 /**
- * The chosen columns, in order. A list rather than five numbered slots: the
- * grid has no reason to cap at five, and the order is the user's.
- */
-const selectedFields = computed<string[]>(() => props.fields ?? []);
-
-/**
- * `v-field-list` emits the keys it collected. Adding one that is already there
- * would draw the same column twice, so a repeat is simply ignored — the picker
- * already greys those out via `disabled-fields`, and this guards the case where
- * it does not.
- */
-const addField = (added: string[] | string): void => {
-  const keys = Array.isArray(added) ? added : [added];
-  const fresh = keys.filter((key) => key !== '' && !selectedFields.value.includes(key));
-  if (fresh.length === 0) return;
-
-  emit('update:fields', [...selectedFields.value, ...fresh]);
-};
-
-const removeField = (field: string): void => {
-  emit(
-    'update:fields',
-    selectedFields.value.filter((candidate) => candidate !== field)
-  );
-};
-
-/**
  * The fields that can hold a point. They come from the prop, not from a
  * `useCollection` of its own: the layout already resolved the collection once,
  * and fetching it again here was a second source of truth that could disagree
@@ -186,13 +131,6 @@ const geolocationFields = computed(() =>
 
 <style scoped>
 .field {
-  margin-top: var(--form-vertical-gap);
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--form-vertical-gap);
   margin-top: var(--form-vertical-gap);
 }
 </style>

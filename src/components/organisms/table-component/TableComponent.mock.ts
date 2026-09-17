@@ -27,6 +27,7 @@ export const generateMockData = (): TableComponentType => {
       'edit-item': firstItem ? [firstItem] : [{ id: 0 }],
       'update:selectedItems': [props.items],
       'update:sort': [['-name']],
+      'update:fields': [['name', 'city']],
     },
   };
 };

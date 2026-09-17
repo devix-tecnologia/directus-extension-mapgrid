@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import { expect, userEvent } from 'storybook/test';
+import { expect, fn, userEvent } from 'storybook/test';
 import { generateMockData } from './TableComponent.mock';
 import TableComponent from './TableComponent.vue';
 
@@ -85,4 +85,59 @@ export const EditDeleteDisabled: Story = {
     canDelete: false,
   },
   render: tableFrame,
+};
+
+/*
+ * As colunas se escolhem no cabecalho, e nao no painel lateral. O `play` cobre
+ * o caminho inteiro no navegador — o menu de contexto, o clique e o evento que
+ * sobe — porque o unitario exercita o stub do `v-table`, e nao o de verdade.
+ */
+export const ChoosingColumns: Story = {
+  name: 'Choosing columns from the header',
+  args: {
+    ...mockData.props,
+    selectedItems: [],
+    'onUpdate:fields': fn(),
+  },
+  render: tableFrame,
+  play: async ({ args, canvasElement }) => {
+    const shown = mockData.props.headers.map((header) => header.value);
+    const [first] = shown;
+    expect(first).toBeTruthy();
+
+    const remove = canvasElement.querySelector<HTMLElement>(`[data-remove-field="${first}"]`);
+    expect(remove).toBeTruthy();
+    if (!remove) return;
+
+    await userEvent.click(remove);
+
+    expect(args['onUpdate:fields']).toHaveBeenCalledWith(shown.slice(1));
+  },
+};
+
+/*
+ * Ordenar tambem mora no menu de contexto do cabecalho: o `v-table` do Directus
+ * troca o clique que ordena por abrir o menu assim que esse slot existe.
+ */
+export const SortingFromTheHeader: Story = {
+  name: 'Sorting from the header menu',
+  args: {
+    ...mockData.props,
+    selectedItems: [],
+    sort: [],
+    'onUpdate:sort': fn(),
+  },
+  render: tableFrame,
+  play: async ({ args, canvasElement }) => {
+    const [first] = mockData.props.headers.map((header) => header.value);
+    expect(first).toBeTruthy();
+
+    const descending = canvasElement.querySelector<HTMLElement>(`[data-sort-desc="${first}"]`);
+    expect(descending).toBeTruthy();
+    if (!descending) return;
+
+    await userEvent.click(descending);
+
+    expect(args['onUpdate:sort']).toHaveBeenCalledWith([`-${first}`]);
+  },
 };

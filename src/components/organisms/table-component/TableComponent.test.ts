@@ -56,28 +56,25 @@ describe('TableComponent — clicking a row takes the map to the item', () => {
 });
 
 describe('TableComponent — sorting by the column header', () => {
-  it('passes the current sort down, so the header shows which way it is ordered', () => {
-    const wrapper = mountTable({ sort: ['-name'] });
-
-    expect(wrapper.findComponent({ name: 'v-table' }).props('sort')).toEqual(['-name']);
-  });
-
-  it('emits the new sort when the header reports one, instead of swallowing the click', async () => {
+  it('emits the new sort when the table reports one, instead of swallowing it', async () => {
     const wrapper = mountTable();
 
-    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:sort', ['status']);
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:sort', {
+      by: 'status',
+      desc: false,
+    });
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted('update:sort')?.[0]).toEqual([['status']]);
   });
 
-  it('accepts a descending sort, which is the second click on the same header', async () => {
+  it('clears the sort when the table reports none, rather than keeping the old field', async () => {
     const wrapper = mountTable({ sort: ['status'] });
 
-    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:sort', ['-status']);
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:sort', { by: null, desc: false });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.emitted('update:sort')?.[0]).toEqual([['-status']]);
+    expect(wrapper.emitted('update:sort')?.[0]).toEqual([[]]);
   });
 
   it('leaves the actions column unsortable, because there is nothing to order by', () => {
@@ -87,6 +84,137 @@ describe('TableComponent — sorting by the column header', () => {
     }[];
 
     expect(headers.find((header) => header.value === 'actions')?.sortable).toBe(false);
+  });
+});
+
+describe('TableComponent — choosing columns from the header', () => {
+  it('offers the field picker in the header, where the Directus tabular layout puts it', () => {
+    const wrapper = mountTable();
+
+    expect(wrapper.findComponent({ name: 'v-field-list' }).exists()).toBe(true);
+  });
+
+  it('appends a field chosen from the picker, keeping the ones already there', async () => {
+    const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }] });
+
+    wrapper.findComponent({ name: 'v-field-list' }).vm.$emit('add', ['city']);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('update:fields')?.[0]).toEqual([['name', 'city']]);
+  });
+
+  it('does not add a field twice, which would draw the same column again', async () => {
+    const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }] });
+
+    wrapper.findComponent({ name: 'v-field-list' }).vm.$emit('add', ['name']);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('update:fields')).toBeUndefined();
+  });
+
+  it('greys out in the picker the columns already shown', () => {
+    const wrapper = mountTable({
+      headers: [
+        { text: 'Name', value: 'name' },
+        { text: 'City', value: 'city' },
+      ],
+    });
+
+    expect(wrapper.findComponent({ name: 'v-field-list' }).props('disabledFields')).toEqual([
+      'name',
+      'city',
+    ]);
+  });
+
+  it('removes a column and keeps the order of the rest', async () => {
+    const wrapper = mountTable({
+      headers: [
+        { text: 'Name', value: 'name' },
+        { text: 'City', value: 'city' },
+        { text: 'State', value: 'state' },
+      ],
+    });
+
+    await wrapper.find('[data-remove-field="city"]').trigger('click');
+
+    expect(wrapper.emitted('update:fields')?.[0]).toEqual([['name', 'state']]);
+  });
+});
+
+describe('TableComponent — sorting from the header context menu', () => {
+  /*
+   * O `v-table` do Directus troca o clique que ordena pelo menu de contexto
+   * assim que o slot `header-context-menu` existe. Por isso o proprio layout
+   * tabular poe "ordenar" dentro do menu — e por isso estes testes exercitam o
+   * menu, e nao o clique no cabecalho.
+   */
+  it('hands the table the sort in the shape it speaks, and not the query format', () => {
+    const wrapper = mountTable({ sort: ['-name'] });
+
+    expect(wrapper.findComponent({ name: 'v-table' }).props('sort')).toEqual({
+      by: 'name',
+      desc: true,
+    });
+  });
+
+  it('sorts ascending from the menu, writing the query format back', async () => {
+    const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }], sort: ['-name'] });
+
+    await wrapper.find('[data-sort-asc="name"]').trigger('click');
+
+    expect(wrapper.emitted('update:sort')?.[0]).toEqual([['name']]);
+  });
+
+  it('sorts descending from the menu', async () => {
+    const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }], sort: ['name'] });
+
+    await wrapper.find('[data-sort-desc="name"]').trigger('click');
+
+    expect(wrapper.emitted('update:sort')?.[0]).toEqual([['-name']]);
+  });
+
+  it('does not offer sorting on the actions column, which is not a field', () => {
+    const wrapper = mountTable();
+
+    expect(wrapper.find('[data-sort-asc="actions"]').exists()).toBe(false);
+  });
+});
+
+describe('TableComponent — reordering columns by dragging the header', () => {
+  it('lets the table reorder the headers, which the tabular layout allows too', () => {
+    const wrapper = mountTable();
+    const table = wrapper.findComponent({ name: 'v-table' });
+
+    expect(table.props('allowHeaderReorder')).toBe(true);
+  });
+
+  it('turns a reordered header list back into the chosen fields, in the new order', async () => {
+    const wrapper = mountTable({
+      headers: [
+        { text: 'Name', value: 'name' },
+        { text: 'City', value: 'city' },
+      ],
+    });
+
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:headers', [
+      { text: 'City', value: 'city' },
+      { text: 'Name', value: 'name' },
+    ]);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('update:fields')?.[0]).toEqual([['city', 'name']]);
+  });
+
+  it('leaves the actions column out of what it writes back, because it is not a field', async () => {
+    const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }] });
+
+    wrapper.findComponent({ name: 'v-table' }).vm.$emit('update:headers', [
+      { text: 'Name', value: 'name' },
+      { text: '', value: 'actions' },
+    ]);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('update:fields')?.[0]).toEqual([['name']]);
   });
 });
 

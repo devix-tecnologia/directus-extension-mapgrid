@@ -37,6 +37,7 @@
         :sort="sort"
         @update:selected-items="selectedItems = $event"
         @update:sort="emit('update:sort', $event)"
+        @update:fields="emit('update:fields', $event)"
         @focus-on-item="handleFocusOnItem"
         @edit-item="editItem"
       />

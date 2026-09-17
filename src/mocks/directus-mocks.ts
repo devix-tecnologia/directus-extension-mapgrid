@@ -21,10 +21,12 @@ export const vTableStub: Component = {
     fixedHeader: { type: Boolean, default: false },
     modelValue: { default: () => [] },
     canDelete: { type: Boolean, default: true },
-    /** Campos de ordenação no formato do Directus: `nome` asc, `-nome` desc. */
-    sort: { type: Array, default: () => [] },
+    /** Ordenação como o `v-table` a descreve: `{ by, desc }`. */
+    sort: { type: Object, default: () => ({ by: null, desc: false }) },
+    /** Arrastar cabecalho para reordenar coluna, como o layout tabular permite. */
+    allowHeaderReorder: { type: Boolean, default: false },
   },
-  emits: ['click:row', 'update:modelValue', 'update:sort'],
+  emits: ['click:row', 'update:modelValue', 'update:sort', 'update:headers'],
   data() {
     return {
       localSelected: Object.assign([], this.modelValue ?? []),
@@ -55,6 +57,12 @@ export const vTableStub: Component = {
   },
   template: `
     <div class="v-table v-table-mock">
+      <div class="v-table-mock__header-extra">
+        <slot name="header-append" />
+        <template v-for="h in headers" :key="'ctx-' + h.value">
+          <slot name="header-context-menu" :header="h" />
+        </template>
+      </div>
       <table>
         <thead>
           <tr>
@@ -377,7 +385,28 @@ const vMenuStub: Component = {
   `,
 };
 
+/**
+ * The app's list row, used inside a menu. The real one carries the whole
+ * hover/active/disabled behaviour of the design system; what a test needs is
+ * the row rendered, clickable, and with its attributes intact — the grid's
+ * header context menu is found by `[data-remove-field]`.
+ */
+const vListItemStub: Component = {
+  name: 'v-list-item',
+  props: {
+    clickable: { type: Boolean, default: false },
+    active: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
+  },
+  template: `
+    <div class="v-list-item v-list-item-mock"><slot /></div>
+  `,
+};
+
 export const directusComponentStubs: Record<string, Component> = {
+  'v-list': createStub('v-list'),
+  'v-divider': createStub('v-divider'),
+  'v-list-item': vListItemStub,
   'v-button': vButtonStub,
   'v-icon': vIconStub,
   'v-dialog': createStub('v-dialog', ['modelValue']),

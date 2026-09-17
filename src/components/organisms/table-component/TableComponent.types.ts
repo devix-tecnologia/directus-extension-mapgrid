@@ -25,4 +25,5 @@ export interface TableComponentEmits {
   'edit-item': [item: GeoItem];
   'update:selectedItems': [items: GeoItem[]];
   'update:sort': [sort: string[]];
+  'update:fields': [fields: string[]];
 }

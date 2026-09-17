@@ -141,3 +141,25 @@ A task-008 tira o seletor de colunas do painel e o leva para o cabeçalho da
 grade, onde o caminho de escrita já é comprovadamente bom. Isso **contorna** o
 sintoma para as colunas, e não corrige o defeito: o resto do painel — campo de
 geolocalização, template do popup, centro do mapa — continua sem gravar.
+
+## Achado de 2026-09-17, vindo da task-008
+
+A medição que sustenta o diagnóstico acima pode estar errada, e por um motivo
+simples: **o preset lido não é o preset gravado**.
+
+A semente dos testes grava um preset global — sem `user` e sem `role`. Quando
+alguém muda uma opção pela interface, o Directus não edita esse global: ele cria
+um preset novo, específico daquela pessoa. O ajudante de teste lia
+`/presets?filter[collection][_eq]=...&limit=1`, ou seja, a primeira linha, que é
+a global — parada no que a semente escreveu. Daí a conclusão "nenhuma escrita do
+painel é gravada".
+
+O ajudante foi corrigido em `tests/helpers/mapgrid-preset.ts`: agora ele lê todas
+as linhas da coleção e aplica a mesma precedência do Directus — o preset da
+pessoa vence o do papel, que vence o global. Com essa correção, a escolha de
+coluna feita no cabeçalho aparece no preset em menos de vinte segundos, e a
+ordenação também.
+
+Próximo passo desta task, portanto, é **refazer a medição** antes de qualquer
+conserto: alternar `zoomOnClick` pelo painel e ler o preset efetivo. Se o valor
+estiver lá, não há defeito nenhum, e esta task fecha como erro de medição.

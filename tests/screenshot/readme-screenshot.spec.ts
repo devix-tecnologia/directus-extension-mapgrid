@@ -36,15 +36,20 @@ async function login(page: Page): Promise<void> {
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
 }
 
-/** Opens the layout options panel, so the shot shows how the layout is configured. */
+/**
+ * Opens the layout options panel, so the shot shows how the layout is
+ * configured. The section it expands is the popup template — the columns used
+ * to live here, and moving them to the grid header left this panel with only
+ * collection configuration.
+ */
 async function openLayoutOptions(page: Page): Promise<void> {
   const header = page.getByRole('button', { name: /^layers/ });
   await expect(header).toBeVisible({ timeout: 30_000 });
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
 
-  const columns = page.getByText(/table columns|colunas da grade/i).first();
-  await expect(columns).toBeVisible({ timeout: 30_000 });
-  await columns.click();
+  const popup = page.getByText(/popup pin map|popup do marcador/i).first();
+  await expect(popup).toBeVisible({ timeout: 30_000 });
+  await popup.click();
 }
 
 test('captures the README screenshot', async ({ page }) => {
@@ -56,12 +61,13 @@ test('captures the README screenshot', async ({ page }) => {
   await apiRequest('POST', '/presets', {
     collection: COLLECTION_NAME,
     layout: 'mapgrid',
-    layout_query: { mapgrid: { page: 1, limit: 25, sort: ['name'] } },
+    // as colunas moram na consulta, e nao nas opcoes: e onde o Directus as
+    // guarda, e e de la que a grade as le desde a task-005
+    layout_query: { mapgrid: { page: 1, limit: 25, sort: ['name'], fields: ['name', 'status'] } },
     layout_options: {
       mapgrid: {
         geolocation: 'location',
         title: '{{name}}',
-        fields: ['name', 'status'],
         zoomOnClick: false,
       },
     },
