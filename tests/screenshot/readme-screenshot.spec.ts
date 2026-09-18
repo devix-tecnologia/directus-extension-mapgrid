@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { DIRETORIO_DE_EVIDENCIAS, nomeDeEvidencia } from '../../scripts/captura-de-tela/index';
 import { COLLECTION_NAME } from '../helper-collection';
 import { apiRequest } from '../helpers/directus-api';
 import { ensureMapGridPreset } from '../helpers/mapgrid-preset';
@@ -21,6 +22,37 @@ import { testEnv } from '../test-env';
  * very thing it is meant to show.
  */
 const VIEWPORT = { width: 1600, height: 900 };
+
+/**
+ * A mesma captura também vira evidência de task, quando pedida.
+ *
+ * A convenção de nome vem do geohub: `TASKS/assets/task-NNN-<rotulo>-<momento>.png`,
+ * com o momento no nome e não em subpasta, para que o par antes/depois apareça
+ * lado a lado ao abrir a pasta.
+ *
+ * O "antes" se obtém rodando este mesmo roteiro contra o `dist/index.js`
+ * construído de uma revisão anterior: as duas imagens saem então do mesmo
+ * ambiente, mesma coleção e mesmo viewport, e a única diferença entre elas é a
+ * extensão. Capturar o "antes" depois da mudança seria tarde demais — só o git
+ * ainda tem aquele estado.
+ */
+const evidencia = (): string | undefined => {
+  const momento = process.env.EVIDENCE_MOMENT;
+  const task = process.env.EVIDENCE_TASK;
+  if (!momento || !task) return undefined;
+
+  if (momento !== 'antes' && momento !== 'depois') {
+    throw new Error(
+      `EVIDENCE_MOMENT deve ser "antes" ou "depois", e veio ${JSON.stringify(momento)}`
+    );
+  }
+
+  return `${DIRETORIO_DE_EVIDENCIAS}/${nomeDeEvidencia({
+    task,
+    rotulo: process.env.EVIDENCE_LABEL ?? 'tela',
+    momento,
+  })}`;
+};
 
 async function login(page: Page): Promise<void> {
   await page.goto('/admin/login');
@@ -90,4 +122,9 @@ test('captures the README screenshot', async ({ page }) => {
     quality: 90,
     animations: 'disabled',
   });
+
+  const caminhoDaEvidencia = evidencia();
+  if (caminhoDaEvidencia) {
+    await page.screenshot({ path: caminhoDaEvidencia, animations: 'disabled' });
+  }
 });

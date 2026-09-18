@@ -86,25 +86,39 @@ caminho para reordenar coluna arrastando, hoje impossível.
 
 | Antes | Depois |
 | --- | --- |
-| ![Antes](../docs/evidencias/task-008/antes.jpg) | ![Depois](../docs/evidencias/task-008/depois.jpg) |
+| ![Antes](assets/task-008-grade-antes.png) | ![Depois](assets/task-008-grade-depois.png) |
 
 O que mudou entre as duas capturas:
 
-**No painel lateral.** O "antes" traz a seção **Table Columns**, com os campos
-escolhidos como chips (`name ×`, `status ×`) e o botão **+ Add field** logo
-abaixo. No "depois" essa seção não existe mais: sobraram quatro seções, todas de
-configuração da coleção, e elas passam a caber lado a lado sem quebrar o título
-em duas linhas — a evidência de aperto que motivou a Fase 4b da task-006.
+**No painel lateral.** O "antes" tem cinco seções, e a última é **Table Columns**
+— é lá que os campos exibidos eram escolhidos, por chips e um botão "Add field".
+No "depois" essa seção não existe mais: sobraram quatro, todas de configuração da
+coleção, e elas passam a caber lado a lado sem quebrar o título em duas linhas —
+a evidência de aperto que motivou a Fase 4b da task-006.
 
-**No cabeçalho da grade.** No "antes" o cabeçalho tem apenas os rótulos das
-colunas. No "depois" aparecem duas coisas novas: o **+** no fim da linha, que
-abre a lista de campos da coleção, e o ícone de ordenação ao lado de `name`,
-indicando por qual coluna a grade está ordenada. Cada cabeçalho passou a abrir um
+**No cabeçalho da grade.** No "antes" o cabeçalho traz apenas `name`, `status` e
+`Actions`. No "depois" aparecem duas coisas: o **+** no fim da linha, que abre a
+lista de campos da coleção, e o ícone de ordenação ao lado de `name`, mostrando
+por qual coluna a grade está ordenada. Cada cabeçalho passou também a abrir um
 menu de contexto com ordem crescente, ordem decrescente e ocultar campo.
 
-As duas imagens saem do mesmo roteiro automatizado, `pnpm screenshot`, na mesma
-coleção de teste e no mesmo viewport de 1600x900 — a diferença entre elas é a
-mudança, e não o enquadramento. A do "depois" é a mesma que o README exibe.
+### Como o par foi gerado
+
+Pela convenção do `geohub/scripts/captura-de-tela`: as duas imagens ficam em
+`TASKS/assets/`, com o momento no **nome** e não em subpasta, para que o par
+apareça lado a lado ao abrir a pasta. A nomeação veio para cá em
+`scripts/captura-de-tela/`, com seus testes.
+
+O "antes" não é a imagem antiga renomeada: é uma captura nova, feita rodando o
+mesmo roteiro autenticado contra o `dist/index.js` reconstruído da revisão
+anterior a esta task (`2846b76`), no mesmo Directus, mesma coleção e mesmo
+viewport de 1600x900. A única diferença entre as duas imagens é a extensão — que
+é exatamente o que uma evidência precisa isolar. Capturar o "antes" depois de
+fazer a mudança seria tarde demais: só o git ainda tem aquele estado.
+
+    EVIDENCE_TASK=008 EVIDENCE_LABEL=grade EVIDENCE_MOMENT=antes|depois \
+      RUNNER_CMD=screenshot docker compose -f docker-compose.test.yml \
+      --profile runner up --abort-on-container-exit --exit-code-from tests
 
 ## Notes
 

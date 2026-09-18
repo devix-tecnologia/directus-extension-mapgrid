@@ -105,6 +105,11 @@ services:
       DIRECTUS_URL: 'http://directus:8055'
       # `e2e` roda a suite; `screenshot` regenera docs/tela.jpg
       RUNNER_CMD: ${RUNNER_CMD:-e2e}
+      # Quando presentes, a captura tambem grava a evidencia da task em
+      # TASKS/assets, no formato task-NNN-<rotulo>-<momento>.png
+      EVIDENCE_TASK: ${EVIDENCE_TASK:-}
+      EVIDENCE_LABEL: ${EVIDENCE_LABEL:-}
+      EVIDENCE_MOMENT: ${EVIDENCE_MOMENT:-}
     depends_on:
       directus:
         condition: service_healthy
