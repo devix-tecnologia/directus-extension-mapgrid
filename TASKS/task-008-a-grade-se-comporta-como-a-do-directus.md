@@ -143,6 +143,81 @@ dois unitários novos fixam que menu e seletor começam fechados.
 A lição que fica é sobre o stub, não sobre a grade: um stub que monta tudo de uma
 vez deixa o teste alcançar o que o usuário não alcança.
 
+## Spike de 2026-09-18 — usar o layout tabular em vez de imitá-lo
+
+A pergunta que sobrou desta task: em vez de manter o nosso `v-table` mais o
+conteúdo dos slots, dá para **embutir o layout tabular do Directus** aqui dentro?
+O que nos falta — alinhamento por coluna, largura, o menu completo — é justamente
+o que ele já tem pronto.
+
+Antes de tudo, uma correção de premissa: a grade já **é** a do Directus. O
+`v-table` é o componente real, e o seletor de campos do `+`, com busca e submenus
+de relação, é o `v-field-list` real. O que escrevemos é só o conteúdo do slot
+`header-context-menu`, e esse conteúdo é autoral por layout — é de lá que vêm os
+"Alinhar à esquerda/centro/direita" do tabular.
+
+Medido no app real, em `spike/tabular-embed` (`0ce82c9`, `fedb3f5`). **Não dá
+para medir no Storybook**: lá o `@directus/extensions-sdk` é um mock nosso, que
+nem exporta `useLayout`, e o layout tabular não existe fora do app do Directus.
+
+### O que o spike achou
+
+- O SDK que o **Directus 10.13.1** entrega em runtime exporta `useLayout` e
+  `useExtensions`. Isso era risco real: o bundle resolve o SDK como externo, e
+  compilamos contra o SDK 16. Layouts registrados: `calendar, cards, kanban,
+  map, tabular, mapgrid`; os slots do tabular são `options, sidebar, actions`.
+- O wrapper de `useLayout` **não desenha nada**: ele chama o `setup()` do layout
+  e entrega tudo num slot `default` como `{ layoutState }`. Quem renderiza o
+  component é quem chama.
+- O tabular renderizou dentro do nosso layout, com tabela, seleção e o `+`.
+- `layoutState` tem 92 chaves, e duas derrubam objeções que eu tinha levantado:
+  `items` (os itens que ele mesmo buscou, então o mapa se alimenta dali, sem
+  segundo fetch) e `onRowClick` (dá para trocar pela nossa função).
+- Sobem como emit **só** `selection`, `layoutOptions` e `layoutQuery`. Como
+  alinhamento e largura moram em `layoutOptions`, embutir entrega as features mas
+  **não** resolve persistir: isso continua sendo a task-009.
+- Sem trocar o `onRowClick`, o clique na linha navega para o item
+  (`/admin/content/<colecao>/1`) em vez de destacar o marcador — medido.
+- A coluna de geometria sai como JSON cru: o tabular usa os displays do Directus,
+  e o tratamento que o nosso `ValueCell` dá a campos sem display se perderia.
+
+### O que ele desenhou
+
+Capturas do spike rodando, não do produto — o `dist` aqui é o do branch, em que o
+`component:` aponta para o spike. Em todas, o tracejado vermelho é a borda do
+spike: o que está dentro dela é o layout tabular do Directus.
+
+| O menu de contexto dele | A grade embutida |
+| --- | --- |
+| ![Menu](assets/task-008-spike-menu.png) | ![Grade](assets/task-008-spike-grade.png) |
+
+No menu aparecem "Sort Ascending/Descending" e "Left/Center/Right Align" — as
+duas de ordenação esmaecidas porque a coluna clicada foi `Location`, que é
+geometria e não ordena. Na grade se vê o outro lado da moeda: `Location` sai como
+JSON cru, sem o tratamento que o nosso `ValueCell` dá.
+
+![A tela inteira, com o relatório](assets/task-008-spike-tela.png)
+
+A tela inteira mostra o relatório que o spike despeja antes da grade: os exports
+do SDK em runtime, os layouts registrados e as 92 chaves do `layoutState`.
+
+### Veredito
+
+Viável, e melhor do que parecia — mas **depois da task-009**, não antes: o ganho
+principal é exatamente o que ela desbloqueia. Fica sem medir quanto do visual do
+tabular assume a tela inteira, já que aqui ele divide espaço com o mapa.
+
+### Como rodar o spike
+
+Nesta máquina o host não alcança portas publicadas pelo docker, então
+`pnpm test:e2e` (que roda o Playwright no host) expira no setup. O caminho que
+funciona é de dentro da rede:
+
+    docker compose -f docker-compose.test.yml --profile runner run --rm tests \
+      bash -lc 'npm i -g pnpm@10.15.0 && pnpm install --frozen-lockfile && \
+      pnpm exec playwright test --config=playwright.config.ts \
+      tests/e2e/SPIKE-tabular.spec.ts --reporter=list'
+
 ## Notes
 
 Depende da task-005 em dois pontos: ela torna `sort` gravável, sem o que a Fase 1
