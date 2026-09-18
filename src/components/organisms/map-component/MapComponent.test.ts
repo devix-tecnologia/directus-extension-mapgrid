@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
+
+const maplibre = vi.hoisted(() => ({
+  maps: [] as Array<{ fitBounds: Mock }>,
+}));
 
 vi.mock('maplibre-gl', () => {
   class MockMap {
@@ -28,6 +32,10 @@ vi.mock('maplibre-gl', () => {
     querySourceFeatures = vi.fn(() => []);
     queryRenderedFeatures = vi.fn(() => []);
     remove = vi.fn();
+
+    constructor() {
+      maplibre.maps.push(this);
+    }
   }
 
   class MockPopup {
@@ -45,7 +53,7 @@ vi.mock('maplibre-gl', () => {
 
   class MockLngLatBounds {
     extend = vi.fn();
-    isEmpty = vi.fn(() => true);
+    isEmpty = vi.fn(() => false);
   }
 
   return {
@@ -93,5 +101,49 @@ describe('MapComponent', () => {
       },
     });
     expect(typeof wrapper.vm.focusOnItem).toBe('function');
+  });
+});
+
+describe('MapComponent — the initial framing runs once, not on every item change', () => {
+  const item = (id: number, coords: [number, number]) => ({
+    id,
+    name: `Item ${id}`,
+    position: { coordinates: coords },
+  });
+
+  const mountMap = (items: ReturnType<typeof item>[]) =>
+    mount(MapComponent, {
+      props: {
+        items,
+        geolocation: 'position',
+        title: '{{name}}',
+        zoomOnClick: false,
+        mapCenterLng: -47.9292,
+        mapCenterLat: -15.7801,
+        mapZoom: 4,
+      },
+      global: {
+        stubs: directusComponentStubs,
+      },
+    });
+
+  beforeEach(() => {
+    maplibre.maps.length = 0;
+  });
+
+  it('does not re-frame when the items change, so a page swap cannot pull the camera back', async () => {
+    const wrapper = mountMap([item(1, [-47.9292, -15.7801])]);
+
+    await flushPromises();
+    const map = maplibre.maps[0];
+    expect(map).toBeDefined();
+    expect(map?.fitBounds).toHaveBeenCalledTimes(1);
+
+    await wrapper.setProps({
+      items: [item(1, [-47.9292, -15.7801]), item(2, [-46.6333, -23.5505])],
+    });
+    await flushPromises();
+
+    expect(map?.fitBounds).toHaveBeenCalledTimes(1);
   });
 });

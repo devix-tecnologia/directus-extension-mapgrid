@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import { expect, fn, userEvent } from 'storybook/test';
+import { expect, fn, userEvent, waitFor } from 'storybook/test';
 import { generateMockData } from './TableComponent.mock';
 import TableComponent from './TableComponent.vue';
 
@@ -26,6 +26,13 @@ const tableFrame = (args: Record<string, unknown>) => ({
     </div>
   `,
 });
+
+/** The column menu is a popup, so the `play` opens it the way a user would. */
+const openHeaderMenu = async (canvasElement: HTMLElement, field: string): Promise<void> => {
+  const header = canvasElement.querySelector<HTMLElement>(`[data-header="${field}"]`);
+  expect(header).toBeTruthy();
+  if (header) await userEvent.click(header);
+};
 
 export const Default: Story = {
   args: {
@@ -101,17 +108,27 @@ export const ChoosingColumns: Story = {
   },
   render: tableFrame,
   play: async ({ args, canvasElement }) => {
+    const { 'onUpdate:fields': onUpdateFields } = args as unknown as {
+      'onUpdate:fields': ReturnType<typeof fn>;
+    };
+
     const shown = mockData.props.headers.map((header) => header.value);
     const [first] = shown;
     expect(first).toBeTruthy();
+    if (!first) return;
 
-    const remove = canvasElement.querySelector<HTMLElement>(`[data-remove-field="${first}"]`);
-    expect(remove).toBeTruthy();
+    await openHeaderMenu(canvasElement, first);
+
+    const remove = await waitFor(() => {
+      const item = canvasElement.querySelector<HTMLElement>(`[data-remove-field="${first}"]`);
+      expect(item).toBeTruthy();
+      return item;
+    });
     if (!remove) return;
 
     await userEvent.click(remove);
 
-    expect(args['onUpdate:fields']).toHaveBeenCalledWith(shown.slice(1));
+    expect(onUpdateFields).toHaveBeenCalledWith(shown.slice(1));
   },
 };
 
@@ -129,15 +146,25 @@ export const SortingFromTheHeader: Story = {
   },
   render: tableFrame,
   play: async ({ args, canvasElement }) => {
+    const { 'onUpdate:sort': onUpdateSort } = args as unknown as {
+      'onUpdate:sort': ReturnType<typeof fn>;
+    };
+
     const [first] = mockData.props.headers.map((header) => header.value);
     expect(first).toBeTruthy();
+    if (!first) return;
 
-    const descending = canvasElement.querySelector<HTMLElement>(`[data-sort-desc="${first}"]`);
-    expect(descending).toBeTruthy();
+    await openHeaderMenu(canvasElement, first);
+
+    const descending = await waitFor(() => {
+      const item = canvasElement.querySelector<HTMLElement>(`[data-sort-desc="${first}"]`);
+      expect(item).toBeTruthy();
+      return item;
+    });
     if (!descending) return;
 
     await userEvent.click(descending);
 
-    expect(args['onUpdate:sort']).toHaveBeenCalledWith([`-${first}`]);
+    expect(onUpdateSort).toHaveBeenCalledWith([`-${first}`]);
   },
 };

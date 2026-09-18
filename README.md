@@ -46,10 +46,11 @@ The layout detects sensible defaults from the collection, so it is usable before
 #### Columns
 
 Columns are chosen in the grid's own header, the way the Directus tabular layout does it — not in
-the sidebar. The **+** at the end of the header row opens the collection's field list; each column's
-context menu (**⋮**) hides it; dragging a header moves the column. Clicking a header sorts by it,
-and clicking again reverses the direction. Every one of those choices is stored in the preset, so
-it is still there on the next visit.
+the sidebar. The **+** at the end of the header row opens the collection's field list, and dragging
+a header moves the column. Clicking a header opens that column's menu, which sorts it ascending or
+descending and hides the field — in the Directus tabular layout sorting lives in that menu rather
+than in the click itself. Every one of those choices is stored in the preset, so it is still there
+on the next visit.
 
 There is no limit on how many columns the grid can show, and the layout only asks the API for the
 fields it actually needs: the columns, the primary key, the geolocation field, and any field cited
@@ -219,10 +220,11 @@ O layout detecta padrões razoáveis a partir da coleção, então já é utiliz
 #### Colunas
 
 As colunas se escolhem no próprio cabeçalho da grade, como no layout tabular do Directus — e não no
-painel lateral. O **+** no fim da linha de cabeçalho abre a lista de campos da coleção; o menu de
-contexto de cada coluna (**⋮**) a oculta; arrastar um cabeçalho move a coluna. Clicar num cabeçalho
-ordena por ele, e clicar de novo inverte a direção. Cada uma dessas escolhas fica gravada no preset,
-então continua lá na próxima visita.
+painel lateral. O **+** no fim da linha de cabeçalho abre a lista de campos da coleção, e arrastar um
+cabeçalho move a coluna. Clicar num cabeçalho abre o menu daquela coluna, que a ordena em ordem
+crescente ou decrescente e oculta o campo — no layout tabular do Directus a ordenação mora nesse
+menu, e não no clique em si. Cada uma dessas escolhas fica gravada no preset, então continua lá na
+próxima visita.
 
 Não há limite de quantas colunas a grade exibe, e o layout só pede à API os campos de que realmente
 precisa: as colunas, a chave primária, o campo de geolocalização e os campos citados no template do
