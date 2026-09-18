@@ -3,7 +3,7 @@ import type { Field } from '@directus/types';
 import type { MaybeRefOrGetter } from 'vue';
 import { computed, ref, toRefs, toValue } from 'vue';
 import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
-import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
+import Layout from './components/templates/mapgrid-layout/SPIKE-tabular-embed.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 import type { GeoItem } from './contract/index';
 import { fieldsToFetch, normalizeLayoutOptions, useWritableLayoutQuery } from './contract/index';
