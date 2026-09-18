@@ -11,6 +11,13 @@ export const createStub = (name: string, props: string[] = []) => ({
   props,
 });
 
+/**
+ * The app's grid. The real `v-table` opens the `header-context-menu` slot as a
+ * popup when a header is clicked — that swap is why sorting moved into the menu
+ * — so the stub owns the same open/close state. Rendering the slot for every
+ * header at once, as it did at first, stacked every column's menu above the
+ * grid and let a story's `play` click an item no user could have reached.
+ */
 export const vTableStub: Component = {
   name: 'v-table',
   props: {
@@ -30,6 +37,7 @@ export const vTableStub: Component = {
   data() {
     return {
       localSelected: Object.assign([], this.modelValue ?? []),
+      openHeaderMenu: null as string | null,
     };
   },
   computed: {
@@ -57,12 +65,6 @@ export const vTableStub: Component = {
   },
   template: `
     <div class="v-table v-table-mock">
-      <div class="v-table-mock__header-extra">
-        <slot name="header-append" />
-        <template v-for="h in headers" :key="'ctx-' + h.value">
-          <slot name="header-context-menu" :header="h" />
-        </template>
-      </div>
       <table>
         <thead>
           <tr>
@@ -79,7 +81,20 @@ export const vTableStub: Component = {
                 @change="canDelete && onSelectAll"
               />
             </th>
-            <th v-for="h in headers" :key="h.value">{{ h.text }}</th>
+            <th
+              v-for="h in headers"
+              :key="h.value"
+              :data-header="h.value"
+              @click="toggleHeaderMenu(h.value)"
+            >
+              {{ h.text }}
+              <div v-if="openHeaderMenu === h.value" class="v-table-mock__context-menu">
+                <slot name="header-context-menu" :header="h" />
+              </div>
+            </th>
+            <th class="v-table-mock__header-append" style="width: 48px;">
+              <slot name="header-append" />
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -110,6 +125,9 @@ export const vTableStub: Component = {
     </div>
   `,
   methods: {
+    toggleHeaderMenu(value: string): void {
+      this.openHeaderMenu = this.openHeaderMenu === value ? null : value;
+    },
     onSelectAll(event: Event): void {
       const target = event.target;
       if (!(target instanceof HTMLInputElement)) return;
@@ -366,21 +384,30 @@ const vFieldListStub: Component = {
 };
 
 /**
- * The app's popover. The real one opens on the activator and teleports its
- * content; here the content stays in place and the activator's `toggle` is a
- * no-op, because what a test or a story needs is the content mounted and
- * reachable, not the floating behaviour.
+ * The app's popover. The real one teleports its content next to the activator;
+ * here it stays in place, but it opens and closes for real. A `toggle` that did
+ * nothing and an `active` pinned to `true` left the field picker mounted and the
+ * `+` painted in its open colour before anyone had clicked it.
  */
 const vMenuStub: Component = {
   name: 'v-menu',
   props: {
     placement: { type: String, default: 'bottom' },
     showArrow: { type: Boolean, default: false },
+    closeOnContentClick: { type: Boolean, default: true },
+  },
+  data() {
+    return { open: false };
+  },
+  methods: {
+    toggle(): void {
+      this.open = !this.open;
+    },
   },
   template: `
     <div class="v-menu v-menu-mock">
-      <slot name="activator" :toggle="() => {}" :active="true" />
-      <div class="v-menu-mock__content"><slot /></div>
+      <slot name="activator" :toggle="toggle" :active="open" />
+      <div v-if="open" class="v-menu-mock__content"><slot /></div>
     </div>
   `,
 };
@@ -690,6 +717,33 @@ const mockComponentsStyles = `
   text-align: left;
 }
 .v-table-mock tbody tr:hover { background: #f5f5f5; }
+.v-table-mock__header-append { text-align: center; }
+.v-menu-mock { position: relative; }
+.v-table-mock__context-menu,
+.v-menu-mock__content {
+  position: absolute;
+  inset-block-start: 100%;
+  z-index: 2;
+  min-inline-size: 11rem;
+  padding-block: 4px;
+  background: var(--theme--background, #fff);
+  border: 1px solid #e4e9f2;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
+  font-weight: normal;
+  text-align: left;
+}
+.v-table-mock__context-menu { inset-inline-start: 0; }
+/* the field picker hangs off the last column, so it opens towards the grid */
+.v-menu-mock__content { inset-inline-end: 0; }
+.v-list-item-mock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.v-list-item-mock:hover { background: var(--theme--background-subdued, #f4f5f7); }
 `;
 
 export function registerDirectusMockComponents(app: App): void {

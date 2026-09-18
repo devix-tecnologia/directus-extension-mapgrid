@@ -3,8 +3,6 @@
 Status: done
 Type: refactor
 Assignee: sidartaveloso
-Difficulty: 4
-Priority: 20
 
 ## Description
 
@@ -52,7 +50,8 @@ caminho para reordenar coluna arrastando, hoje impossível.
 - [x] Decidir o que fazer com a coluna de ações, que não é ordenável: continua
       com `sortable: false`, coberto por teste
 - [x] Conferir a interação com o mapa: reordenar troca a página de itens, e o
-      enquadramento só roda uma vez (`performInitialFitBoundsOnce`)
+      enquadramento só roda uma vez (`performInitialFitBoundsOnce`) — coberto
+      por teste, que acusa duas chamadas se o guarda sair
 
 ### Fase 1b: ordenar deixou de ser um clique no cabeçalho
 - [x] O `v-table` do Directus **troca** o clique que ordena por abrir o menu
@@ -78,7 +77,8 @@ caminho para reordenar coluna arrastando, hoje impossível.
 
 ### Fase 3: verificação
 - [x] Unitários do que for lógica pura
-- [x] Stories com `play` para ordenação e escolha de coluna
+- [x] Stories com `play` para ordenação e escolha de coluna — como nasceram,
+      passavam sem abrir menu nenhum; ver o achado de 2026-09-18
 - [x] e2e: ordenar por uma coluna e conferir que a escolha sobrevive a reload
 - [x] e2e: escolher um campo pelo cabeçalho e conferir que sobrevive a reload
 - [x] `pnpm screenshot` — as duas frentes mudam a tela, e refazer a captura do
@@ -121,6 +121,27 @@ fazer a mudança seria tarde demais: só o git ainda tem aquele estado.
     EVIDENCE_TASK=008 EVIDENCE_LABEL=grade EVIDENCE_MOMENT=antes|depois \
       RUNNER_CMD=screenshot docker compose -f docker-compose.test.yml \
       --profile runner up --abort-on-container-exit --exit-code-from tests
+
+## Achado de 2026-09-18 — as stories passavam por um defeito do stub
+
+O `header-context-menu` não era popup no stub do `v-table`: saía renderizado uma
+vez por coluna, sempre montado, num bloco acima da grade. No Storybook isso
+empilhava "ordem crescente / decrescente / ocultar campo" de todas as colunas, e
+o `+` ficava permanentemente na cor de aberto, porque o stub do `v-menu` tinha
+`toggle` vazio e `active` fixo em `true`. Os dois nasceram nesta task.
+
+O `play` das duas stories passava **por causa disso**: clicava direto no item do
+menu, sem abrir menu nenhum — um estado que no app real não existe. O
+`check:stories` não pega, porque só procura escrita no console.
+
+Os stubs agora têm o estado de abrir e fechar, como o `v-table` de verdade: o
+clique no cabeçalho abre o menu daquela coluna e fecha o das outras, e o `+`
+passou para um `th` no fim da linha, que é onde ele mora no Directus e é como o
+e2e já o encontrava. Os `play` e os unitários abrem o menu antes de clicar, e
+dois unitários novos fixam que menu e seletor começam fechados.
+
+A lição que fica é sobre o stub, não sobre a grade: um stub que monta tudo de uma
+vez deixa o teste alcançar o que o usuário não alcança.
 
 ## Notes
 

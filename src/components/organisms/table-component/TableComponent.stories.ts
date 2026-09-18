@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import { expect, fn, userEvent } from 'storybook/test';
+import { expect, fn, userEvent, waitFor } from 'storybook/test';
 import { generateMockData } from './TableComponent.mock';
 import TableComponent from './TableComponent.vue';
 
@@ -26,6 +26,13 @@ const tableFrame = (args: Record<string, unknown>) => ({
     </div>
   `,
 });
+
+/** The column menu is a popup, so the `play` opens it the way a user would. */
+const openHeaderMenu = async (canvasElement: HTMLElement, field: string): Promise<void> => {
+  const header = canvasElement.querySelector<HTMLElement>(`[data-header="${field}"]`);
+  expect(header).toBeTruthy();
+  if (header) await userEvent.click(header);
+};
 
 export const Default: Story = {
   args: {
@@ -92,23 +99,31 @@ export const EditDeleteDisabled: Story = {
  * o caminho inteiro no navegador — o menu de contexto, o clique e o evento que
  * sobe — porque o unitario exercita o stub do `v-table`, e nao o de verdade.
  */
-const onUpdateFields = fn();
-
 export const ChoosingColumns: Story = {
   name: 'Choosing columns from the header',
   args: {
     ...mockData.props,
     selectedItems: [],
-    'onUpdate:fields': onUpdateFields,
+    'onUpdate:fields': fn(),
   },
   render: tableFrame,
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
+    const { 'onUpdate:fields': onUpdateFields } = args as unknown as {
+      'onUpdate:fields': ReturnType<typeof fn>;
+    };
+
     const shown = mockData.props.headers.map((header) => header.value);
     const [first] = shown;
     expect(first).toBeTruthy();
+    if (!first) return;
 
-    const remove = canvasElement.querySelector<HTMLElement>(`[data-remove-field="${first}"]`);
-    expect(remove).toBeTruthy();
+    await openHeaderMenu(canvasElement, first);
+
+    const remove = await waitFor(() => {
+      const item = canvasElement.querySelector<HTMLElement>(`[data-remove-field="${first}"]`);
+      expect(item).toBeTruthy();
+      return item;
+    });
     if (!remove) return;
 
     await userEvent.click(remove);
@@ -121,23 +136,31 @@ export const ChoosingColumns: Story = {
  * Ordenar tambem mora no menu de contexto do cabecalho: o `v-table` do Directus
  * troca o clique que ordena por abrir o menu assim que esse slot existe.
  */
-const onUpdateSort = fn();
-
 export const SortingFromTheHeader: Story = {
   name: 'Sorting from the header menu',
   args: {
     ...mockData.props,
     selectedItems: [],
     sort: [],
-    'onUpdate:sort': onUpdateSort,
+    'onUpdate:sort': fn(),
   },
   render: tableFrame,
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
+    const { 'onUpdate:sort': onUpdateSort } = args as unknown as {
+      'onUpdate:sort': ReturnType<typeof fn>;
+    };
+
     const [first] = mockData.props.headers.map((header) => header.value);
     expect(first).toBeTruthy();
+    if (!first) return;
 
-    const descending = canvasElement.querySelector<HTMLElement>(`[data-sort-desc="${first}"]`);
-    expect(descending).toBeTruthy();
+    await openHeaderMenu(canvasElement, first);
+
+    const descending = await waitFor(() => {
+      const item = canvasElement.querySelector<HTMLElement>(`[data-sort-desc="${first}"]`);
+      expect(item).toBeTruthy();
+      return item;
+    });
     if (!descending) return;
 
     await userEvent.click(descending);

@@ -12,6 +12,14 @@ const mountTable = (props: Partial<ReturnType<typeof tablePropsFor>> = {}) =>
     global: { stubs: directusComponentStubs },
   });
 
+type TableWrapper = ReturnType<typeof mountTable>;
+
+/** Both menus are popups, so a test reaches their items the way a user does. */
+const openHeaderMenu = (wrapper: TableWrapper, field: string) =>
+  wrapper.find(`[data-header="${field}"]`).trigger('click');
+
+const openFieldPicker = (wrapper: TableWrapper) => wrapper.find('.add-field').trigger('click');
+
 describe('TableComponent — the item grid', () => {
   it('draws one row per item', () => {
     const kind = mappableKind('landmarks');
@@ -88,14 +96,19 @@ describe('TableComponent — sorting by the column header', () => {
 });
 
 describe('TableComponent — choosing columns from the header', () => {
-  it('offers the field picker in the header, where the Directus tabular layout puts it', () => {
+  it('keeps the field picker shut until the header `+` is clicked', async () => {
     const wrapper = mountTable();
+
+    expect(wrapper.findComponent({ name: 'v-field-list' }).exists()).toBe(false);
+
+    await openFieldPicker(wrapper);
 
     expect(wrapper.findComponent({ name: 'v-field-list' }).exists()).toBe(true);
   });
 
   it('appends a field chosen from the picker, keeping the ones already there', async () => {
     const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }] });
+    await openFieldPicker(wrapper);
 
     wrapper.findComponent({ name: 'v-field-list' }).vm.$emit('add', ['city']);
     await wrapper.vm.$nextTick();
@@ -105,6 +118,7 @@ describe('TableComponent — choosing columns from the header', () => {
 
   it('does not add a field twice, which would draw the same column again', async () => {
     const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }] });
+    await openFieldPicker(wrapper);
 
     wrapper.findComponent({ name: 'v-field-list' }).vm.$emit('add', ['name']);
     await wrapper.vm.$nextTick();
@@ -112,13 +126,14 @@ describe('TableComponent — choosing columns from the header', () => {
     expect(wrapper.emitted('update:fields')).toBeUndefined();
   });
 
-  it('greys out in the picker the columns already shown', () => {
+  it('greys out in the picker the columns already shown', async () => {
     const wrapper = mountTable({
       headers: [
         { text: 'Name', value: 'name' },
         { text: 'City', value: 'city' },
       ],
     });
+    await openFieldPicker(wrapper);
 
     expect(wrapper.findComponent({ name: 'v-field-list' }).props('disabledFields')).toEqual([
       'name',
@@ -135,6 +150,7 @@ describe('TableComponent — choosing columns from the header', () => {
       ],
     });
 
+    await openHeaderMenu(wrapper, 'city');
     await wrapper.find('[data-remove-field="city"]').trigger('click');
 
     expect(wrapper.emitted('update:fields')?.[0]).toEqual([['name', 'state']]);
@@ -157,9 +173,20 @@ describe('TableComponent — sorting from the header context menu', () => {
     });
   });
 
+  it('keeps the menu shut until the header is clicked, as the real table does', async () => {
+    const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }] });
+
+    expect(wrapper.find('[data-sort-asc="name"]').exists()).toBe(false);
+
+    await openHeaderMenu(wrapper, 'name');
+
+    expect(wrapper.find('[data-sort-asc="name"]').exists()).toBe(true);
+  });
+
   it('sorts ascending from the menu, writing the query format back', async () => {
     const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }], sort: ['-name'] });
 
+    await openHeaderMenu(wrapper, 'name');
     await wrapper.find('[data-sort-asc="name"]').trigger('click');
 
     expect(wrapper.emitted('update:sort')?.[0]).toEqual([['name']]);
@@ -168,13 +195,16 @@ describe('TableComponent — sorting from the header context menu', () => {
   it('sorts descending from the menu', async () => {
     const wrapper = mountTable({ headers: [{ text: 'Name', value: 'name' }], sort: ['name'] });
 
+    await openHeaderMenu(wrapper, 'name');
     await wrapper.find('[data-sort-desc="name"]').trigger('click');
 
     expect(wrapper.emitted('update:sort')?.[0]).toEqual([['-name']]);
   });
 
-  it('does not offer sorting on the actions column, which is not a field', () => {
+  it('does not offer sorting on the actions column, which is not a field', async () => {
     const wrapper = mountTable();
+
+    await openHeaderMenu(wrapper, 'actions');
 
     expect(wrapper.find('[data-sort-asc="actions"]').exists()).toBe(false);
   });
