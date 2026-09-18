@@ -181,31 +181,57 @@ nem exporta `useLayout`, e o layout tabular não existe fora do app do Directus.
 - A coluna de geometria sai como JSON cru: o tabular usa os displays do Directus,
   e o tratamento que o nosso `ValueCell` dá a campos sem display se perderia.
 
+### v2 — o tabular e o mapa na mesma tela
+
+A v1 respondeu "dá para embutir" e deixou de fora o que mais importava: os dois
+juntos. A v2 (`7666f2e`) mediu isso, e o que ela achou muda o veredito.
+
+**O clique na linha deixa de navegar.** Trocando o `onRowClick` do `layoutState`
+pelo nosso, o payload chega como `{item, event}` e o mapa enquadra o item:
+`navegou para o item? false`. Era o risco que eu tinha apontado como capaz de
+afundar a ideia — e ele cai.
+
+**O mapa vive dos itens que o próprio tabular buscou.** Ressalva: o `useItems` do
+nosso `setup()` continua rodando no spike, então ali ainda há dois fetches. O que
+está provado é que o mapa não precisa do nosso, não que já o removemos.
+
+**O tabular aguenta meia tela**, com o mapa em cima. Sobra uma folga no topo da
+grade, chrome dele esperando mais espaço — cosmético, mas é a ponta solta.
+
 ### O que ele desenhou
 
 Capturas do spike rodando, não do produto — o `dist` aqui é o do branch, em que o
-`component:` aponta para o spike. Em todas, o tracejado vermelho é a borda do
-spike: o que está dentro dela é o layout tabular do Directus.
+`component:` aponta para o spike. O tracejado vermelho é a borda do spike: dentro
+dela, o layout tabular do Directus.
 
-| O menu de contexto dele | A grade embutida |
+![O clique na linha levando o mapa ao item](assets/task-008-spike-clique.png)
+
+A decisiva: clicar na linha "Rio de Janeiro" da grade **do Directus** levou o
+**nosso** mapa até lá, com o popup aberto, e a URL não mudou.
+
+| Os dois dividindo a tela | O menu de contexto, inteiro |
 | --- | --- |
-| ![Menu](assets/task-008-spike-menu.png) | ![Grade](assets/task-008-spike-grade.png) |
+| ![Tela dividida](assets/task-008-spike-split.png) | ![Menu](assets/task-008-spike-menu.png) |
 
-No menu aparecem "Sort Ascending/Descending" e "Left/Center/Right Align" — as
-duas de ordenação esmaecidas porque a coluna clicada foi `Location`, que é
-geometria e não ordena. Na grade se vê o outro lado da moeda: `Location` sai como
-JSON cru, sem o tratamento que o nosso `ValueCell` dá.
+O menu vem completo numa coluna ordenável: crescente, decrescente, os três
+alinhamentos e ocultar campo — é exatamente o que nos falta hoje.
 
-![A tela inteira, com o relatório](assets/task-008-spike-tela.png)
+![A grade embutida](assets/task-008-spike-grade.png)
 
-A tela inteira mostra o relatório que o spike despeja antes da grade: os exports
-do SDK em runtime, os layouts registrados e as 92 chaves do `layoutState`.
+E o outro lado da moeda: `Location` sai como JSON cru. O tabular usa os displays
+do Directus, então o tratamento que o nosso `ValueCell` dá a campos sem display
+se perderia.
 
 ### Veredito
 
-Viável, e melhor do que parecia — mas **depois da task-009**, não antes: o ganho
-principal é exatamente o que ela desbloqueia. Fica sem medir quanto do visual do
-tabular assume a tela inteira, já que aqui ele divide espaço com o mapa.
+Viável, e agora sem o risco que mais pesava contra. Mas **depois da task-009**,
+não antes: alinhamento e largura passam a existir na interface de graça, só que
+**persistir** continua dependendo dela, porque sobem como emit apenas `selection`,
+`layoutOptions` e `layoutQuery` — e essas duas moram em `layoutOptions`. Adotar o
+tabular não substitui a task-009; ela vira pré-requisito.
+
+O custo a pagar, que a v2 deixou visível: reaver o tratamento de campos sem
+display, hoje no `ValueCell`, e acertar a folga no topo da grade.
 
 ### Como rodar o spike
 
