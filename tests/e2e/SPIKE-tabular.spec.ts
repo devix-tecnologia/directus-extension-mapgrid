@@ -52,6 +52,19 @@ test('SPIKE: o que o app entrega para embutir o layout tabular', async ({ page }
   const rowCount = await rows.count();
   console.log(`linhas dentro do tabular embutido: ${rowCount}`);
 
+  // antes de qualquer clique, senao a captura sai da tela do item
+  await page.screenshot({ path: 'test-results/spike-01-tudo.png', fullPage: true });
+  await page.locator('.spike__grid').screenshot({ path: 'test-results/spike-02-grade.png' });
+
+  // e o menu de contexto do tabular, que e o que motivou a ideia
+  const firstHeader = page.locator('.spike__grid thead th').nth(1);
+  if (await firstHeader.isVisible()) {
+    await firstHeader.click();
+    await page.waitForTimeout(1_000);
+    await page.screenshot({ path: 'test-results/spike-03-menu.png' });
+    await page.keyboard.press('Escape');
+  }
+
   if (rowCount > 0) {
     const urlBefore = page.url();
     await rows.first().click();
