@@ -2,8 +2,10 @@
  * SPIKE — DESCARTAVEL. Apagar junto com SPIKE-tabular-embed.vue.
  *
  * O host nao alcanca o container neste ambiente, entao a observacao roda de
- * dentro da rede do docker, como o resto do e2e. O que este roteiro faz e
- * abrir o layout e despejar no stdout o relatorio que o spike desenhou.
+ * dentro da rede do docker, como o resto do e2e.
+ *
+ * v2: mede o tabular e o mapa na mesma tela — se o tabular aguenta meia tela, se
+ * o clique na linha pode deixar de navegar, e se o mapa vive dos itens dele.
  */
 import { expect, type Page, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
@@ -29,50 +31,45 @@ test.beforeAll(async () => {
   await setupTestEnvironment();
 });
 
-test('SPIKE: o que o app entrega para embutir o layout tabular', async ({ page }) => {
-  page.on('console', (message) => console.log(`[browser:${message.type()}] ${message.text()}`));
+test('SPIKE: o tabular e o mapa na mesma tela', async ({ page }) => {
   page.on('pageerror', (error) => console.log(`[pageerror] ${error.message}`));
 
   await ensureMapGridPreset();
   await login(page);
 
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
-  await expect(page.locator('.spike')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('.spike-split')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('.spike-grid table')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
 
-  const blocks = await page.locator('.spike__report').allInnerTexts();
-  console.log('\n========== RELATORIO DO SPIKE ==========');
-  for (const block of blocks) console.log(block);
-  console.log('========================================\n');
+  // o mapa precisa de um tempo para desenhar antes da captura
+  await page.waitForTimeout(5_000);
 
-  const gridHtml = await page.locator('.spike__grid').innerHTML();
-  console.log(`grid renderizou ${gridHtml.length} caracteres de HTML`);
-  console.log(`grid tem <table>? ${gridHtml.includes('<table')}`);
+  const status = async () => (await page.locator('.spike-status').innerText()).replace(/\s+/g, ' ');
+  console.log(`\n[status inicial] ${await status()}`);
 
-  const rows = page.locator('.spike__grid tbody tr');
-  const rowCount = await rows.count();
-  console.log(`linhas dentro do tabular embutido: ${rowCount}`);
+  await page.screenshot({ path: 'test-results/spike2-01-split.png', fullPage: false });
 
-  // antes de qualquer clique, senao a captura sai da tela do item
-  await page.screenshot({ path: 'test-results/spike-01-tudo.png', fullPage: true });
-  await page.locator('.spike__grid').screenshot({ path: 'test-results/spike-02-grade.png' });
+  const rows = page.locator('.spike-grid tbody tr');
+  console.log(`linhas no tabular embutido: ${await rows.count()}`);
 
-  // e o menu de contexto do tabular, que e o que motivou a ideia
-  const firstHeader = page.locator('.spike__grid thead th').nth(1);
-  if (await firstHeader.isVisible()) {
-    await firstHeader.click();
+  // a pergunta central: o clique na linha ainda navega para o item?
+  const urlBefore = page.url();
+  await rows.nth(2).click();
+  await page.waitForTimeout(3_000);
+
+  console.log(`[status apos clique] ${await status()}`);
+  console.log(`url antes:  ${urlBefore}`);
+  console.log(`url depois: ${page.url()}`);
+  console.log(`navegou para o item? ${page.url() !== urlBefore}`);
+
+  await page.screenshot({ path: 'test-results/spike2-02-apos-clique.png', fullPage: false });
+
+  // e o menu de contexto, que continua sendo o do tabular
+  const header = page.locator('.spike-grid thead th').nth(2);
+  if (await header.isVisible()) {
+    await header.click();
     await page.waitForTimeout(1_000);
-    await page.screenshot({ path: 'test-results/spike-03-menu.png' });
-    await page.keyboard.press('Escape');
+    await page.screenshot({ path: 'test-results/spike2-03-menu.png', fullPage: false });
   }
-
-  if (rowCount > 0) {
-    const urlBefore = page.url();
-    await rows.first().click();
-    await page.waitForTimeout(2_000);
-    console.log(`clique na linha — antes: ${urlBefore}`);
-    console.log(`clique na linha — depois: ${page.url()}`);
-    console.log(`navegou para o item? ${page.url() !== urlBefore}`);
-  }
-
-  await page.screenshot({ path: 'test-results/spike-tabular.png', fullPage: true });
 });

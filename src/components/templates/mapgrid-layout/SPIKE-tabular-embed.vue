@@ -1,40 +1,63 @@
 <!--
   SPIKE — DESCARTAVEL. Nao faz parte da extensao.
 
-  Pergunta: da para embutir o layout tabular do Directus aqui dentro, via
-  `useLayout`, em vez de manter o nosso `v-table` + slots?
+  v1 respondeu "da para embutir o layout tabular?". Esta e a v2, que responde o
+  que a v1 deixou sem medir: **o tabular e o mapa convivendo na mesma tela**.
 
-  O que este spike mede, no app de verdade (o Storybook nao serve: la o
-  `@directus/extensions-sdk` e um mock nosso, entao nao existe layout tabular):
+  Tres coisas sob teste aqui:
 
-  1. o SDK que o Directus em execucao entrega exporta `useLayout`/`useExtensions`?
-     (o bundle resolve o SDK como externo, e o e2e roda Directus 10.13.1, que e
-     bem mais antigo que o SDK 16 contra o qual compilamos)
-  2. quais layouts estao registrados
-  3. o que o scoped slot do wrapper expoe como `layoutState`
-  4. o layout tabular renderiza aqui dentro, e o clique na linha faz o que?
+  1. o tabular aguenta meia tela? ele foi escrito para ocupar tudo, e aqui divide
+     espaco com o mapa
+  2. o `onRowClick` do `layoutState` pode ser trocado pelo nosso, para o clique
+     na linha enquadrar o marcador em vez de navegar para o item
+  3. o mapa se alimenta do `items` que o proprio tabular buscou
+
+  Sobre o item 3: o `setup()` em `src/index.ts` continua fazendo o `useItems`
+  dele, entao aqui ainda ha dois fetches. O spike nao mexe nisso — ele so mostra
+  que o mapa NAO precisa do nosso, comparando as duas contagens no rodape.
 
   Para desfazer: apagar este arquivo e `git checkout -- src/index.ts`.
 -->
 <template>
-  <div class="spike">
-    <h2>SPIKE — tabular embed</h2>
-    <pre class="spike__report">{{ report }}</pre>
+  <div class="spike-layout">
+    <details class="spike-report">
+      <summary>relatorio do spike ({{ reportLines.length }} linhas)</summary>
+      <pre>{{ report }}</pre>
+    </details>
 
-    <template v-if="wrapperComp">
-      <component :is="wrapperComp" v-bind="wrapperProps">
-        <template #default="{ layoutState }">
-          <h3>layoutState ({{ Object.keys(layoutState).length }} chaves)</h3>
-          <pre class="spike__report">{{ describe(layoutState) }}</pre>
+    <component :is="wrapperComp" v-if="wrapperComp" v-bind="wrapperProps">
+      <template #default="{ layoutState }">
+        <div class="spike-split">
+          <MapComponent
+            ref="mapRef"
+            class="spike-map"
+            :items="asItems(layoutState.items)"
+            :geolocation="geolocation ?? ''"
+            :title="title ?? ''"
+            :zoom-on-click="zoomOnClick"
+            :map-center-lng="mapCenterLng"
+            :map-center-lat="mapCenterLat"
+            :map-zoom="mapZoom"
+          />
 
-          <h3>o layout tabular renderizado aqui dentro</h3>
-          <div class="spike__grid">
-            <component :is="tabularComp" v-if="tabularComp" v-bind="layoutState" />
-            <p v-else>sem component do tabular</p>
+          <div class="spike-grid">
+            <component
+              :is="tabularComp"
+              v-if="tabularComp"
+              v-bind="{ ...layoutState, onRowClick: handleRowClick }"
+            />
           </div>
-        </template>
-      </component>
-    </template>
+        </div>
+
+        <p class="spike-status">
+          itens do tabular: <b>{{ asItems(layoutState.items).length }}</b> ·
+          itens do nosso useItems: <b>{{ items?.length ?? 0 }}</b> · ultimo clique:
+          <b>{{ lastClick }}</b>
+        </p>
+      </template>
+    </component>
+
+    <p v-else class="spike-status">sem layoutWrapper — ver relatorio</p>
   </div>
 </template>
 
@@ -42,46 +65,45 @@
 import * as sdk from '@directus/extensions-sdk';
 import type { Component } from 'vue';
 import { computed, ref, shallowRef } from 'vue';
+import type { GeoItem } from '../../../contract/index';
+import MapComponent from '../../organisms/map-component/MapComponent.vue';
 
-const props = defineProps<{ collection: string }>();
+const props = defineProps<{
+  collection: string;
+  items?: GeoItem[];
+  geolocation?: string;
+  title?: string;
+  zoomOnClick?: boolean;
+  mapCenterLng?: number;
+  mapCenterLat?: number;
+  mapZoom?: number;
+}>();
 
-/* biome-disable — spike descartavel, o SDK em runtime pode nao ter estas chaves */
-// biome-ignore lint/suspicious/noExplicitAny: spike
+// biome-ignore lint/suspicious/noExplicitAny: spike descartavel
 const anySdk = sdk as any;
 
-const lines: string[] = [];
+const reportLines: string[] = [];
 const wrapperComp = shallowRef<Component | null>(null);
 const tabularComp = shallowRef<Component | null>(null);
+const mapRef = ref<InstanceType<typeof MapComponent> | null>(null);
+const lastClick = ref('(nenhum)');
 
-lines.push(`exports do SDK: ${Object.keys(sdk).sort().join(', ')}`);
-lines.push(`useExtensions: ${typeof anySdk.useExtensions}`);
-lines.push(`useLayout: ${typeof anySdk.useLayout}`);
+reportLines.push(`useExtensions: ${typeof anySdk.useExtensions}`);
+reportLines.push(`useLayout: ${typeof anySdk.useLayout}`);
 
 if (typeof anySdk.useExtensions === 'function') {
-  try {
-    const registered = anySdk.useExtensions().layouts?.value ?? [];
-    lines.push(
-      `layouts registrados: ${registered.map((l: { id: string }) => l.id).join(', ') || '(nenhum)'}`
-    );
-    const tabular = registered.find((l: { id: string }) => l.id === 'tabular');
-    tabularComp.value = tabular?.component ?? null;
-    lines.push(`component do tabular: ${tabular ? 'achado' : 'NAO achado'}`);
-    lines.push(`slots do tabular: ${Object.keys(tabular?.slots ?? {}).join(', ') || '(nenhum)'}`);
-  } catch (error) {
-    lines.push(`useExtensions explodiu: ${String(error)}`);
-  }
+  const registered = anySdk.useExtensions().layouts?.value ?? [];
+  reportLines.push(`layouts: ${registered.map((l: { id: string }) => l.id).join(', ')}`);
+  tabularComp.value = registered.find((l: { id: string }) => l.id === 'tabular')?.component ?? null;
 }
 
 if (typeof anySdk.useLayout === 'function') {
-  try {
-    wrapperComp.value = anySdk.useLayout(ref('tabular')).layoutWrapper.value ?? null;
-    lines.push(`layoutWrapper: ${wrapperComp.value ? 'obtido' : 'nulo'}`);
-  } catch (error) {
-    lines.push(`useLayout explodiu: ${String(error)}`);
-  }
+  wrapperComp.value = anySdk.useLayout(ref('tabular')).layoutWrapper.value ?? null;
 }
 
-const report = lines.join('\n');
+const report = reportLines.join('\n');
+
+const asItems = (value: unknown): GeoItem[] => (Array.isArray(value) ? (value as GeoItem[]) : []);
 
 const wrapperProps = computed(() => ({
   collection: props.collection,
@@ -92,32 +114,54 @@ const wrapperProps = computed(() => ({
   search: null,
 }));
 
-const describe = (state: Record<string, unknown>): string =>
-  Object.keys(state)
-    .sort()
-    .map((key) => {
-      const value = state[key];
-      const kind = Array.isArray(value) ? `array(${value.length})` : typeof value;
-      return `${key}: ${kind}`;
-    })
-    .join('\n');
+/**
+ * O lance todo: sem isto o clique na linha navega para a tela do item, que
+ * mataria a sincronia com o mapa — que e a razao de existir desta extensao.
+ */
+const handleRowClick = (payload: unknown): void => {
+  const shape = payload && typeof payload === 'object' ? Object.keys(payload).join('+') : 'nao-obj';
+  const item = (payload as { item?: GeoItem } | null)?.item;
+  lastClick.value = `{${shape}} item=${item?.id ?? '?'}`;
+
+  if (item) mapRef.value?.focusOnItem(item);
+};
 </script>
 
 <style scoped>
-.spike {
-  padding: 16px;
-  overflow: auto;
-  height: 100%;
+.spike-layout {
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  padding: var(--content-padding);
+  padding-top: 0;
+}
+.spike-report {
+  flex: 0 0 auto;
   font-family: monospace;
-}
-.spike__report {
-  background: #f4f5f7;
-  padding: 8px;
-  white-space: pre-wrap;
   font-size: 12px;
+  margin-bottom: 8px;
 }
-.spike__grid {
+.spike-split {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
   border: 2px dashed #c00;
-  min-height: 300px;
+  overflow: hidden;
+}
+.spike-split :deep(.map-wrapper) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.spike-grid {
+  flex: 0 0 45%;
+  min-height: 0;
+  overflow: auto;
+  border-top: 2px dashed #c00;
+}
+.spike-status {
+  flex: 0 0 auto;
+  font-family: monospace;
+  font-size: 12px;
 }
 </style>
