@@ -57,6 +57,32 @@ test('SPIKE v9: os dois layouts e as duas configuracoes', async ({ page }) => {
 
   await page.screenshot({ path: 'test-results/spike9-01-dois.png' });
 
+  // de onde vem o espaco em branco em cada painel
+  for (const pane of ['.spike-pane--map', '.spike-pane--grid']) {
+    const arvore = await page.evaluate((selector) => {
+      const root = document.querySelector(selector);
+      if (!root) return 'painel ausente';
+      const linhas: string[] = [];
+      const topoDoPainel = root.getBoundingClientRect().top;
+      const anda = (el: Element, nivel: number) => {
+        if (nivel > 5) return;
+        const box = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        const classe = (el.className || '').toString().split(' ').slice(0, 2).join('.');
+        linhas.push(
+          `${'  '.repeat(nivel)}${el.tagName.toLowerCase()}.${classe} ` +
+            `dy=${Math.round(box.top - topoDoPainel)} h=${Math.round(box.height)} ` +
+            `pad=${cs.paddingTop}/${cs.paddingBottom} mar=${cs.marginTop}/${cs.marginBottom} ` +
+            `pos=${cs.position} tr=${cs.transform === 'none' ? '-' : cs.transform}`
+        );
+        for (const filho of Array.from(el.children).slice(0, 4)) anda(filho, nivel + 1);
+      };
+      anda(root, 0);
+      return linhas.join('\n');
+    }, pane);
+    console.log(`\n[arvore ${pane}]\n${arvore}`);
+  }
+
   // os dois paineis de configuracao
   const header = page.getByRole('button', { name: /^layers/ });
   await expect(header).toBeVisible({ timeout: 30_000 });

@@ -110,10 +110,41 @@ const sortLabel = computed(() => {
 .spike-pane--map {
   flex: 1 1 auto;
   overflow: hidden;
+  display: flex;
 }
 .spike-pane--grid {
   flex: 0 0 45%;
   overflow: auto;
+}
+
+/*
+ * O espaco em branco dos dois paineis, medido em vez de adivinhado.
+ *
+ * A grade: `.layout-tabular` carrega `margin: 32px 0 132px` — a folga que ele
+ * assume quando ocupa a pagina inteira, com cabecalho em cima e paginacao
+ * embaixo. Dentro de meia tela isso vira buraco.
+ *
+ * O mapa: `.layout-map` nasce `flex: 0 1 auto` e mediu 213px num painel de
+ * 277px, entao sobrava faixa branca embaixo. Ele precisa esticar.
+ */
+.spike-pane--grid :deep(.layout-tabular) {
+  margin-block: 0;
+}
+
+/*
+ * O cabecalho da grade e `position: sticky` com deslocamento — ele reserva a
+ * altura do cabecalho fixo da pagina do Directus. Medido: o `tr.fixed` caia em
+ * dy=62 enquanto a tabela comecava em dy=2, deixando 60px de faixa branca e as
+ * primeiras linhas correndo por baixo dele. Dentro do nosso painel quem rola e
+ * o painel, entao o deslocamento e zero.
+ */
+.spike-pane--grid :deep(thead.table-header tr.fixed) {
+  top: 0;
+}
+.spike-pane--map :deep(.layout-map) {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
 }
 .spike-status {
   flex: 0 0 auto;
