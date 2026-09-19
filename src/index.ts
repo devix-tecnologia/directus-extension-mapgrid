@@ -139,8 +139,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     // biome-ignore lint/suspicious/noExplicitAny: spike
     const anySdk = sdk as any;
 
+    /*
+     * v9: os DOIS layouts. `selection` e `layoutQuery` sao compartilhados — sao
+     * eles que sincronizam mapa e grade. Ja o `layoutOptions` e de cada um: o
+     * mapa guarda ali o `geometryField`, e o tabular o `spacing`.
+     */
     const embeddedSelection = ref<(string | number)[]>([]);
-    const embeddedOptions = ref<Record<string, unknown>>({});
     const embeddedQuery = ref<Record<string, unknown>>({
       fields: ['name', 'status', 'location'],
       sort: ['name'],
@@ -148,57 +152,77 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       page: 1,
     });
 
-    const embeddedProps = reactive({
-      collection,
-      selection: embeddedSelection,
-      layoutOptions: embeddedOptions,
-      layoutQuery: embeddedQuery,
-      layoutProps: ref({}),
-      filter,
-      filterUser: ref(null),
-      filterSystem: ref(null),
-      search,
-      showSelect: ref('multiple'),
-      selectMode: ref(false),
-      readonly: ref(false),
-      resetPreset: ref(null),
-      clearFilters: ref(null),
-    });
+    interface Embedded {
+      id: string;
+      report: string;
+      state: Record<string, unknown>;
+      component: unknown;
+      optionsComponent: unknown;
+    }
 
-    const embeddedEmit = (event: string, value: unknown): void => {
-      if (event === 'update:layoutQuery') embeddedQuery.value = value as Record<string, unknown>;
-      if (event === 'update:layoutOptions') embeddedOptions.value = value as Record<string, unknown>;
-      if (event === 'update:selection') embeddedSelection.value = value as (string | number)[];
-    };
+    const embedLayout = (id: string, initialOptions: Record<string, unknown>): Embedded => {
+      const options = ref<Record<string, unknown>>(initialOptions);
 
-    const embeddedReport = ref('');
-    const embeddedState = ref<Record<string, unknown>>({});
-    const embeddedComponent = ref<unknown>(null);
-    const embeddedOptionsComponent = ref<unknown>(null);
+      const embeddedProps = reactive({
+        collection,
+        selection: embeddedSelection,
+        layoutOptions: options,
+        layoutQuery: embeddedQuery,
+        layoutProps: ref({}),
+        filter,
+        filterUser: ref(null),
+        filterSystem: ref(null),
+        search,
+        showSelect: ref('multiple'),
+        selectMode: ref(false),
+        readonly: ref(false),
+        resetPreset: ref(null),
+        clearFilters: ref(null),
+      });
 
-    try {
-      const registered = anySdk.useExtensions?.().layouts?.value ?? [];
-      const tabular = registered.find((l: { id: string }) => l.id === 'tabular');
-      embeddedComponent.value = tabular?.component ?? null;
-      embeddedOptionsComponent.value = tabular?.slots?.options ?? null;
+      const emit = (event: string, value: unknown): void => {
+        if (event === 'update:layoutQuery') embeddedQuery.value = value as Record<string, unknown>;
+        if (event === 'update:layoutOptions') options.value = value as Record<string, unknown>;
+        if (event === 'update:selection') embeddedSelection.value = value as (string | number)[];
+      };
 
-      if (typeof tabular?.setup !== 'function') {
-        embeddedReport.value = 'layout tabular sem setup()';
-      } else {
-        const state = tabular.setup(embeddedProps, { emit: embeddedEmit });
+      const empty: Embedded = { id, report: '', state: {}, component: null, optionsComponent: null };
+
+      try {
+        const registered = anySdk.useExtensions?.().layouts?.value ?? [];
+        const layout = registered.find((l: { id: string }) => l.id === id);
+        if (typeof layout?.setup !== 'function') {
+          return { ...empty, report: `${id}: sem setup()` };
+        }
+
+        const state = layout.setup(embeddedProps, { emit });
         // os mesmos `onUpdate:<chave>` que o createLayoutWrapper acrescenta
         for (const key of Object.keys(state)) {
           (state as Record<string, unknown>)[`onUpdate:${key}`] = (value: unknown) => {
-            embeddedEmit(`update:${key}`, value);
+            emit(`update:${key}`, value);
           };
         }
-        embeddedState.value = reactive(state) as Record<string, unknown>;
-        embeddedReport.value = `setup() rodou fora do wrapper · ${Object.keys(state).length} chaves`;
+
+        return {
+          id,
+          report: `${id}: ok, ${Object.keys(state).length} chaves`,
+          state: reactive(state) as Record<string, unknown>,
+          component: layout.component ?? null,
+          optionsComponent: layout.slots?.options ?? null,
+        };
+      } catch (error) {
+        return { ...empty, report: `${id}: EXPLODIU ${String(error)}` };
       }
-    } catch (error) {
-      embeddedReport.value = `setup() EXPLODIU: ${String(error)}`;
-    }
-    /* ================= fim do SPIKE v8 ================= */
+    };
+
+    const embeddedGrid = embedLayout('tabular', {});
+    const embeddedMap = embedLayout('map', {
+      geometryField: detectedGeo.value,
+      geometryFormat: 'native',
+      clusterData: true,
+    });
+    const embeddedReport = computed(() => `${embeddedGrid.report} · ${embeddedMap.report}`);
+    /* ================= fim do SPIKE ================= */
 
     const selectedItems = ref<GeoItem[]>([]);
 
@@ -310,11 +334,10 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       fieldsInCollection,
       selectedItems,
       deleteSelectedItems,
-      // SPIKE v8: o Directus entrega isto ao componente E ao painel de opcoes
+      // SPIKE: o Directus entrega isto ao componente E ao painel de opcoes
       embeddedReport,
-      embeddedState,
-      embeddedComponent,
-      embeddedOptionsComponent,
+      embeddedGrid,
+      embeddedMap,
       embeddedSelection,
       ...layoutOptionBindings,
     };

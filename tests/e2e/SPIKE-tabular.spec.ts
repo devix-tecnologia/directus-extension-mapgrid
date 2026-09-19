@@ -1,8 +1,8 @@
 /**
- * SPIKE v8 — DESCARTAVEL.
+ * SPIKE v9 — DESCARTAVEL.
  *
- * O elo: o `setup()` do layout embutido roda de dentro do nosso `setup()`, fora
- * do `createLayoutWrapper`? E o estado chega ao componente E ao painel?
+ * Os dois layouts do Directus, com o `setup()` de cada um chamado do nosso, e
+ * os dois paineis de configuracao na barra lateral.
  */
 import { expect, type Page, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
@@ -28,7 +28,7 @@ test.beforeAll(async () => {
   await setupTestEnvironment();
 });
 
-test('SPIKE v8: setup() deles chamado do nosso', async ({ page }) => {
+test('SPIKE v9: os dois layouts e as duas configuracoes', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
 
@@ -45,42 +45,52 @@ test('SPIKE v8: setup() deles chamado do nosso', async ({ page }) => {
 
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
   await expect(page.locator('.spike-bar')).toBeVisible({ timeout: 60_000 });
-  await page.waitForTimeout(8_000);
+  await page.waitForTimeout(10_000);
 
   console.log(`\n[1] ${(await page.locator('.spike-bar').innerText()).replace(/\s+/g, ' ')}`);
-  console.log(`[1] a grade deles desenhou? table=${await page.locator('.spike-pane--grid table').count()}`);
+  console.log(`[1] mapa desenhou? canvas=${await page.locator('.spike-pane--map canvas').count()}`);
+  console.log(`[1] grade desenhou? table=${await page.locator('.spike-pane--grid table').count()}`);
   console.log(`[1] ${(await page.locator('.spike-status').innerText()).replace(/\s+/g, ' ')}`);
 
   console.log(`\n[consultas] ${calls.length}`);
   calls.forEach((c, i) => console.log(`      [${i + 1}] ${c}`));
 
-  await page.screenshot({ path: 'test-results/spike8-01-grade.png' });
+  await page.screenshot({ path: 'test-results/spike9-01-dois.png' });
 
-  // a prova: o painel de opcoes recebe o MESMO estado, sem wrapper proprio
+  // os dois paineis de configuracao
   const header = page.getByRole('button', { name: /^layers/ });
   await expect(header).toBeVisible({ timeout: 30_000 });
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
   await page.waitForTimeout(2_000);
 
-  const section = page.getByText(/SPIKE v8 — opcoes do tabular/i).first();
-  if ((await section.count()) > 0) {
-    await section.click();
+  for (const label of [/opcoes da grade deles/i, /opcoes do mapa deles/i]) {
+    const section = page.getByText(label).first();
+    if ((await section.count()) > 0) {
+      await section.click();
+      await page.waitForTimeout(2_500);
+    }
+  }
+
+  for (const which of ['grade', 'mapa']) {
+    const panel = page.locator(`[data-spike-panel="${which}"]`);
+    if ((await panel.count()) > 0) {
+      console.log(`\n[painel ${which}] ${(await panel.innerText()).replace(/\s+/g, ' ').slice(0, 240)}`);
+    } else {
+      console.log(`\n[painel ${which}] ausente`);
+    }
+  }
+
+  console.log(`\n[consultas depois dos paineis] ${calls.length}`);
+  await page.screenshot({ path: 'test-results/spike9-02-paineis.png' });
+
+  // sincronia: marcar na grade deve aparecer no estado compartilhado
+  const cell = page.locator('.spike-pane--grid tbody tr').first().locator('td').first();
+  if ((await cell.count()) > 0) {
+    await cell.click();
     await page.waitForTimeout(3_000);
+    console.log(`\n[sincronia] ${(await page.locator('.spike-status').innerText()).replace(/\s+/g, ' ')}`);
+    await page.screenshot({ path: 'test-results/spike9-03-selecao.png' });
   }
-
-  const painel = page.locator('[data-spike-panel]');
-  console.log(`\n[2] painel presente? ${await painel.count()}`);
-  if ((await painel.count()) > 0) {
-    console.log(`[2] ${(await painel.getAttribute('data-spike-panel')) ?? ''}`);
-  }
-
-  const opts = page.locator('.spike-opts');
-  if ((await opts.count()) > 0) {
-    console.log(`[2] conteudo: ${(await opts.innerText()).replace(/\s+/g, ' ').slice(0, 200)}`);
-  }
-
-  console.log(`\n[3] consultas depois de abrir o painel: ${calls.length}`);
-  await page.screenshot({ path: 'test-results/spike8-02-painel.png' });
 
   console.log(`\n[erros] ${errors.length === 0 ? 'nenhum' : JSON.stringify(errors.slice(0, 3))}`);
 });

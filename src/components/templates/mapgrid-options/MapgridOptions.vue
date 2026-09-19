@@ -7,13 +7,24 @@
     layout desenha. Se o painel de opcoes do tabular montar aqui e reagir, o
     problema de "painel e layout sao irmaos" acabou.
   -->
-  <v-detail icon="science" label="SPIKE v8 — opcoes do tabular">
-    <div class="spike-opts">
-      <p :data-spike-panel="spikePanelReport">{{ spikePanelReport }}</p>
+  <v-detail icon="science" label="SPIKE — opcoes da grade deles">
+    <div class="spike-opts" data-spike-panel="grade">
+      <p>{{ spikeReport(embeddedGrid) }}</p>
       <component
-        :is="embeddedOptionsComponent"
-        v-if="embeddedOptionsComponent && spikeHasState"
-        v-bind="embeddedState"
+        :is="embeddedGrid?.optionsComponent"
+        v-if="embeddedGrid?.optionsComponent"
+        v-bind="embeddedGrid.state"
+      />
+    </div>
+  </v-detail>
+
+  <v-detail icon="science" label="SPIKE — opcoes do mapa deles">
+    <div class="spike-opts" data-spike-panel="mapa">
+      <p>{{ spikeReport(embeddedMap) }}</p>
+      <component
+        :is="embeddedMap?.optionsComponent"
+        v-if="embeddedMap?.optionsComponent"
+        v-bind="embeddedMap.state"
       />
     </div>
   </v-detail>
@@ -86,21 +97,27 @@ import { useI18n } from 'vue-i18n';
 import { MESSAGES } from '../../../shared/messages';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
+interface SpikeEmbedded {
+  id: string;
+  report: string;
+  state: Record<string, unknown>;
+  component: unknown;
+  optionsComponent: unknown;
+}
+
 const props = defineProps<
   MapgridOptionsProps & {
-    embeddedState?: Record<string, unknown>;
-    embeddedOptionsComponent?: unknown;
+    embeddedGrid?: SpikeEmbedded;
+    embeddedMap?: SpikeEmbedded;
   }
 >();
 
-/* ---- SPIKE v8 — DESCARTAVEL ---- */
-const spikeHasState = computed(() => Object.keys(props.embeddedState ?? {}).length > 0);
-const spikePanelReport = computed(() => {
-  const keys = Object.keys(props.embeddedState ?? {}).length;
-  const comp = props.embeddedOptionsComponent ? 'sim' : 'nao';
-  return `estado chegou ao painel: ${keys} chaves · slots.options: ${comp}`;
-});
-/* ---- fim do SPIKE v8 ---- */
+/* ---- SPIKE — DESCARTAVEL ---- */
+const spikeReport = (embedded?: SpikeEmbedded): string => {
+  const keys = Object.keys(embedded?.state ?? {}).length;
+  return `${keys} chaves · slots.options: ${embedded?.optionsComponent ? 'sim' : 'nao'}`;
+};
+/* ---- fim do SPIKE ---- */
 
 const emit = defineEmits<MapgridOptionsEmits>();
 
