@@ -1,31 +1,34 @@
 <!--
   SPIKE — DESCARTAVEL. Nao faz parte da extensao.
 
-  v1 respondeu "da para embutir o layout tabular?". Esta e a v2, que responde o
-  que a v1 deixou sem medir: **o tabular e o mapa convivendo na mesma tela**.
+  v1: da para embutir o layout tabular? (da)
+  v2: ele e o mapa convivem na mesma tela? (convivem, e o clique na linha pode
+      deixar de navegar)
+  v3: isto vale so para o tabular, ou para **qualquer layout** do Directus?
 
-  Tres coisas sob teste aqui:
-
-  1. o tabular aguenta meia tela? ele foi escrito para ocupar tudo, e aqui divide
-     espaco com o mapa
-  2. o `onRowClick` do `layoutState` pode ser trocado pelo nosso, para o clique
-     na linha enquadrar o marcador em vez de navegar para o item
-  3. o mapa se alimenta do `items` que o proprio tabular buscou
-
-  Sobre o item 3: o `setup()` em `src/index.ts` continua fazendo o `useItems`
-  dele, entao aqui ainda ha dois fetches. O spike nao mexe nisso — ele so mostra
-  que o mapa NAO precisa do nosso, comparando as duas contagens no rodape.
+  A v3 troca o layout embutido em tempo de execucao. Se `cards` entrar no lugar
+  de `tabular` sem mudar mais nada, entao o que o spike descobriu nao e sobre a
+  grade: e sobre poder pendurar qualquer layout do Directus ao lado do mapa.
 
   Para desfazer: apagar este arquivo e `git checkout -- src/index.ts`.
 -->
 <template>
   <div class="spike-layout">
-    <details class="spike-report">
-      <summary>relatorio do spike ({{ reportLines.length }} linhas)</summary>
-      <pre>{{ report }}</pre>
-    </details>
+    <div class="spike-bar">
+      <button
+        v-for="id in LAYOUT_IDS"
+        :key="id"
+        type="button"
+        :class="{ on: id === layoutId }"
+        :data-layout="id"
+        @click="layoutId = id"
+      >
+        {{ id }}
+      </button>
+      <span class="spike-note">embutido: <b>{{ layoutId }}</b></span>
+    </div>
 
-    <component :is="wrapperComp" v-if="wrapperComp" v-bind="wrapperProps">
+    <component :is="layoutWrapper" v-if="layoutWrapper" v-bind="wrapperProps">
       <template #default="{ layoutState }">
         <div class="spike-split">
           <MapComponent
@@ -42,29 +45,31 @@
 
           <div class="spike-grid">
             <component
-              :is="tabularComp"
-              v-if="tabularComp"
+              :is="embeddedComp"
+              v-if="embeddedComp"
               v-bind="{ ...layoutState, onRowClick: handleRowClick }"
             />
+            <p v-else>sem component para {{ layoutId }}</p>
           </div>
         </div>
 
-        <p class="spike-status">
-          itens do tabular: <b>{{ asItems(layoutState.items).length }}</b> ·
-          itens do nosso useItems: <b>{{ items?.length ?? 0 }}</b> · ultimo clique:
-          <b>{{ lastClick }}</b>
+        <p class="spike-status" :data-layout-keys="Object.keys(layoutState).length">
+          <b>{{ layoutId }}</b> · chaves do layoutState:
+          <b>{{ Object.keys(layoutState).length }}</b> · itens dele:
+          <b>{{ asItems(layoutState.items).length }}</b> · itens do nosso useItems:
+          <b>{{ items?.length ?? 0 }}</b> · ultimo clique: <b>{{ lastClick }}</b>
         </p>
       </template>
     </component>
 
-    <p v-else class="spike-status">sem layoutWrapper — ver relatorio</p>
+    <p v-else class="spike-status">sem layoutWrapper para {{ layoutId }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as sdk from '@directus/extensions-sdk';
 import type { Component } from 'vue';
-import { computed, ref, shallowRef } from 'vue';
+import { computed, ref } from 'vue';
 import type { GeoItem } from '../../../contract/index';
 import MapComponent from '../../organisms/map-component/MapComponent.vue';
 
@@ -82,26 +87,26 @@ const props = defineProps<{
 // biome-ignore lint/suspicious/noExplicitAny: spike descartavel
 const anySdk = sdk as any;
 
-const reportLines: string[] = [];
-const wrapperComp = shallowRef<Component | null>(null);
-const tabularComp = shallowRef<Component | null>(null);
+const LAYOUT_IDS = ['tabular', 'cards', 'calendar', 'kanban'] as const;
+
+/*
+ * Reativo de proposito: `useLayout` devolve um computed que re-resolve quando o
+ * id muda, entao trocar de layout nao exige remontar nada nem rebuildar.
+ */
+const layoutId = ref<string>('tabular');
+
+const extensions = typeof anySdk.useExtensions === 'function' ? anySdk.useExtensions() : null;
+
+const embeddedComp = computed<Component | null>(() => {
+  const registered = extensions?.layouts?.value ?? [];
+  return registered.find((l: { id: string }) => l.id === layoutId.value)?.component ?? null;
+});
+
+const layoutWrapper =
+  typeof anySdk.useLayout === 'function' ? anySdk.useLayout(layoutId).layoutWrapper : null;
+
 const mapRef = ref<InstanceType<typeof MapComponent> | null>(null);
 const lastClick = ref('(nenhum)');
-
-reportLines.push(`useExtensions: ${typeof anySdk.useExtensions}`);
-reportLines.push(`useLayout: ${typeof anySdk.useLayout}`);
-
-if (typeof anySdk.useExtensions === 'function') {
-  const registered = anySdk.useExtensions().layouts?.value ?? [];
-  reportLines.push(`layouts: ${registered.map((l: { id: string }) => l.id).join(', ')}`);
-  tabularComp.value = registered.find((l: { id: string }) => l.id === 'tabular')?.component ?? null;
-}
-
-if (typeof anySdk.useLayout === 'function') {
-  wrapperComp.value = anySdk.useLayout(ref('tabular')).layoutWrapper.value ?? null;
-}
-
-const report = reportLines.join('\n');
 
 const asItems = (value: unknown): GeoItem[] => (Array.isArray(value) ? (value as GeoItem[]) : []);
 
@@ -114,10 +119,6 @@ const wrapperProps = computed(() => ({
   search: null,
 }));
 
-/**
- * O lance todo: sem isto o clique na linha navega para a tela do item, que
- * mataria a sincronia com o mapa — que e a razao de existir desta extensao.
- */
 const handleRowClick = (payload: unknown): void => {
   const shape = payload && typeof payload === 'object' ? Object.keys(payload).join('+') : 'nao-obj';
   const item = (payload as { item?: GeoItem } | null)?.item;
@@ -135,11 +136,26 @@ const handleRowClick = (payload: unknown): void => {
   padding: var(--content-padding);
   padding-top: 0;
 }
-.spike-report {
+.spike-bar {
   flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
   font-family: monospace;
   font-size: 12px;
-  margin-bottom: 8px;
+}
+.spike-bar button {
+  font-family: inherit;
+  padding: 3px 10px;
+  cursor: pointer;
+  border: 1px solid #c00;
+  background: transparent;
+  border-radius: 4px;
+}
+.spike-bar button.on {
+  background: #c00;
+  color: #fff;
 }
 .spike-split {
   display: flex;

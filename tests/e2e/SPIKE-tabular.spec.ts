@@ -1,11 +1,12 @@
 /**
  * SPIKE — DESCARTAVEL. Apagar junto com SPIKE-tabular-embed.vue.
  *
- * O host nao alcanca o container neste ambiente, entao a observacao roda de
- * dentro da rede do docker, como o resto do e2e.
+ * v4: a consulta ao backend e feita uma vez ou duas?
  *
- * v2: mede o tabular e o mapa na mesma tela — se o tabular aguenta meia tela, se
- * o clique na linha pode deixar de navegar, e se o mapa vive dos itens dele.
+ * O spike alimenta o mapa com `layoutState.items` — os itens que o layout
+ * embutido buscou. Mas o `setup()` em `src/index.ts` continua chamando o
+ * `useItems` dele. A pergunta e se isso vira duas idas ao backend, e o que
+ * exatamente cada uma pede.
  */
 import { expect, type Page, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
@@ -31,45 +32,34 @@ test.beforeAll(async () => {
   await setupTestEnvironment();
 });
 
-test('SPIKE: o tabular e o mapa na mesma tela', async ({ page }) => {
-  page.on('pageerror', (error) => console.log(`[pageerror] ${error.message}`));
-
+test('SPIKE v4: quantas consultas ao backend', async ({ page }) => {
   await ensureMapGridPreset();
   await login(page);
 
+  const calls: string[] = [];
+  page.on('request', (request) => {
+    const url = request.url();
+    if (url.includes(`/items/${COLLECTION_NAME}`)) {
+      calls.push(decodeURIComponent(url.split('/items/')[1] ?? url));
+    }
+  });
+
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
   await expect(page.locator('.spike-split')).toBeVisible({ timeout: 60_000 });
-  await expect(page.locator('.spike-grid table')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
+  await page.waitForTimeout(8_000);
 
-  // o mapa precisa de um tempo para desenhar antes da captura
-  await page.waitForTimeout(5_000);
+  console.log(`\n===== TABULAR: ${calls.length} consultas a /items/${COLLECTION_NAME} =====`);
+  calls.forEach((call, index) => console.log(`  [${index + 1}] ${call}`));
 
-  const status = async () => (await page.locator('.spike-status').innerText()).replace(/\s+/g, ' ');
-  console.log(`\n[status inicial] ${await status()}`);
+  const afterTabular = calls.length;
+  calls.length = 0;
 
-  await page.screenshot({ path: 'test-results/spike2-01-split.png', fullPage: false });
+  await page.locator('[data-layout="cards"]').click();
+  await page.waitForTimeout(8_000);
 
-  const rows = page.locator('.spike-grid tbody tr');
-  console.log(`linhas no tabular embutido: ${await rows.count()}`);
+  console.log(`\n===== TROCA PARA CARDS: +${calls.length} consultas =====`);
+  calls.forEach((call, index) => console.log(`  [${index + 1}] ${call}`));
 
-  // a pergunta central: o clique na linha ainda navega para o item?
-  const urlBefore = page.url();
-  await rows.nth(2).click();
-  await page.waitForTimeout(3_000);
-
-  console.log(`[status apos clique] ${await status()}`);
-  console.log(`url antes:  ${urlBefore}`);
-  console.log(`url depois: ${page.url()}`);
-  console.log(`navegou para o item? ${page.url() !== urlBefore}`);
-
-  await page.screenshot({ path: 'test-results/spike2-02-apos-clique.png', fullPage: false });
-
-  // e o menu de contexto, que continua sendo o do tabular
-  const header = page.locator('.spike-grid thead th').nth(2);
-  if (await header.isVisible()) {
-    await header.click();
-    await page.waitForTimeout(1_000);
-    await page.screenshot({ path: 'test-results/spike2-03-menu.png', fullPage: false });
-  }
+  console.log(`\nresumo: tabular=${afterTabular} troca-para-cards=${calls.length}`);
 });
