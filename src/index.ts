@@ -104,14 +104,21 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
     const layoutOptionBindings = createLayoutOptions();
 
-    const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
-      sort,
-      limit,
-      page,
-      fields: queryFields,
-      filter,
-      search,
-    });
+    /*
+     * SPIKE v5: o `useItems` daqui saiu de proposito. A v4 mediu duas buscas ao
+     * backend — a nossa e a do layout embutido — e a proposta do v5 e ter uma
+     * so, a dele, com o `layoutQuery` que nos entregamos. Deixar esta chamada
+     * de pe faria a contagem de consultas mentir.
+     *
+     * `queryFields` fica sem uso aqui, e e isso mesmo enquanto o spike dura.
+     */
+    void queryFields;
+    const items = ref<GeoItem[]>([]);
+    const loading = ref(false);
+    const error = ref<unknown>(null);
+    const totalPages = ref(1);
+    const itemCount = ref(0);
+    const totalCount = ref(0);
 
     const selectedItems = ref<GeoItem[]>([]);
 
