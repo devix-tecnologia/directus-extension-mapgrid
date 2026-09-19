@@ -1,7 +1,8 @@
+import * as sdk from '@directus/extensions-sdk';
 import { defineLayout, useApi, useCollection, useItems, useSync } from '@directus/extensions-sdk';
 import type { Field } from '@directus/types';
 import type { MaybeRefOrGetter } from 'vue';
-import { computed, ref, toRefs, toValue } from 'vue';
+import { computed, reactive, ref, toRefs, toValue } from 'vue';
 import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
 import Layout from './components/templates/mapgrid-layout/SPIKE-tabular-embed.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
@@ -120,6 +121,85 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const itemCount = ref(0);
     const totalCount = ref(0);
 
+    /* ================= SPIKE v8 — DESCARTAVEL =================
+     *
+     * O elo que sustenta o desenho da v7: chamar o `setup()` do layout embutido
+     * DAQUI, e nao de dentro do componente.
+     *
+     * Motivo: o Directus entrega o retorno deste `setup()` tanto ao componente
+     * quanto ao painel de opcoes — e por isso que o MapgridOptions ja recebe
+     * `collection` e `geolocation`. Se o estado do layout embutido nascer aqui,
+     * ele chega aos dois pelo caminho que ja existe, e o problema de "painel e
+     * layout sao irmaos" desaparece por construcao.
+     *
+     * O `createLayoutWrapper` faz exatamente isto por dentro: `layout.setup(
+     * props, { emit })` mais os `onUpdate:<chave>`. Aqui a mesma coisa, sem o
+     * componente no meio.
+     */
+    // biome-ignore lint/suspicious/noExplicitAny: spike
+    const anySdk = sdk as any;
+
+    const embeddedSelection = ref<(string | number)[]>([]);
+    const embeddedOptions = ref<Record<string, unknown>>({});
+    const embeddedQuery = ref<Record<string, unknown>>({
+      fields: ['name', 'status', 'location'],
+      sort: ['name'],
+      limit: 25,
+      page: 1,
+    });
+
+    const embeddedProps = reactive({
+      collection,
+      selection: embeddedSelection,
+      layoutOptions: embeddedOptions,
+      layoutQuery: embeddedQuery,
+      layoutProps: ref({}),
+      filter,
+      filterUser: ref(null),
+      filterSystem: ref(null),
+      search,
+      showSelect: ref('multiple'),
+      selectMode: ref(false),
+      readonly: ref(false),
+      resetPreset: ref(null),
+      clearFilters: ref(null),
+    });
+
+    const embeddedEmit = (event: string, value: unknown): void => {
+      if (event === 'update:layoutQuery') embeddedQuery.value = value as Record<string, unknown>;
+      if (event === 'update:layoutOptions') embeddedOptions.value = value as Record<string, unknown>;
+      if (event === 'update:selection') embeddedSelection.value = value as (string | number)[];
+    };
+
+    const embeddedReport = ref('');
+    const embeddedState = ref<Record<string, unknown>>({});
+    const embeddedComponent = ref<unknown>(null);
+    const embeddedOptionsComponent = ref<unknown>(null);
+
+    try {
+      const registered = anySdk.useExtensions?.().layouts?.value ?? [];
+      const tabular = registered.find((l: { id: string }) => l.id === 'tabular');
+      embeddedComponent.value = tabular?.component ?? null;
+      embeddedOptionsComponent.value = tabular?.slots?.options ?? null;
+
+      if (typeof tabular?.setup !== 'function') {
+        embeddedReport.value = 'layout tabular sem setup()';
+      } else {
+        const state = tabular.setup(embeddedProps, { emit: embeddedEmit });
+        // os mesmos `onUpdate:<chave>` que o createLayoutWrapper acrescenta
+        for (const key of Object.keys(state)) {
+          (state as Record<string, unknown>)[`onUpdate:${key}`] = (value: unknown) => {
+            embeddedEmit(`update:${key}`, value);
+          };
+        }
+        embeddedState.value = reactive(state) as Record<string, unknown>;
+        embeddedReport.value = `setup() rodou fora do wrapper · ${Object.keys(state).length} chaves`;
+      }
+    } catch (error) {
+      embeddedReport.value = `setup() EXPLODIU: ${String(error)}`;
+    }
+    /* ================= fim do SPIKE v8 ================= */
+
     const selectedItems = ref<GeoItem[]>([]);
 
     const deleteItems = async (ids: (string | number)[]) => {
@@ -230,6 +310,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       fieldsInCollection,
       selectedItems,
       deleteSelectedItems,
+      // SPIKE v8: o Directus entrega isto ao componente E ao painel de opcoes
+      embeddedReport,
+      embeddedState,
+      embeddedComponent,
+      embeddedOptionsComponent,
+      embeddedSelection,
       ...layoutOptionBindings,
     };
   },

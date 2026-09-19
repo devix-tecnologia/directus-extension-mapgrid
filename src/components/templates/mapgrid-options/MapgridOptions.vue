@@ -1,4 +1,23 @@
 <template>
+  <!--
+    SPIKE v8 — DESCARTAVEL. A prova do desenho.
+
+    Este painel NAO cria wrapper nenhum: ele recebe `embeddedState` como prop,
+    vindo do `setup()` de src/index.ts — o mesmo estado que o componente do
+    layout desenha. Se o painel de opcoes do tabular montar aqui e reagir, o
+    problema de "painel e layout sao irmaos" acabou.
+  -->
+  <v-detail icon="science" label="SPIKE v8 — opcoes do tabular">
+    <div class="spike-opts">
+      <p :data-spike-panel="spikePanelReport">{{ spikePanelReport }}</p>
+      <component
+        :is="embeddedOptionsComponent"
+        v-if="embeddedOptionsComponent && spikeHasState"
+        v-bind="embeddedState"
+      />
+    </div>
+  </v-detail>
+
   <v-detail icon="info" :label="t('optionPopup')">
     <div class="field">
       <v-collection-field-template v-model="title" :collection="collection" />
@@ -67,7 +86,21 @@ import { useI18n } from 'vue-i18n';
 import { MESSAGES } from '../../../shared/messages';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
-const props = defineProps<MapgridOptionsProps>();
+const props = defineProps<
+  MapgridOptionsProps & {
+    embeddedState?: Record<string, unknown>;
+    embeddedOptionsComponent?: unknown;
+  }
+>();
+
+/* ---- SPIKE v8 — DESCARTAVEL ---- */
+const spikeHasState = computed(() => Object.keys(props.embeddedState ?? {}).length > 0);
+const spikePanelReport = computed(() => {
+  const keys = Object.keys(props.embeddedState ?? {}).length;
+  const comp = props.embeddedOptionsComponent ? 'sim' : 'nao';
+  return `estado chegou ao painel: ${keys} chaves · slots.options: ${comp}`;
+});
+/* ---- fim do SPIKE v8 ---- */
 
 const emit = defineEmits<MapgridOptionsEmits>();
 
