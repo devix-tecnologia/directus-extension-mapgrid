@@ -1,9 +1,8 @@
 /**
- * SPIKE — DESCARTAVEL. Apagar junto com SPIKE-tabular-embed.vue e o bloco
- * marcado em MapgridOptions.vue.
+ * SPIKE — DESCARTAVEL. Apagar junto com SPIKE-tabular-embed.vue.
  *
- * v6: a area de configuracao. Da para compor, trazendo o painel de opcoes do
- * layout tabular para dentro do nosso? E quanto custa?
+ * v7: os dois layouts do Directus (map e tabular) compostos, dividindo
+ * `selection` e `layoutQuery`.
  */
 import { expect, type Page, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
@@ -29,7 +28,7 @@ test.beforeAll(async () => {
   await setupTestEnvironment();
 });
 
-test('SPIKE v6: compor a area de configuracao', async ({ page }) => {
+test('SPIKE v7: map + tabular do Directus, compostos', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
 
@@ -45,42 +44,56 @@ test('SPIKE v6: compor a area de configuracao', async ({ page }) => {
   });
 
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
-  await expect(page.locator('.nossa-grade')).toBeVisible({ timeout: 60_000 });
-  await page.waitForTimeout(6_000);
+  await expect(page.locator('.spike-split')).toBeVisible({ timeout: 60_000 });
+  await page.waitForTimeout(10_000);
 
-  console.log(`\n[antes de abrir o painel] buscas: ${calls.length}`);
+  const status = async () => (await page.locator('.spike-status').innerText()).replace(/\s+/g, ' ');
+  const bar = async () => (await page.locator('.spike-bar').innerText()).replace(/\s+/g, ' ');
+
+  console.log(`\n[1] ${await bar()}`);
+  console.log(`[1] o mapa deles desenhou? canvas=${await page.locator('.spike-pane--map canvas').count()}`);
+  console.log(`[1] a grade deles desenhou? table=${await page.locator('.spike-pane--grid table').count()}`);
+
+  console.log(`\n[3] buscas de itens: ${calls.length}`);
   calls.forEach((c, i) => console.log(`      [${i + 1}] ${c}`));
+  console.log(`[estado] ${await status()}`);
 
-  // abre a barra lateral de opcoes do layout
-  const header = page.getByRole('button', { name: /^layers/ });
-  await expect(header).toBeVisible({ timeout: 30_000 });
-  if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
-  await page.waitForTimeout(3_000);
+  await page.screenshot({ path: 'test-results/spike7-01-composto.png' });
 
-  const spike = page.locator('[data-spike-options]');
-  console.log(`\n[painel] bloco do spike presente? ${await spike.count()}`);
-  if ((await spike.count()) > 0) {
-    console.log(`[painel] ${(await spike.getAttribute('data-spike-options')) ?? ''}`);
+  const mapKeys = (await page.locator('[data-map-keys]').getAttribute('data-map-keys')) ?? '';
+  console.log(`\n[opcoes do map] chaves do estado dele: ${mapKeys.split(',').length}`);
+  console.log(`[opcoes do map] relacionadas a geometria: ${mapKeys
+    .split(',')
+    .filter((k) => /geo|geometry|cluster|basemap|location/i.test(k))
+    .join(', ')}`);
+
+  // 2: selecionar pela primeira celula da linha, que e onde mora o seletor
+  const cell = page.locator('.spike-pane--grid tbody tr').first().locator('td').first();
+  if ((await cell.count()) > 0) {
+    await cell.click();
+    await page.waitForTimeout(3_000);
+    console.log(`\n[2] apos marcar uma linha: ${await status()}`);
+    console.log(`[2] marcadores destacados no mapa? ${await page.locator('.spike-pane--map .maplibregl-marker').count()}`);
+    await page.screenshot({ path: 'test-results/spike7-02-selecao.png' });
+  } else {
+    console.log('\n[2] nenhuma celula na grade');
   }
 
-  // expande a secao do spike
-  const section = page.getByText(/SPIKE — opcoes do tabular/i).first();
-  if ((await section.count()) > 0) {
-    await section.click();
-    await page.waitForTimeout(4_000);
+  // 4: ordenar pela grade deles, e ver se o layoutQuery compartilhado aguenta
+  const header = page.locator('.spike-pane--grid thead th').nth(1);
+  if ((await header.count()) > 0) {
+    await header.click();
+    await page.waitForTimeout(1_500);
+    const sortItem = page.locator('[role="listitem"], .v-list-item').filter({ hasText: /descending/i }).first();
+    if ((await sortItem.count()) > 0) {
+      await sortItem.click();
+      await page.waitForTimeout(4_000);
+    }
+    console.log(`\n[4] apos ordenar: ${await status()}`);
+    console.log(`[4] buscas ate aqui: ${calls.length}`);
+    calls.forEach((c, i) => console.log(`      [${i + 1}] ${c}`));
+    await page.screenshot({ path: 'test-results/spike7-03-ordenado.png' });
   }
 
-  const painel = page.locator('.spike-opts__painel');
-  console.log(`[painel] painel deles montou? ${await painel.count()}`);
-  if ((await painel.count()) > 0) {
-    const texto = (await painel.innerText()).replace(/\s+/g, ' ').slice(0, 300);
-    console.log(`[painel] conteudo: ${texto || '(vazio)'}`);
-    console.log(`[painel] html: ${(await painel.innerHTML()).length} caracteres`);
-  }
-
-  console.log(`\n[depois de abrir o painel] buscas: ${calls.length}`);
-  calls.forEach((c, i) => console.log(`      [${i + 1}] ${c}`));
-
-  await page.screenshot({ path: 'test-results/spike6-01-painel.png' });
   console.log(`\n[erros] ${errors.length === 0 ? 'nenhum' : JSON.stringify(errors.slice(0, 3))}`);
 });

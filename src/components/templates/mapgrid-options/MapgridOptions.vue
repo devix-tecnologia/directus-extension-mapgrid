@@ -1,28 +1,4 @@
 <template>
-  <!--
-    SPIKE v6 — DESCARTAVEL. Da para compor a area de configuracao, trazendo o
-    painel de opcoes do layout tabular para dentro do nosso?
-
-    O `slots.options` dele e alcancavel pelo registro de layouts. O problema e
-    que o painel de opcoes e o componente do layout sao IRMAOS na arvore: o
-    `layoutState` que existe la dentro nao chega aqui. Para dar props ao painel
-    deles, so instanciando outro wrapper — e outro wrapper e outro `setup()`,
-    logo outra consulta. E o que este bloco mede.
-  -->
-  <v-detail icon="science" label="SPIKE — opcoes do tabular">
-    <div class="spike-opts" :data-spike-options="spikeReport">
-      <p>{{ spikeReport }}</p>
-      <component :is="spikeWrapper" v-if="spikeWrapper" v-bind="spikeWrapperProps">
-        <template #default="{ layoutState }">
-          <div class="spike-opts__painel">
-            <component :is="spikeOptionsComp" v-if="spikeOptionsComp" v-bind="layoutState" />
-            <p v-else>sem component de options</p>
-          </div>
-        </template>
-      </component>
-    </div>
-  </v-detail>
-
   <v-detail icon="info" :label="t('optionPopup')">
     <div class="field">
       <v-collection-field-template v-model="title" :collection="collection" />
@@ -86,45 +62,12 @@
 </template>
 
 <script setup lang="ts">
-import * as sdk from '@directus/extensions-sdk';
-import { computed, ref, shallowRef } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { MESSAGES } from '../../../shared/messages';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const props = defineProps<MapgridOptionsProps>();
-
-/* ---- SPIKE v6 — DESCARTAVEL ---- */
-// biome-ignore lint/suspicious/noExplicitAny: spike
-const anySdk = sdk as any;
-
-const spikeOptionsComp = shallowRef<unknown>(null);
-const spikeWrapper = shallowRef<unknown>(null);
-const spikeLines: string[] = [];
-
-if (typeof anySdk.useExtensions === 'function') {
-  const registered = anySdk.useExtensions().layouts?.value ?? [];
-  const tabular = registered.find((l: { id: string }) => l.id === 'tabular');
-  spikeOptionsComp.value = tabular?.slots?.options ?? null;
-  spikeLines.push(`slots.options do tabular: ${spikeOptionsComp.value ? 'achado' : 'ausente'}`);
-}
-
-if (typeof anySdk.useLayout === 'function') {
-  spikeWrapper.value = anySdk.useLayout(ref('tabular')).layoutWrapper.value ?? null;
-  spikeLines.push(`wrapper proprio do painel: ${spikeWrapper.value ? 'criado' : 'nulo'}`);
-}
-
-const spikeReport = spikeLines.join(' · ');
-
-const spikeWrapperProps = computed(() => ({
-  collection: props.collection,
-  selection: [],
-  layoutOptions: {},
-  layoutQuery: { fields: ['name'], sort: ['name'], limit: 25, page: 1 },
-  filter: null,
-  search: null,
-}));
-/* ---- fim do SPIKE v6 ---- */
 
 const emit = defineEmits<MapgridOptionsEmits>();
 

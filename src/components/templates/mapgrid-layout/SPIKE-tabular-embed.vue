@@ -1,166 +1,100 @@
 <!--
   SPIKE — DESCARTAVEL. Nao faz parte da extensao.
 
-  v1: da para embutir o layout tabular? (da)
-  v2: ele e o mapa convivem? (sim, e no tabular o clique na linha pode ser nosso)
-  v3: vale para outros layouts? (embutir sim; interceptar o clique nao — no cards
-      o item e um link e navega)
-  v4: a consulta e aproveitada? (nao: duas buscas, com campos e ordem diferentes)
+  v7 — a virada: em vez de "grade deles + mapa nosso", compor **os dois layouts
+  do Directus**. Ele registra um layout `map` alem do `tabular`, e a extensao
+  passaria a ser a composicao dos dois, nao a reimplementacao de nenhum.
 
-  v5 — a pergunta que as quatro anteriores levantaram: **usar a base, nao o
-  layout**. O `createLayoutWrapper` nao desenha nada, so chama o `setup()` do
-  layout e entrega o resultado pelo slot. Entao da para consumir o `layoutState`
-  e desenhar markup nosso, sem montar o componente deles.
+  Quatro perguntas:
+    1. o layout `map` deles monta aqui dentro, ao lado do `tabular`?
+    2. `selection` — um dos tres props que sobem como emit — serve de sincronia
+       entre os dois? clicar na linha deveria acender o marcador, e vice-versa
+    3. quantas consultas ao backend, agora que sao dois layouts de verdade?
+    4. o `layoutQuery` compartilhado aguenta os dois escrevendo nele?
 
-  Se der certo, tres problemas caem de uma vez:
-    - o clique volta a ser nosso, porque a linha e nossa
-    - some a folga no topo, que era chrome deles
-    - a consulta vira uma so, porque nos e que entregamos o `layoutQuery` — e
-      podemos injetar nele o campo de geometria que o mapa precisa
-
-  Duas coisas em teste aqui, e o `setup()` de `src/index.ts` teve o `useItems`
-  removido de proposito, para a contagem de consultas ficar honesta:
-    1. o `setup()` do tabular roda de pe sem o componente dele montado?
-    2. o `render-display` — como ele formata celula — e alcancavel por extensao?
+  O historico: v5 provou consulta unica com `layoutQuery` de mao dupla; v2
+  provou o `onRowClick` trocado. Aqui nada disso e usado — a ideia e justamente
+  nao interceptar nada, e deixar cada layout ser o que ele e.
 
   Para desfazer: apagar este arquivo e `git checkout -- src/index.ts`.
 -->
 <template>
   <div class="spike-layout">
     <div class="spike-bar">
-      <span>v5 — logica deles, markup nosso</span>
-      <span class="spike-note">render-display: <b>{{ hasRenderDisplay }}</b></span>
+      <span>v7 — dois layouts do Directus compostos</span>
+      <span>map: <b>{{ mapComp ? 'ok' : 'ausente' }}</b></span>
+      <span>tabular: <b>{{ tabularComp ? 'ok' : 'ausente' }}</b></span>
     </div>
 
-    <component
-      :is="layoutWrapper"
-      v-if="layoutWrapper"
-      v-bind="wrapperProps"
-      @update:layoutQuery="onQueryChange"
-    >
-      <template #default="{ layoutState }">
-        <div class="spike-split">
-          <MapComponent
-            ref="mapRef"
-            :items="asItems(layoutState.items)"
-            :geolocation="geolocation ?? ''"
-            :title="title ?? ''"
-            :zoom-on-click="zoomOnClick"
-            :map-center-lng="mapCenterLng"
-            :map-center-lat="mapCenterLat"
-            :map-zoom="mapZoom"
-          />
+    <div class="spike-split">
+      <!-- o layout `map` do Directus -->
+      <div class="spike-pane spike-pane--map">
+        <component :is="mapWrapper" v-if="mapWrapper" v-bind="mapProps" v-on="wrapperEvents">
+          <template #default="{ layoutState }">
+            <span class="spike-keys" :data-map-keys="Object.keys(layoutState).sort().join(',')" />
+            <component :is="mapComp" v-if="mapComp" v-bind="layoutState" />
+          </template>
+        </component>
+      </div>
 
-          <!-- markup nosso, alimentado pelo estado deles -->
-          <div class="spike-grid">
-            <table class="nossa-grade">
-              <thead>
-                <tr>
-                  <th
-                    v-for="header in headersOf(layoutState)"
-                    :key="header.value"
-                    :data-col="header.value"
-                    @click="sortBy(layoutState, header.value)"
-                  >
-                    {{ header.text }}
-                    <span v-if="sortOf(layoutState).by === header.value">
-                      {{ sortOf(layoutState).desc ? '▼' : '▲' }}
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in asItems(layoutState.items)"
-                  :key="item.id"
-                  :data-row="item.id"
-                  @click="focus(item)"
-                >
-                  <td v-for="header in headersOf(layoutState)" :key="header.value">
-                    <render-display
-                      v-if="hasRenderDisplay"
-                      :value="item[header.value]"
-                      :type="typeOf(layoutState, header.value)"
-                      :collection="collection"
-                      :field="header.value"
-                    />
-                    <span v-else>{{ item[header.value] }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <!-- o layout `tabular` do Directus -->
+      <div class="spike-pane spike-pane--grid">
+        <component
+          :is="tabularWrapper"
+          v-if="tabularWrapper"
+          v-bind="wrapperProps"
+          v-on="wrapperEvents"
+        >
+          <template #default="{ layoutState }">
+            <component :is="tabularComp" v-if="tabularComp" v-bind="layoutState" />
+          </template>
+        </component>
+      </div>
+    </div>
 
-        <p class="spike-status">
-          chaves: <b>{{ Object.keys(layoutState).length }}</b> · colunas:
-          <b>{{ headersOf(layoutState).length }}</b> · itens dele:
-          <b>{{ asItems(layoutState.items).length }}</b> · itens nossos:
-          <b>{{ items?.length ?? 0 }}</b> · sort:
-          <b>{{ sortOf(layoutState).by }}/{{ sortOf(layoutState).desc ? 'desc' : 'asc' }}</b> ·
-          emits de layoutQuery: <b>{{ queryEmits }}</b> · clique: <b>{{ lastClick }}</b>
-        </p>
-      </template>
-    </component>
-
-    <p v-else class="spike-status">sem layoutWrapper</p>
+    <p class="spike-status">
+      selecao: <b>{{ selection.length }}</b> [{{ selection.join(',') }}] · emits de selection:
+      <b>{{ selectionEmits }}</b> · emits de layoutQuery: <b>{{ queryEmits }}</b> · sort:
+      <b>{{ (liveQuery.sort as string[])?.join(',') }}</b>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as sdk from '@directus/extensions-sdk';
-import { computed, getCurrentInstance, ref } from 'vue';
-import type { GeoItem } from '../../../contract/index';
-import MapComponent from '../../organisms/map-component/MapComponent.vue';
+import type { Component } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
-const props = defineProps<{
-  collection: string;
-  items?: GeoItem[];
-  geolocation?: string;
-  title?: string;
-  zoomOnClick?: boolean;
-  mapCenterLng?: number;
-  mapCenterLat?: number;
-  mapZoom?: number;
-}>();
+const props = defineProps<{ collection: string; geolocation?: string }>();
 
 // biome-ignore lint/suspicious/noExplicitAny: spike descartavel
 const anySdk = sdk as any;
 
-interface LayoutHeader {
-  text: string;
-  value: string;
+const mapComp = shallowRef<Component | null>(null);
+const tabularComp = shallowRef<Component | null>(null);
+
+if (typeof anySdk.useExtensions === 'function') {
+  const registered = anySdk.useExtensions().layouts?.value ?? [];
+  const find = (id: string) => registered.find((l: { id: string }) => l.id === id)?.component ?? null;
+  mapComp.value = find('map');
+  tabularComp.value = find('tabular');
 }
-interface TableSortShape {
-  by: string | null;
-  desc: boolean;
-}
-type LayoutState = Record<string, unknown>;
 
-const layoutId = ref('tabular');
-const layoutWrapper =
-  typeof anySdk.useLayout === 'function' ? anySdk.useLayout(layoutId).layoutWrapper : null;
+const useWrapper = (id: string) =>
+  typeof anySdk.useLayout === 'function' ? anySdk.useLayout(ref(id)).layoutWrapper : null;
 
-/** O `render-display` esta entre os componentes globais que o app registra? */
-const globalComponents = Object.keys(getCurrentInstance()?.appContext.components ?? {});
-const hasRenderDisplay = globalComponents.includes('render-display');
+const mapWrapper = useWrapper('map');
+const tabularWrapper = useWrapper('tabular');
 
-const mapRef = ref<InstanceType<typeof MapComponent> | null>(null);
-const lastClick = ref('(nenhum)');
-
-const asItems = (value: unknown): GeoItem[] => (Array.isArray(value) ? (value as GeoItem[]) : []);
-
-/**
- * O `layoutQuery` e prop nossa, entao o campo de geometria entra aqui — sem ele
- * o layout so pede o que exibe, e o mapa fica sem coordenada (foi o que a v4
- * flagrou no cards, que pedia `fields[]=id` e mais nada).
- */
 /*
- * O `layoutQuery` tem de ser de mao dupla. Na primeira tentativa ele era um
- * objeto estatico, e a ordenacao nao pegava: o `onSortChange` deles escreve via
- * `useSync`, que **emite** `update:layoutQuery` — e emit que ninguem escuta some.
- * O estado voltava ao valor fixo no render seguinte.
+ * Estado compartilhado. `selection` e `layoutQuery` sao dois dos tres props que
+ * sobem como emit, entao os dois layouts podem escrever neles — e e isso que se
+ * quer medir: se a selecao feita num aparece no outro.
  */
+const selection = ref<(string | number)[]>([]);
+const selectionEmits = ref(0);
+const queryEmits = ref(0);
+
 const liveQuery = ref<Record<string, unknown>>({
   fields: [...new Set(['name', 'status', props.geolocation].filter(Boolean))],
   sort: ['name'],
@@ -168,55 +102,42 @@ const liveQuery = ref<Record<string, unknown>>({
   page: 1,
 });
 
-const queryEmits = ref(0);
-const onQueryChange = (next: Record<string, unknown>): void => {
-  queryEmits.value += 1;
-  liveQuery.value = next;
-};
-
 const wrapperProps = computed(() => ({
   collection: props.collection,
-  selection: [],
+  selection: selection.value,
   layoutOptions: {},
   layoutQuery: liveQuery.value,
   filter: null,
   search: null,
 }));
 
-const headersOf = (state: LayoutState): LayoutHeader[] => {
-  const headers = state.tableHeaders;
-  return Array.isArray(headers) ? (headers as LayoutHeader[]) : [];
-};
+/*
+ * O layout `map` le o campo de geometria do `layoutOptions` DELE, nao do
+ * `layoutQuery`. Passando vazio, ele pedia `fields[]=id` e desenhava um mapa
+ * sem marcador nenhum — a configuracao dele e que diz onde estao os pontos.
+ *
+ * O nome da chave nao esta documentado para extensao, entao o spike tenta as
+ * que fazem sentido e despeja as chaves do estado no DOM, para conferir qual
+ * pegou.
+ */
+const mapProps = computed(() => ({
+  ...wrapperProps.value,
+  layoutOptions: {
+    geometryField: props.geolocation,
+    geometryFormat: 'native',
+    clusterData: true,
+  },
+}));
 
-const sortOf = (state: LayoutState): TableSortShape =>
-  (state.tableSort as TableSortShape | undefined) ?? { by: null, desc: false };
-
-const typeOf = (state: LayoutState, field: string): string => {
-  const fields = state.fieldsInCollection;
-  if (!Array.isArray(fields)) return 'string';
-  const found = (fields as { field: string; type?: string }[]).find((f) => f.field === field);
-  return found?.type ?? 'string';
-};
-
-/** A ordenacao e deles: chamamos o `onSortChange` que o `layoutState` entrega. */
-const sortBy = (state: LayoutState, field: string): void => {
-  const onSortChange = state.onSortChange;
-  if (typeof onSortChange !== 'function') {
-    lastClick.value = 'SEM onSortChange';
-    return;
-  }
-  lastClick.value = `onSortChange(${field})`;
-  const current = sortOf(state);
-  (onSortChange as (sort: TableSortShape) => void)({
-    by: field,
-    desc: current.by === field ? !current.desc : false,
-  });
-};
-
-/** O clique e nosso por construcao: a linha e nossa, nao ha nada a interceptar. */
-const focus = (item: GeoItem): void => {
-  lastClick.value = `item=${item.id}`;
-  mapRef.value?.focusOnItem(item);
+const wrapperEvents = {
+  'update:selection': (next: (string | number)[]) => {
+    selectionEmits.value += 1;
+    selection.value = next;
+  },
+  'update:layoutQuery': (next: Record<string, unknown>) => {
+    queryEmits.value += 1;
+    liveQuery.value = next;
+  },
 };
 </script>
 
@@ -240,40 +161,21 @@ const focus = (item: GeoItem): void => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 8px;
-  border: 2px dashed #090;
+  gap: 6px;
   overflow: hidden;
 }
-.spike-split :deep(.map-wrapper) {
+.spike-pane {
+  min-height: 0;
+  overflow: hidden;
+  border: 2px dashed #00a;
+  position: relative;
+}
+.spike-pane--map {
   flex: 1 1 auto;
-  min-height: 0;
 }
-.spike-grid {
+.spike-pane--grid {
   flex: 0 0 45%;
-  min-height: 0;
   overflow: auto;
-  border-top: 2px dashed #090;
-}
-.nossa-grade {
-  width: 100%;
-  border-collapse: collapse;
-}
-.nossa-grade th {
-  text-align: left;
-  padding: 8px 12px;
-  cursor: pointer;
-  background: var(--theme--background-subdued, #f4f5f7);
-  border-bottom: 1px solid var(--theme--border-color-subdued, #e4e9f2);
-  position: sticky;
-  top: 0;
-}
-.nossa-grade td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--theme--border-color-subdued, #eee);
-}
-.nossa-grade tbody tr:hover {
-  background: var(--theme--background-subdued, #f4f5f7);
-  cursor: pointer;
 }
 .spike-status {
   flex: 0 0 auto;
