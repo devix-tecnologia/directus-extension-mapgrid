@@ -1,6 +1,6 @@
 # Task 009 — O painel de opções não persiste nada no preset
 
-Status: pending
+Status: done
 Type: fix
 Assignee: A definir
 Difficulty: 2
@@ -126,13 +126,17 @@ Duas hipóteses a testar, nessa ordem:
 
 ## Tasks
 
-- [ ] Confirmar qual das duas hipóteses é a verdadeira, medindo e não supondo
-- [ ] Comparar com um layout nativo: o tabular grava `tableSpacing` pelo painel,
-      então ou ele faz algo diferente, ou o defeito também o atinge
-- [ ] Corrigir, ou contornar se a causa estiver no app e não aqui
-- [ ] Reativar o `test.fixme` em `tests/e2e/mapgrid-columns.spec.ts`
-- [ ] Cobrir com e2e pelo menos duas opções de naturezas diferentes, para a
-      correção não valer só para um caso
+- [x] Confirmar qual das duas hipóteses é a verdadeira, medindo e não supondo —
+      nenhuma das duas: o instrumento é que estava errado, ver a conclusão
+- [x] Comparar com um layout nativo: o tabular grava `tableSpacing` pelo painel,
+      então ou ele faz algo diferente, ou o defeito também o atinge — o spike da
+      task-008 montou o painel do tabular e ele grava, como o nosso
+- [x] Corrigir, ou contornar se a causa estiver no app e não aqui — nada a
+      corrigir no código da extensão; o conserto foi no ajudante de teste
+- [x] Reativar o `test.fixme` em `tests/e2e/mapgrid-columns.spec.ts` — feito pela
+      task-008, que o trocou por um teste de verdade
+- [ ] Cobrir com e2e uma segunda opção, de natureza diferente de `zoomOnClick`,
+      para a garantia não valer só para um booleano
 
 ## Notes
 
@@ -165,3 +169,34 @@ ordenação também.
 Próximo passo desta task, portanto, é **refazer a medição** antes de qualquer
 conserto: alternar `zoomOnClick` pelo painel e ler o preset efetivo. Se o valor
 estiver lá, não há defeito nenhum, e esta task fecha como erro de medição.
+
+## Conclusão de 2026-09-19 — era erro de medição, e não há defeito
+
+A medição foi refeita, exatamente como o achado acima pedia, e está em
+`tests/e2e/mapgrid-options-persistence.spec.ts`. Alternar `Zoom on Table Click`
+pelo painel, contra um Directus real, lendo o preset **efetivo**:
+
+    [antes]       layout_options: {"zoomOnClick":true}
+    [depois]      layout_options: {"zoomOnClick":false}
+    [apos reload] layout_options: {"zoomOnClick":false}
+
+O painel grava. E sobrevive ao reload, o que descarta também a hipótese de que
+montar o layout de novo sobrescreveria a escolha com o padrão detectado — que
+era o risco que restava nesse caminho.
+
+As duas linhas da tabela na abertura desta task estão resolvidas: a escolha de
+coluna passou a gravar pela task-008, que a levou para `layoutQuery.fields`, e a
+opção de painel nunca deixou de gravar — a medição é que lia a linha errada.
+
+O teste fica como regressão. Ele é lento (perto de sete minutos, com dois
+carregamentos completos e o mapa), e por isso carrega `test.setTimeout` próprio:
+os 180s do padrão não cobrem.
+
+**O que isso destrava.** A task-010 declarava esta aqui como pré-requisito
+bloqueante, porque alinhamento, largura e as opções do mapa do Directus moram em
+`layoutOptions`. O bloqueio não existe.
+
+**A lição.** O defeito descrito aqui nunca existiu, e a investigação que o
+sustentava custou tempo real. O que faltou foi conferir o instrumento antes de
+confiar na leitura: o ajudante lia `limit=1` de uma tabela em que o Directus
+escreve numa linha nova.

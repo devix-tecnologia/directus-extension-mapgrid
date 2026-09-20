@@ -54,13 +54,15 @@ Isso encosta em duas tasks abertas:
 - **task-007** (honrar a configuração de mapa do Directus) talvez seja
   *atendida* por esta, já que o layout deles lê a configuração nativa.
 
-## Pré-requisito
+## Pré-requisito — destravado em 2026-09-19
 
-**A task-009 vem primeiro** — decidido em 2026-09-19. Alinhamento, largura, mapa
-base, campo geoespacial e agrupamento moram todos em `layoutOptions`, e escrita
-de `layoutOptions` não chega ao preset. Sem a 009, toda a configuração que esta
-task traz apareceria na tela e sumiria no reload: o usuário mexeria no Basemap,
-recarregaria e perderia.
+A decisão do dia foi fazer a task-009 primeiro, porque alinhamento, largura,
+mapa base, campo geoespacial e agrupamento moram todos em `layoutOptions`, e o
+diagnóstico dela dizia que `layoutOptions` não chegava ao preset.
+
+A medição foi refeita e **não há defeito**: o painel grava e sobrevive ao
+reload. A 009 fechou como erro de medição, e o bloqueio não existe. O teste de
+regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 
 ## Tasks
 
