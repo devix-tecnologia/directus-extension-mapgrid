@@ -20,6 +20,14 @@ export const COLUMN_KEYS = ['coluna1', 'coluna2', 'coluna3', 'coluna4', 'coluna5
 export type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 export interface LayoutOptions {
+  /**
+   * A configuração de cada layout do Directus que o MapGrid compõe, cada uma
+   * na sua chave. Numa chave só, um sobrescreveria o outro — o mapa guarda ali
+   * o campo de geometria e o mapa base, a grade o espaçamento e o alinhamento.
+   * O conteúdo é deles, e por isso fica sem forma declarada aqui.
+   */
+  tabular?: Record<string, unknown>;
+  map?: Record<string, unknown>;
   /** The fields the grid shows, in order. */
   fields?: string[];
   /** Marker popup template, over the item's fields. Empty → the id. */

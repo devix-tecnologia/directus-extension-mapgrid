@@ -1,16 +1,22 @@
+/**
+ * O MapGrid compõe os dois layouts do Directus.
+ *
+ * Este é o teste que prova o desenho da task-010, e só o e2e pode: o Storybook
+ * não alcança os layouts do Directus, porque lá o SDK é um mock nosso e o
+ * registro de layouts não existe.
+ */
 import { expect, type Page, test } from '@playwright/test';
-import { COLLECTION_NAME, EMPTY_COLLECTION_NAME } from '../helper-collection';
+import { COLLECTION_NAME } from '../helper-collection';
+import { ensureMapGridPreset, readMapGridPresetQuery } from '../helpers/mapgrid-preset';
+import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
-import { readCamera, waitForCameraToSettle } from './helpers/map-camera';
-import { projectToScreenPoint } from './helpers/map-projection';
-
-const FOCUSED_ZOOM_THRESHOLD = 10;
-const BRASILIA: [number, number] = [-47.9292, -15.7801];
 
 async function login(page: Page): Promise<void> {
   await page.goto('/admin/login');
-  const emailInput = page.locator('input[type="email"], input[name="email"]').first();
-  await emailInput.fill(testEnv.DIRECTUS_ADMIN_EMAIL);
+  await page
+    .locator('input[type="email"], input[name="email"]')
+    .first()
+    .fill(testEnv.DIRECTUS_ADMIN_EMAIL);
   await page
     .locator('input[type="password"], input[name="password"]')
     .first()
@@ -19,87 +25,80 @@ async function login(page: Page): Promise<void> {
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
 }
 
-async function openMapGridCollection(page: Page, collection = COLLECTION_NAME): Promise<void> {
-  await page.goto(`/admin/content/${collection}`);
-  await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
+async function openCollection(page: Page): Promise<void> {
+  await page.goto(`/admin/content/${COLLECTION_NAME}`);
+  await expect(page.locator('.mapgrid-container')).toBeVisible({ timeout: 60_000 });
 }
 
-async function clickCanvasAt(page: Page, point: { x: number; y: number }): Promise<void> {
-  const canvas = page.locator('.maplibregl-canvas');
-  const box = await canvas.boundingBox();
-  if (!box) throw new Error('Map canvas has no bounding box');
+test.beforeAll(async () => {
+  await setupTestEnvironment();
+});
 
-  await page.mouse.click(box.x + point.x, box.y + point.y);
-}
-
-test.describe('MapGrid Layout - E2E Tests', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('MapGrid — a composição', () => {
+  test('desenha o mapa e a grade do Directus, não os nossos', async ({ page }) => {
+    await ensureMapGridPreset();
     await login(page);
-    await openMapGridCollection(page);
-  });
+    await openCollection(page);
 
-  test('should focus and fly to the marker when clicking a grid row', async ({ page }) => {
-    const targetRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
-    await expect(targetRow).toBeVisible({ timeout: 30_000 });
-
-    await targetRow.click();
-
-    await expect(page.locator('.maplibregl-popup')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.maplibregl-popup strong')).toHaveText('Brasilia');
-
-    await expect
-      .poll(async () => (await readCamera(page)).zoom, { timeout: 20_000 })
-      .toBeGreaterThan(FOCUSED_ZOOM_THRESHOLD);
-
-    const cameraAfterFocus = await readCamera(page);
-    expect(cameraAfterFocus.center[0]).toBeCloseTo(BRASILIA[0], 1);
-    expect(cameraAfterFocus.center[1]).toBeCloseTo(BRASILIA[1], 1);
-
-    await expect(targetRow.locator('.selected-row')).toBeVisible();
-  });
-
-  test('should select the matching grid row when clicking a map marker', async ({ page }) => {
-    const camera = await waitForCameraToSettle(page);
-    const canvas = page.locator('.maplibregl-canvas');
-    const viewport = await canvas.boundingBox();
-    if (!viewport) throw new Error('Map canvas has no bounding box');
-
-    const markerScreenPoint = projectToScreenPoint(camera, viewport, BRASILIA);
-
-    await clickCanvasAt(page, markerScreenPoint);
-
-    await expect(page.locator('.maplibregl-popup strong')).toHaveText('Brasilia', {
-      timeout: 15_000,
-    });
-
-    const selectedRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
-    await expect(selectedRow.locator('.selected-row')).toBeVisible({ timeout: 15_000 });
-  });
-
-  test('should enable the delete action when selecting a grid row', async ({ page }) => {
-    const targetRow = page.locator('.v-table tbody tr', { hasText: 'Brasilia' }).first();
-    await expect(targetRow).toBeVisible({ timeout: 30_000 });
-
-    const checkbox = targetRow.getByRole('checkbox');
-    await expect(checkbox).toHaveAttribute('aria-pressed', 'false');
-    await checkbox.click();
-    await expect(checkbox).toHaveAttribute('aria-pressed', 'true');
-
-    const deleteBtn = page
-      .locator('.header-bar .delete-btn, [class*="layout-actions"] .delete-btn')
-      .first();
-    await expect(deleteBtn).toBeVisible({ timeout: 15_000 });
-
-    await deleteBtn.click();
-    await expect(page.getByText('Delete 1 item(s)?')).toBeVisible();
-    await expect(page.getByText('This action cannot be undone.')).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel' }).click();
-  });
-
-  test('should show the empty state message when collection has no items', async ({ page }) => {
-    await page.goto(`/admin/content/${EMPTY_COLLECTION_NAME}`);
-    await expect(page.locator('.v-info', { hasText: 'No items found' })).toBeVisible({
+    await expect(page.locator('.mapgrid-pane--map .layout-map')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('.mapgrid-pane--grid .layout-tabular')).toBeVisible({
       timeout: 60_000,
     });
+    await expect(page.locator('.mapgrid-pane--grid table')).toBeVisible({ timeout: 60_000 });
+  });
+
+  test('uma consulta só alimenta os dois, e não uma por layout', async ({ page }) => {
+    const buscas: string[] = [];
+    page.on('request', (request) => {
+      const url = request.url();
+      if (url.includes(`/items/${COLLECTION_NAME}?`) && !url.includes('aggregate')) {
+        buscas.push(url);
+      }
+    });
+
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+    await page.waitForTimeout(8_000);
+
+    const distintas = [...new Set(buscas.map((url) => url.split('/items/')[1] ?? url))];
+    console.log(`\n[buscas] ${buscas.length} no total, ${distintas.length} distintas`);
+    for (const busca of distintas) console.log(`   ${decodeURIComponent(busca)}`);
+
+    // uma por layout e o esperado; repetida e duplicacao
+    expect(distintas.length).toBeLessThanOrEqual(2);
+  });
+
+  test('ordenar pelo cabeçalho da grade deles grava no preset', async ({ page }) => {
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+
+    await page.locator('.mapgrid-pane--grid thead th', { hasText: 'name' }).first().click();
+    const descendente = page.getByText(/sort descending|ordem decrescente/i).first();
+    await expect(descendente).toBeVisible({ timeout: 20_000 });
+    await descendente.click();
+
+    await expect
+      .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
+      .toEqual(['-name']);
+  });
+
+  test('o espaço em branco dos layouts de página inteira não aparece', async ({ page }) => {
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+    await page.waitForTimeout(5_000);
+
+    const folga = await page.evaluate(() => {
+      const painel = document.querySelector('.mapgrid-pane--grid');
+      const cabecalho = document.querySelector('.mapgrid-pane--grid thead tr');
+      if (!painel || !cabecalho) return -1;
+      return Math.round(cabecalho.getBoundingClientRect().top - painel.getBoundingClientRect().top);
+    });
+
+    // o cabecalho comeca no topo do painel; media 60px antes do acerto de CSS
+    expect(folga).toBeGreaterThanOrEqual(0);
+    expect(folga).toBeLessThan(12);
   });
 });

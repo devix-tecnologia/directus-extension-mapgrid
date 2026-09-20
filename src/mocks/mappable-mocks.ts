@@ -8,9 +8,15 @@
  * story per kind covers the behaviour each of them exercises.
  */
 
-import type { CollectionFieldSummary } from '../components/templates/mapgrid-options/MapgridOptions.types';
 import type { GeoItem, MapCameraOptions, PointCoordinates } from '../contract/index';
 import type { Header } from '../services/table/table.types';
+
+/** Um campo da coleção como o Storybook precisa vê-lo. */
+export interface CollectionFieldSummary {
+  name: string;
+  field: string;
+  meta?: { interface?: string | null } | null;
+}
 
 export interface MappableKind {
   /** The collection name in Directus. */
