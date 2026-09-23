@@ -93,9 +93,10 @@ const syncCameraMetadata = (instance: maplibregl.Map): void => {
   mapContainer.value.dataset.zoom = String(instance.getZoom());
 };
 
-const fitBoundsToItems = (): void => {
+/** Returns whether a framing animation was started. */
+const fitBoundsToItems = (): boolean => {
   const instance = getMap();
-  if (!instance || props.items.length === 0) return;
+  if (!instance || props.items.length === 0) return false;
 
   const bounds = new maplibregl.LngLatBounds();
   for (const item of props.items) {
@@ -105,13 +106,23 @@ const fitBoundsToItems = (): void => {
     }
   }
 
-  if (!bounds.isEmpty()) {
-    instance.fitBounds(bounds, {
-      padding: FIT_BOUNDS_PADDING,
-      maxZoom: GEO_FIT_BOUNDS_MAX_ZOOM,
-      duration: GEO_ANIMATION_DURATION,
-    });
-  }
+  if (bounds.isEmpty()) return false;
+
+  instance.fitBounds(bounds, {
+    padding: FIT_BOUNDS_PADDING,
+    maxZoom: GEO_FIT_BOUNDS_MAX_ZOOM,
+    duration: GEO_ANIMATION_DURATION,
+  });
+  return true;
+};
+
+/**
+ * Publishes `data-initial-fit="done"` once the automatic framing is over. The
+ * camera attributes alone cannot tell "the flight ended" from "the flight has
+ * not started yet" — both read as a camera standing still.
+ */
+const markInitialFitDone = (): void => {
+  if (mapContainer.value) mapContainer.value.dataset.initialFit = 'done';
 };
 
 /**
@@ -123,7 +134,13 @@ const fitBoundsToItems = (): void => {
 const performInitialFitBoundsOnce = (): void => {
   if (hasPerformedInitialFitBounds) return;
   hasPerformedInitialFitBounds = true;
-  fitBoundsToItems();
+
+  const instance = getMap();
+  if (instance && fitBoundsToItems()) {
+    instance.once('moveend', markInitialFitDone);
+  } else {
+    markInitialFitDone();
+  }
 };
 
 const dismissAllPopups = (): void => {

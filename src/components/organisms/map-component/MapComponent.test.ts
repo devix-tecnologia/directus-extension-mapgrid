@@ -3,9 +3,18 @@ import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
 
+const maplibreState = vi.hoisted(() => ({
+  instances: [] as Array<{ once: { mock: { calls: unknown[][] } } }>,
+  boundsAreEmpty: true,
+}));
+
 vi.mock('maplibre-gl', () => {
   class MockMap {
+    constructor() {
+      maplibreState.instances.push(this);
+    }
     on = vi.fn();
+    once = vi.fn();
     addSource = vi.fn();
     addLayer = vi.fn();
     getSource = vi.fn();
@@ -45,7 +54,7 @@ vi.mock('maplibre-gl', () => {
 
   class MockLngLatBounds {
     extend = vi.fn();
-    isEmpty = vi.fn(() => true);
+    isEmpty = vi.fn(() => maplibreState.boundsAreEmpty);
   }
 
   return {
@@ -58,6 +67,7 @@ vi.mock('maplibre-gl', () => {
   };
 });
 
+import { nextTick } from 'vue';
 import MapComponent from './MapComponent.vue';
 
 describe('MapComponent', () => {
@@ -73,6 +83,8 @@ describe('MapComponent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    maplibreState.instances.length = 0;
+    maplibreState.boundsAreEmpty = true;
   });
 
   it('should render map container', () => {
@@ -93,5 +105,47 @@ describe('MapComponent', () => {
       },
     });
     expect(typeof wrapper.vm.focusOnItem).toBe('function');
+  });
+
+  /*
+   * O enquadramento automatico anima (`fitBounds` com `duration`), e quem olha
+   * de fora — o e2e — nao tem como distinguir "a camera parou porque o voo
+   * acabou" de "a camera parou porque o voo ainda nem comecou". O componente
+   * publica o fim do enquadramento inicial para que isso deixe de ser palpite.
+   */
+  describe('initial framing signal', () => {
+    const initialFit = (wrapper: ReturnType<typeof mount>) =>
+      (wrapper.find('.map-container').element as HTMLElement).dataset.initialFit;
+
+    it('is only published when the framing animation ends', async () => {
+      maplibreState.boundsAreEmpty = false;
+      const wrapper = mount(MapComponent, {
+        props: defaultProps,
+        global: { stubs: directusComponentStubs },
+      });
+      await nextTick();
+      await nextTick();
+
+      expect(initialFit(wrapper)).toBeUndefined();
+
+      const [instance] = maplibreState.instances;
+      const moveEnd = instance?.once.mock.calls.find(([event]) => event === 'moveend');
+      const onMoveEnd = moveEnd?.[1];
+      if (typeof onMoveEnd !== 'function') throw new Error('no moveend handler was registered');
+      onMoveEnd();
+
+      expect(initialFit(wrapper)).toBe('done');
+    });
+
+    it('is published right away when there is nothing to frame', async () => {
+      const wrapper = mount(MapComponent, {
+        props: defaultProps,
+        global: { stubs: directusComponentStubs },
+      });
+      await nextTick();
+      await nextTick();
+
+      expect(initialFit(wrapper)).toBe('done');
+    });
   });
 });

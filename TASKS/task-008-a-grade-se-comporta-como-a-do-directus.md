@@ -3,6 +3,8 @@
 Status: in-progress
 Type: refactor
 Assignee: sidartaveloso
+Difficulty: 4
+Priority: 20
 
 ## Description
 
@@ -49,7 +51,7 @@ caminho para reordenar coluna arrastando, hoje impossível.
       direção em que está ordenado
 - [x] Decidir o que fazer com a coluna de ações, que não é ordenável: continua
       com `sortable: false`, coberto por teste
-- [ ] Conferir a interação com o mapa: reordenar troca a página de itens, e o
+- [x] Conferir a interação com o mapa: reordenar troca a página de itens, e o
       enquadramento só roda uma vez (`performInitialFitBoundsOnce`)
 
 ### Fase 1b: ordenar deixou de ser um clique no cabeçalho

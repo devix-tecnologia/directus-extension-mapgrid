@@ -1,11 +1,10 @@
 import { expect, type Page, test } from '@playwright/test';
 import { COLLECTION_NAME, EMPTY_COLLECTION_NAME } from '../helper-collection';
 import { testEnv } from '../test-env';
-import { type CameraState, projectToScreenPoint } from './helpers/map-projection';
+import { readCamera, waitForCameraToSettle } from './helpers/map-camera';
+import { projectToScreenPoint } from './helpers/map-projection';
 
 const FOCUSED_ZOOM_THRESHOLD = 10;
-const CAMERA_SETTLE_POLL_MS = 700;
-const CAMERA_SETTLE_TIMEOUT_MS = 30_000;
 const BRASILIA: [number, number] = [-47.9292, -15.7801];
 
 async function login(page: Page): Promise<void> {
@@ -18,34 +17,6 @@ async function login(page: Page): Promise<void> {
     .fill(testEnv.DIRECTUS_ADMIN_PASSWORD);
   await page.locator('button[type="submit"]').first().click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
-}
-
-async function readCamera(page: Page): Promise<CameraState> {
-  const container = page.locator('.map-container');
-  await expect(container).toHaveAttribute('data-zoom', /-?\d/, { timeout: 30_000 });
-  await expect(container).toHaveAttribute('data-center', /-?\d/, { timeout: 30_000 });
-
-  const rawCenter = (await container.getAttribute('data-center')) ?? '';
-  const zoom = Number(await container.getAttribute('data-zoom'));
-  const center = rawCenter.split(',').map(Number) as [number, number];
-  return { center, zoom };
-}
-
-async function waitForCameraToSettle(page: Page): Promise<CameraState> {
-  const deadline = Date.now() + CAMERA_SETTLE_TIMEOUT_MS;
-  let previousCamera = await readCamera(page);
-
-  while (Date.now() < deadline) {
-    await page.waitForTimeout(CAMERA_SETTLE_POLL_MS);
-    const currentCamera = await readCamera(page);
-    const cameraIsStable =
-      currentCamera.zoom === previousCamera.zoom &&
-      currentCamera.center.join(',') === previousCamera.center.join(',');
-    if (cameraIsStable) return currentCamera;
-    previousCamera = currentCamera;
-  }
-
-  throw new Error(`Map camera did not stabilize within ${CAMERA_SETTLE_TIMEOUT_MS}ms`);
 }
 
 async function openMapGridCollection(page: Page, collection = COLLECTION_NAME): Promise<void> {
