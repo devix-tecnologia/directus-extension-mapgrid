@@ -47,15 +47,6 @@ async function visibleColumns(page: Page): Promise<string[]> {
     .filter((label) => label !== '' && label.toLowerCase() !== 'actions');
 }
 
-/*
- * Todo teste deste arquivo le e grava o MESMO preset do admin. O
- * `playwright.config.ts` roda `fullyParallel` com varios workers fora do CI, e
- * ai um teste reescreve o preset no meio do outro: a ordenacao gravada volta a
- * `name`, os `fields` somem. `default` mantem o arquivo num worker so, em ordem,
- * sem tornar um teste dependente do anterior como `serial` faria.
- */
-test.describe.configure({ mode: 'default' });
-
 test.describe('MapGrid sorting', () => {
   test.beforeAll(async () => {
     await setupTestEnvironment();
