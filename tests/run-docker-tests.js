@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { exec } from 'node:child_process';
+import { statSync } from 'node:fs';
 import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
@@ -50,6 +51,32 @@ function log(message) {
 
 function logError(message) {
   console.error(`${LABEL} ERROR ${message}`);
+}
+
+/*
+ * O compose monta `./dist/index.js` como arquivo. Se o build ainda nao existe,
+ * o Docker nao reclama: cria no host um DIRETORIO vazio com esse nome, do root.
+ * O Directus sobe sem a extensao, a suite falha por um motivo que nao e o dela,
+ * e o `pnpm build` seguinte passa a morrer com EISDIR ate alguem apagar o
+ * diretorio com privilegio de root. Por isso a checagem vem antes de subir.
+ */
+const BUILT_EXTENSION = 'dist/index.js';
+
+function assertExtensionIsBuilt() {
+  let stats;
+  try {
+    stats = statSync(BUILT_EXTENSION);
+  } catch {
+    throw new Error(
+      `${BUILT_EXTENSION} not found. Run "pnpm build" before the ${suiteName} suite.`
+    );
+  }
+  if (!stats.isFile()) {
+    throw new Error(
+      `${BUILT_EXTENSION} is a directory, left behind by a Docker bind mount that ran before the build. ` +
+        'Remove it (it is owned by root: docker run --rm -v "$PWD":/w alpine rm -rf /w/dist) and run "pnpm build".'
+    );
+  }
 }
 
 async function resolveDockerComposeCommand() {
@@ -172,6 +199,8 @@ async function main() {
 
   try {
     log(`=== ${suiteName} test pipeline started ===\n`);
+
+    assertExtensionIsBuilt();
 
     composeCommand = await resolveDockerComposeCommand();
     log(`Using: ${composeCommand}`);
