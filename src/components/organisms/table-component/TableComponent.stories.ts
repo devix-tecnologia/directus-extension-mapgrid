@@ -92,15 +92,17 @@ export const EditDeleteDisabled: Story = {
  * o caminho inteiro no navegador — o menu de contexto, o clique e o evento que
  * sobe — porque o unitario exercita o stub do `v-table`, e nao o de verdade.
  */
+const onUpdateFields = fn();
+
 export const ChoosingColumns: Story = {
   name: 'Choosing columns from the header',
   args: {
     ...mockData.props,
     selectedItems: [],
-    'onUpdate:fields': fn(),
+    'onUpdate:fields': onUpdateFields,
   },
   render: tableFrame,
-  play: async ({ args, canvasElement }) => {
+  play: async ({ canvasElement }) => {
     const shown = mockData.props.headers.map((header) => header.value);
     const [first] = shown;
     expect(first).toBeTruthy();
@@ -111,7 +113,7 @@ export const ChoosingColumns: Story = {
 
     await userEvent.click(remove);
 
-    expect(args['onUpdate:fields']).toHaveBeenCalledWith(shown.slice(1));
+    expect(onUpdateFields).toHaveBeenCalledWith(shown.slice(1));
   },
 };
 
@@ -119,16 +121,18 @@ export const ChoosingColumns: Story = {
  * Ordenar tambem mora no menu de contexto do cabecalho: o `v-table` do Directus
  * troca o clique que ordena por abrir o menu assim que esse slot existe.
  */
+const onUpdateSort = fn();
+
 export const SortingFromTheHeader: Story = {
   name: 'Sorting from the header menu',
   args: {
     ...mockData.props,
     selectedItems: [],
     sort: [],
-    'onUpdate:sort': fn(),
+    'onUpdate:sort': onUpdateSort,
   },
   render: tableFrame,
-  play: async ({ args, canvasElement }) => {
+  play: async ({ canvasElement }) => {
     const [first] = mockData.props.headers.map((header) => header.value);
     expect(first).toBeTruthy();
 
@@ -138,6 +142,6 @@ export const SortingFromTheHeader: Story = {
 
     await userEvent.click(descending);
 
-    expect(args['onUpdate:sort']).toHaveBeenCalledWith([`-${first}`]);
+    expect(onUpdateSort).toHaveBeenCalledWith([`-${first}`]);
   },
 };
