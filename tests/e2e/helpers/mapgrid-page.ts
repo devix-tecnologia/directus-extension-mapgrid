@@ -31,6 +31,9 @@ export const LINHAS = `${PAINEL_GRADE} tbody tr`;
 /** O `+` que abre o seletor de campos, no cabeçalho do layout tabular deles. */
 export const ADICIONAR_CAMPO = `${PAINEL_GRADE} thead .add-field`;
 
+/** O canvas do MapLibre, que é onde os marcadores são desenhados. */
+export const CANVAS_DO_MAPA = `${PAINEL_MAPA} .maplibregl-canvas`;
+
 const CARREGAMENTO = 60_000;
 
 export async function login(page: Page): Promise<void> {
@@ -117,4 +120,27 @@ export async function ordenarPor(
 
   await expect(item).toBeVisible({ timeout: 20_000 });
   await item.click();
+}
+
+/** A linha da grade que fala de um item, achada pelo texto de uma célula. */
+export function linhaDe(page: Page, texto: string) {
+  return page.locator(LINHAS, { hasText: texto }).first();
+}
+
+/**
+ * Clica no centro do canvas do mapa.
+ *
+ * Achar um marcador numa tela de MapLibre exige saber onde a câmera está, e a
+ * instância do mapa é deles — não há como alcançá-la de fora. O caminho que
+ * dispensa a projeção é pôr o marcador onde já se sabe: o clique na linha
+ * centraliza o item, então depois dele o ponto daquele item está no centro.
+ */
+export async function clicarNoCentroDoMapa(page: Page): Promise<void> {
+  const canvas = page.locator(CANVAS_DO_MAPA);
+  await expect(canvas).toBeVisible({ timeout: CARREGAMENTO });
+
+  const caixa = await canvas.boundingBox();
+  if (!caixa) throw new Error('O canvas do mapa não tem caixa delimitadora');
+
+  await page.mouse.click(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2);
 }

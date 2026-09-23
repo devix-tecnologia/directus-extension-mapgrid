@@ -10,7 +10,9 @@ import { COLLECTION_NAME } from '../helper-collection';
 import { ensureMapGridPreset, readMapGridPresetQuery } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
+  clicarNoCentroDoMapa,
   GRADE,
+  linhaDe,
   login,
   MAPA,
   openCollection,
@@ -18,6 +20,16 @@ import {
   PAINEL_GRADE,
   TABELA,
 } from './helpers/mapgrid-page';
+
+/**
+ * A cidade mais isolada da semente. Serve de alvo justamente por isso: no zoom
+ * do clique na linha ela é o único ponto perto do centro, então o clique no
+ * canvas não tem como cair noutro marcador nem num agrupamento.
+ */
+const CIDADE_ISOLADA = 'Manaus';
+
+/** Tempo do voo da câmera até o item, antes de o ponto estar no centro. */
+const VOO = 4_000;
 
 test.beforeAll(async () => {
   await setupTestEnvironment();
@@ -66,6 +78,32 @@ test.describe('MapGrid — a composição', () => {
     await expect
       .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
       .toEqual(['-name']);
+  });
+
+  /*
+   * A regressão que a reescrita do spec perdeu, e que o desenho novo precisa
+   * devolver: o `handleClick` do layout de mapa do Directus faz `router.push`
+   * para a tela do item, então um marcador clicado levava a pessoa para fora do
+   * MapGrid — o oposto de sincronizar as duas metades.
+   */
+  test('clicar num ponto marca a linha dele na grade, e não sai do MapGrid', async ({ page }) => {
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+
+    const linha = linhaDe(page, CIDADE_ISOLADA);
+    await expect(linha).toBeVisible({ timeout: 60_000 });
+
+    // o clique na linha centraliza o item: e o que poe o marcador no centro
+    await linha.click();
+    await page.waitForTimeout(VOO);
+
+    await clicarNoCentroDoMapa(page);
+
+    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
+      timeout: 15_000,
+    });
+    await expect(page).toHaveURL(new RegExp(`/admin/content/${COLLECTION_NAME}(\\?|$)`));
   });
 
   test('o espaço em branco dos layouts de página inteira não aparece', async ({ page }) => {

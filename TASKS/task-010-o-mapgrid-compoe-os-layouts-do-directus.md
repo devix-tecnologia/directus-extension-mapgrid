@@ -1,6 +1,6 @@
 # Task 010 — O MapGrid compõe os layouts do Directus
 
-Status: pending
+Status: in-progress
 Type: refactor
 Assignee: sidartaveloso
 Priority: 10
@@ -78,20 +78,22 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       `geometryField` ou `slots.options` sumirem do que o Directus devolve
 
 ### Fase 2: a composição
-- [ ] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
-- [ ] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar
-- [ ] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
+- [x] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
+- [x] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar
+- [x] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
       a tela do item quando não está em modo de seleção, então **clicar num ponto
       hoje sai do MapGrid**. Antes da composição, clicar no marcador selecionava a
       linha na grade, e o e2e que cobria isso ("should select the matching grid
       row when clicking a map marker") saiu na reescrita do `mapgrid-layout.spec.ts`.
       Trocar o `handleClick` como o `onRowClick` foi trocado, e devolver o e2e.
-      A task-006 parte daqui para "clicar no ponto define o registro atual"
-- [ ] Reverter as suposições de página inteira, que não estão na API e só o DOM
+      A task-006 parte daqui para "clicar no ponto define o registro atual".
+      Fechado em 2026-09-23 — ver "O clique no ponto" abaixo
+- [x] Reverter as suposições de página inteira, que não estão na API e só o DOM
       revela: `.layout-tabular` traz `margin: 32px 0 132px`; o cabeçalho é
       `sticky` com deslocamento da altura do cabeçalho do app; `.layout-map`
       nasce `flex: 0 1 auto` e não estica
-- [ ] Decidir o destino do `MapToolbar`, do zoom ao clicar e do popup
+- [ ] Decidir o destino do `MapToolbar`, do zoom ao clicar e do popup — **é
+      decisão reservada**, não do agente da rodada
 
 ### Fase 3: o que sai
 - [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem
@@ -125,6 +127,36 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 - [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
 - [ ] `pnpm screenshot` e evidência antes/depois
 - [ ] README: a seção de colunas descreve a grade atual
+
+## O clique no ponto — fechado em 2026-09-23
+
+O `handleClick` do layout de mapa é trocado no `propsDoMapa`, pelo mesmo caminho
+que o `onRowClick` já usava: quem monta os props do componente embutido é o
+nosso template, então basta sobrescrever a chave. No lugar do `router.push`
+entra a outra metade do que eles mesmos fazem — marcar o item na `selection`,
+que é estado compartilhado pelos dois embutidos. A linha acende na grade porque
+a grade lê a mesma `selection`, não porque o template toque no DOM dela.
+
+Marcador e caixa de marcação passam a ser a mesma linguagem: clicar num ponto já
+marcado o desmarca, e clicar noutro acrescenta.
+
+**Ressalva herdada, e é da task-006 decidir o que fazer com ela.** A `selection`
+também arma as ações em lote, então marcar pelo mapa habilita o apagar. A
+task-006 já registra que "registro atual" não deveria usar `selection`; enquanto
+essa decisão não sai, usar a `selection` é o único destaque que o `v-table`
+oferece sem alcançar o DOM dele por fora.
+
+Provas:
+
+- unitária, em `MapgridLayout.test.ts`: o `handleClick` que chega ao componente
+  do mapa é o nosso, o deles não é chamado, e acrescentar/remover/ignorar o
+  clique sem item estão fixados;
+- e2e, em `mapgrid-layout.spec.ts` ("clicar num ponto marca a linha dele na
+  grade, e não sai do MapGrid"). Achar um marcador num canvas de MapLibre exige
+  a câmera, e a instância do mapa é deles; o spec dispensa a projeção pondo o
+  marcador onde já se sabe — o clique na linha centraliza o item, e o alvo é
+  Manaus, a cidade mais isolada da semente, para o clique no centro não cair num
+  agrupamento.
 
 ## Notes
 
