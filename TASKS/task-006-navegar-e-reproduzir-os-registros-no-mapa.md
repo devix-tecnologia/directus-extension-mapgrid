@@ -4,7 +4,7 @@ Status: pending
 Type: feat
 Assignee: sidartaveloso
 Difficulty: 3
-Priority: 40
+Priority: 700
 
 ## Description
 

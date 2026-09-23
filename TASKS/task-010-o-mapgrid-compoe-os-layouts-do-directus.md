@@ -3,6 +3,7 @@
 Status: pending
 Type: refactor
 Assignee: sidartaveloso
+Priority: 10
 
 ## Description
 
