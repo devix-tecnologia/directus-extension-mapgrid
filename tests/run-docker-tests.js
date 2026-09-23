@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { exec } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { statSync } from 'node:fs';
 import { promisify } from 'node:util';
 
@@ -16,6 +16,22 @@ const SUITES = {
     suiteId: 'main',
     services: 'directus',
     testCommand: 'npx playwright test',
+    /*
+     * O e2e roda DENTRO da rede do docker, no servico `tests` do perfil
+     * `runner`, e nao na maquina.
+     *
+     * O caminho pela maquina depende de alcancar a porta que o docker publicou
+     * — e ha maquina que nao alcanca: com rota de saida do Tailscale anunciada,
+     * a conexao para a porta publicada expira sem erro, e a suite inteira cai
+     * por um motivo que nao e o dela. De dentro da rede o Directus atende pelo
+     * nome do servico, `http://directus:8055`, e a porta sorteada deixa de
+     * importar.
+     *
+     * Quem precisa do Playwright interativo (`--ui`, `--debug`, a gravacao)
+     * passa `--host` e volta ao caminho antigo, que e o unico onde a janela do
+     * navegador aparece.
+     */
+    runnerService: 'tests',
   },
 };
 
@@ -38,6 +54,8 @@ if (!suite) {
 }
 
 const VERBOSE = process.env.VERBOSE === 'true' || process.argv.includes('--verbose');
+const RUN_ON_HOST = process.argv.includes('--host') || process.env.E2E_ON_HOST === 'true';
+const useRunnerService = Boolean(suite.runnerService) && !RUN_ON_HOST;
 const DIRECTUS_VERSION = process.env.DIRECTUS_VERSION || DEFAULT_DIRECTUS_VERSION;
 const CONTAINER_NAME = `directus-mapgrid-${suite.suiteId}-${DIRECTUS_VERSION}`;
 const COMPOSE_ENVIRONMENT_PREFIX = `TEST_SUITE_ID=${suite.suiteId} DIRECTUS_VERSION=${DIRECTUS_VERSION}`;
@@ -135,9 +153,15 @@ async function waitForHealthyContainer(maxWaitSeconds = HEALTH_CHECK_TIMEOUT_SEC
 
 async function stopContainers(composeCommand) {
   log('Stopping existing containers...');
+  /*
+   * `--volumes` so no caminho da maquina. No do runner, os volumes nomeados sao
+   * o node_modules e o store do pnpm do container: apaga-los faz cada execucao
+   * reinstalar os 919 pacotes do zero, o que domina o tempo total.
+   */
+  const volumeFlag = useRunnerService ? '' : ' --volumes';
   try {
     await execAsync(
-      `${COMPOSE_ENVIRONMENT_PREFIX} ${composeCommand} -f docker-compose.test.yml down --remove-orphans --volumes`
+      `${COMPOSE_ENVIRONMENT_PREFIX} ${composeCommand} -f docker-compose.test.yml down --remove-orphans${volumeFlag}`
     );
     log('Containers stopped');
   } catch {
@@ -194,6 +218,38 @@ async function runTests(directusUrl) {
   });
 }
 
+/**
+ * Roda a suite no servico `tests`, dentro da rede do docker.
+ *
+ * `spawn` com `stdio: 'inherit'`, e nao `exec`: a instalacao mais a saida do
+ * Playwright passam do buffer padrao de 1MB do `exec`, que mataria o processo
+ * no meio da suite e reportaria uma falha que nao aconteceu.
+ */
+async function runTestsInRunner(composeCommand) {
+  log(`Running ${suiteName} tests inside the "${suite.runnerService}" service...`);
+
+  if (forwardedTestArguments) {
+    logError(
+      `Ignoring "${forwardedTestArguments}": extra arguments only reach the host runner. Add --host to use it.`
+    );
+  }
+
+  const command = `${COMPOSE_ENVIRONMENT_PREFIX} ${composeCommand} -f docker-compose.test.yml --profile runner run --rm ${suite.runnerService}`;
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, { shell: true, stdio: 'inherit' });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        log('Tests completed successfully');
+        resolve();
+      } else {
+        reject(new Error(`Tests finished with exit code ${code}`));
+      }
+    });
+  });
+}
+
 async function main() {
   let composeCommand;
 
@@ -216,8 +272,12 @@ async function main() {
       throw new Error('Directus container never became healthy');
     }
 
-    const port = await getExposedDirectusPort();
-    await runTests(`http://localhost:${port}`);
+    if (useRunnerService) {
+      await runTestsInRunner(composeCommand);
+    } else {
+      const port = await getExposedDirectusPort();
+      await runTests(`http://localhost:${port}`);
+    }
 
     log('\n=== Stopping containers ===');
     await stopContainers(composeCommand);

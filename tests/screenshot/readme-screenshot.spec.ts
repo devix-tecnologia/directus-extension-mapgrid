@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { DIRETORIO_DE_EVIDENCIAS, nomeDeEvidencia } from '../../scripts/captura-de-tela/index';
+import { esperarOMapGrid } from '../e2e/helpers/mapgrid-page';
 import { COLLECTION_NAME } from '../helper-collection';
 import { apiRequest } from '../helpers/directus-api';
 import { ensureMapGridPreset } from '../helpers/mapgrid-preset';
@@ -108,7 +109,7 @@ test('captures the README screenshot', async ({ page }) => {
   await page.setViewportSize(VIEWPORT);
   await login(page);
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
-  await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
+  await esperarOMapGrid(page);
 
   await openLayoutOptions(page);
 

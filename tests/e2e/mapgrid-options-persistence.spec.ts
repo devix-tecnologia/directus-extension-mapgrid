@@ -11,24 +11,9 @@
  * Se passar, o defeito da task-009 era erro de medição.
  */
 import { expect, type Page, test } from '@playwright/test';
-import { COLLECTION_NAME } from '../helper-collection';
 import { ensureMapGridPreset, readMapGridPresetOptions } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
-import { testEnv } from '../test-env';
-
-async function login(page: Page): Promise<void> {
-  await page.goto('/admin/login');
-  await page
-    .locator('input[type="email"], input[name="email"]')
-    .first()
-    .fill(testEnv.DIRECTUS_ADMIN_EMAIL);
-  await page
-    .locator('input[type="password"], input[name="password"]')
-    .first()
-    .fill(testEnv.DIRECTUS_ADMIN_PASSWORD);
-  await page.locator('button[type="submit"]').first().click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
-}
+import { login, openCollection } from './helpers/mapgrid-page';
 
 /** A barra lateral vem recolhida, e as opções do layout só existem no DOM depois. */
 async function openLayoutOptions(page: Page): Promise<void> {
@@ -52,8 +37,7 @@ test('uma opção mudada no painel sobrevive ao reload', async ({ page }) => {
   await ensureMapGridPreset();
   await login(page);
 
-  await page.goto(`/admin/content/${COLLECTION_NAME}`);
-  await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
+  await openCollection(page);
 
   const antes = await readMapGridPresetOptions();
   console.log(`[antes] layout_options efetivo: ${JSON.stringify(antes)}`);

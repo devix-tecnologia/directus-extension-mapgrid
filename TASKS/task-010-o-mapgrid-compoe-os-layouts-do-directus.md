@@ -98,6 +98,13 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 - [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador
 - [ ] A migração de preset da task-005 **fica**: `layoutQuery.fields` continua
       sendo o contrato
+- [ ] Decidir o destino da migração do formato numerado (`coluna1..5`). Ela saiu
+      na prática: o `normalizeLayoutOptions` segue em `src/contract/`, mas nada
+      em `src/index.ts` o chama, e a grade embutida lê `fields` direto da
+      consulta. Um preset da versão antiga não perde dados, mas as colunas dele
+      deixam de ser honradas. Ou a migração volta, ou ela é abandonada de
+      propósito — e aí saem juntos o `normalizeLayoutOptions` e o e2e que a
+      cobria, hoje parado em `test.fixme` no `mapgrid-columns.spec.ts`
 
 ### Fase 4: verificação
 - [ ] Os 155 unitários de hoje se apoiam nos componentes que saem; refazer o que
@@ -105,12 +112,11 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 - [ ] Stories: o Storybook não alcança os layouts do Directus, porque lá o SDK é
       um mock nosso. Decidir o que resta de story
 - [ ] e2e é onde esta task se prova, e o ambiente do docker é o único lugar
-- [ ] Reancorar os specs que ainda miram os componentes que saíram: o
-      `mapgrid-columns.spec.ts` tem 9 seletores deles (`.map-container`,
-      `.v-table`, `[data-sort-desc]`, `[data-remove-field]`) e a regressão da
-      task-009 (`mapgrid-options-persistence.spec.ts`) espera por
-      `.map-container`. Hoje esses specs falham por procurar a tela antiga, não
-      por defeito
+- [x] Reancorar os specs que ainda miram os componentes que saíram. Os seletores
+      passaram a morar em `tests/e2e/helpers/mapgrid-page.ts`, um lugar só: os
+      specs partem dos dois painéis da composição e, dentro deles, das classes
+      dos layouts do Directus. A captura do README vinha com o mesmo defeito e
+      foi junto
 - [ ] Regressão de persistência herdada da task-009: gravar pelo painel uma
       opção de cada layout embutido (por exemplo `displayTemplate` do mapa e o
       espaçamento da grade) e conferir as duas no preset efetivo depois de um

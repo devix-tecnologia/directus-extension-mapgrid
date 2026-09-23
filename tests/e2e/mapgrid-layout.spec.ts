@@ -5,30 +5,19 @@
  * não alcança os layouts do Directus, porque lá o SDK é um mock nosso e o
  * registro de layouts não existe.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
 import { ensureMapGridPreset, readMapGridPresetQuery } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
-import { testEnv } from '../test-env';
-
-async function login(page: Page): Promise<void> {
-  await page.goto('/admin/login');
-  await page
-    .locator('input[type="email"], input[name="email"]')
-    .first()
-    .fill(testEnv.DIRECTUS_ADMIN_EMAIL);
-  await page
-    .locator('input[type="password"], input[name="password"]')
-    .first()
-    .fill(testEnv.DIRECTUS_ADMIN_PASSWORD);
-  await page.locator('button[type="submit"]').first().click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
-}
-
-async function openCollection(page: Page): Promise<void> {
-  await page.goto(`/admin/content/${COLLECTION_NAME}`);
-  await expect(page.locator('.mapgrid-container')).toBeVisible({ timeout: 60_000 });
-}
+import {
+  GRADE,
+  login,
+  MAPA,
+  openCollection,
+  ordenarPor,
+  PAINEL_GRADE,
+  TABELA,
+} from './helpers/mapgrid-page';
 
 test.beforeAll(async () => {
   await setupTestEnvironment();
@@ -40,11 +29,9 @@ test.describe('MapGrid — a composição', () => {
     await login(page);
     await openCollection(page);
 
-    await expect(page.locator('.mapgrid-pane--map .layout-map')).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator('.mapgrid-pane--grid .layout-tabular')).toBeVisible({
-      timeout: 60_000,
-    });
-    await expect(page.locator('.mapgrid-pane--grid table')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(MAPA)).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(GRADE)).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(TABELA)).toBeVisible({ timeout: 60_000 });
   });
 
   test('uma consulta só alimenta os dois, e não uma por layout', async ({ page }) => {
@@ -74,10 +61,7 @@ test.describe('MapGrid — a composição', () => {
     await login(page);
     await openCollection(page);
 
-    await page.locator('.mapgrid-pane--grid thead th', { hasText: 'name' }).first().click();
-    const descendente = page.getByText(/sort descending|ordem decrescente/i).first();
-    await expect(descendente).toBeVisible({ timeout: 20_000 });
-    await descendente.click();
+    await ordenarPor(page, 'name', 'desc');
 
     await expect
       .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
@@ -90,12 +74,12 @@ test.describe('MapGrid — a composição', () => {
     await openCollection(page);
     await page.waitForTimeout(5_000);
 
-    const folga = await page.evaluate(() => {
-      const painel = document.querySelector('.mapgrid-pane--grid');
-      const cabecalho = document.querySelector('.mapgrid-pane--grid thead tr');
+    const folga = await page.evaluate((seletor) => {
+      const painel = document.querySelector(seletor);
+      const cabecalho = document.querySelector(`${seletor} thead tr`);
       if (!painel || !cabecalho) return -1;
       return Math.round(cabecalho.getBoundingClientRect().top - painel.getBoundingClientRect().top);
-    });
+    }, PAINEL_GRADE);
 
     // o cabecalho comeca no topo do painel; media 60px antes do acerto de CSS
     expect(folga).toBeGreaterThanOrEqual(0);
