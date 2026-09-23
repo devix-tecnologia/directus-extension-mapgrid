@@ -3,6 +3,7 @@
 Status: done
 Type: feat
 Assignee: marcospatricio
+Priority: 200
 
 ## Description
 

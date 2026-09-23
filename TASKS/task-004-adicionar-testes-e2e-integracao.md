@@ -3,6 +3,7 @@
 Status: done
 Type: test
 Assignee: marcospatricio
+Priority: 400
 
 ## Description
 

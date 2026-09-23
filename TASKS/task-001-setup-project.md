@@ -3,6 +3,7 @@
 Status: done
 Type: chore
 Assignee: sidartaveloso
+Priority: 100
 
 ## Description
 

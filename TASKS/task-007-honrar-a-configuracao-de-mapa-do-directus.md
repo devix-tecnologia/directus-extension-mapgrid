@@ -3,6 +3,8 @@
 Status: pending
 Type: feat
 Assignee: A definir
+Difficulty: 4
+Priority: 10
 
 ## Description
 

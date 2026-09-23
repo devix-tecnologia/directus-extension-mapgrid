@@ -3,6 +3,8 @@
 Status: pending
 Type: fix
 Assignee: A definir
+Difficulty: 2
+Priority: 30
 
 ## Description
 

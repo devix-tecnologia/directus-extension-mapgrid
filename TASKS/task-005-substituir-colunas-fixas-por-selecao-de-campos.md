@@ -3,6 +3,7 @@
 Status: done
 Type: refactor
 Assignee: sidartaveloso
+Priority: 500
 
 ## Description
 

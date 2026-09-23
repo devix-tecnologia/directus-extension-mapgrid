@@ -3,6 +3,7 @@
 Status: done
 Type: refactor
 Assignee: marcospatricio
+Priority: 300
 
 ## Description
 
