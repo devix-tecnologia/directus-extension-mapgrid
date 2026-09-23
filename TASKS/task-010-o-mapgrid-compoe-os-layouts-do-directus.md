@@ -97,6 +97,17 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 - [ ] Stories: o Storybook não alcança os layouts do Directus, porque lá o SDK é
       um mock nosso. Decidir o que resta de story
 - [ ] e2e é onde esta task se prova, e o ambiente do docker é o único lugar
+- [ ] Reancorar os specs que ainda miram os componentes que saíram: o
+      `mapgrid-columns.spec.ts` tem 9 seletores deles (`.map-container`,
+      `.v-table`, `[data-sort-desc]`, `[data-remove-field]`) e a regressão da
+      task-009 (`mapgrid-options-persistence.spec.ts`) espera por
+      `.map-container`. Hoje esses specs falham por procurar a tela antiga, não
+      por defeito
+- [ ] Regressão de persistência herdada da task-009: gravar pelo painel uma
+      opção de cada layout embutido (por exemplo `displayTemplate` do mapa e o
+      espaçamento da grade) e conferir as duas no preset efetivo depois de um
+      reload. Prova que `layoutOptions.map` e `layoutOptions.tabular` não se
+      sobrescrevem, o que a regressão do `zoomOnClick` não alcança
 - [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
 - [ ] `pnpm screenshot` e evidência antes/depois
 - [ ] README: a seção de colunas descreve a grade atual

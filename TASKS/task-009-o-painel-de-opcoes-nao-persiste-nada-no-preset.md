@@ -135,18 +135,19 @@ Duas hipóteses a testar, nessa ordem:
       corrigir no código da extensão; o conserto foi no ajudante de teste
 - [x] Reativar o `test.fixme` em `tests/e2e/mapgrid-columns.spec.ts` — feito pela
       task-008, que o trocou por um teste de verdade
-- [ ] Cobrir com e2e uma segunda opção, de natureza diferente de `zoomOnClick`,
-      para a garantia não valer só para um booleano
+
+O último item desta lista era cobrir com e2e uma segunda opção, de natureza
+diferente de `zoomOnClick`. Ele passou para a task-010, porque depois dela as
+opções que importam são outras. Ver "Depois da task-010", no fim.
 
 ## Notes
 
-Não é regressão da task-005: ela mudou onde as colunas são guardadas, e o defeito
-atinge igualmente opções que ela não tocou.
+Não é regressão da task-005: ela mudou onde as colunas são guardadas.
 
-A task-008 tira o seletor de colunas do painel e o leva para o cabeçalho da
-grade, onde o caminho de escrita já é comprovadamente bom. Isso **contorna** o
-sintoma para as colunas, e não corrige o defeito: o resto do painel — campo de
-geolocalização, template do popup, centro do mapa — continua sem gravar.
+Quando esta task foi aberta, esta nota dizia que levar o seletor de colunas para
+o cabeçalho (task-008) só **contornava** o defeito, e que o resto do painel
+continuava sem gravar. A conclusão de 2026-09-19, abaixo, desfez isso: o painel
+nunca deixou de gravar. A nota fica só como histórico.
 
 ## Achado de 2026-09-17, vindo da task-008
 
@@ -200,3 +201,41 @@ bloqueante, porque alinhamento, largura e as opções do mapa do Directus moram 
 sustentava custou tempo real. O que faltou foi conferir o instrumento antes de
 confiar na leitura: o ajudante lia `limit=1` de uma tabela em que o Directus
 escreve numa linha nova.
+
+## Depois da task-010 — o painel é outro
+
+Esta task mediu um painel que **não existe mais**. Ela foi escrita e fechada sobre
+o `MapgridOptions` antigo, com campo de geolocalização, template do popup, centro
+do mapa e colunas, todos gravados no primeiro nível do `layoutOptions`.
+
+A task-010 trocou a grade e o mapa pelos layouts do Directus. O painel agora tem
+três partes:
+
+| Seção do painel | De quem é | Onde grava |
+| --- | --- | --- |
+| Mapa | layout de mapa do Directus | `layoutOptions.map`: `geometryField`, `displayTemplate`, `clusterData`, `cameraOptions` |
+| Grade | layout tabular do Directus | `layoutOptions.tabular`: espaçamento, alinhamento, largura de coluna |
+| Zoom ao clicar na linha | nosso | `layoutOptions.zoomOnClick`, no primeiro nível, como antes |
+
+Uma exceção não passa pelo preset: o **basemap** escolhido no painel do mapa mora
+no `useAppStore()` do Directus, por usuário, e vale para todos os mapas do app
+(ver task-007).
+
+A conclusão desta task continua valendo para o que ela mediu: o `zoomOnClick`
+grava. Mas ela **não cobre** as opções que agora importam, e elas chegam ao preset
+por outro caminho. O layout deles emite `update:layoutOptions` com o objeto
+inteiro dele, e os computeds `opcoesDaGrade` e `opcoesDoMapa` de `src/index.ts`
+espalham esse objeto dentro da chave do layout. Um defeito ali, como um layout
+sobrescrevendo a chave do outro ou uma escrita a partir de cópia velha do
+`layoutOptions`, não seria pego pela regressão atual, que só lê o booleano do
+primeiro nível.
+
+Duas consequências, registradas na Fase 4 da task-010:
+
+- a regressão `tests/e2e/mapgrid-options-persistence.spec.ts` espera por
+  `.map-container`, a classe do `MapComponent` que saiu, e precisa ser
+  reancorada na composição (`.mapgrid-container`, `.layout-map`);
+- falta uma regressão que grave uma opção **de cada layout embutido** (por
+  exemplo o `displayTemplate` do mapa e o espaçamento da grade) e confira as duas
+  no preset efetivo depois de um reload. Ela prova de uma vez que as chaves `map`
+  e `tabular` não se sobrescrevem.
