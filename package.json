@@ -88,9 +88,15 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
-    "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e"
+    "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
+    "sandcastle": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/main.ts",
+    "sandcastle:rodada": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/rodada.ts",
+    "sandcastle:fila": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/fila-de-tarefas/cli.ts",
+    "sandcastle:image": "docker build -t sandcastle:$(basename \"$PWD\" | tr '[:upper:]' '[:lower:]') --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) -f .sandcastle/Dockerfile .sandcastle",
+    "typecheck:sandcastle": "tsc --noEmit -p .sandcastle/tsconfig.json"
   },
   "devDependencies": {
+    "@ai-hero/sandcastle": "^0.12.0",
     "@biomejs/biome": "^2.5.9",
     "@directus/constants": "^13.0.3",
     "@directus/extensions-sdk": "^16.0.2",

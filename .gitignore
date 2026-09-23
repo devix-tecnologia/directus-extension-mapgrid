@@ -5,3 +5,9 @@ dist
 storybook-static
 test-results/
 playwright-report/
+
+# O Sandcastle cria uma worktree por rodada e grava logs aqui; nada disso é do
+# repositório. O `.env` guarda credencial e nunca deve ser versionado.
+.sandcastle/worktrees/
+.sandcastle/logs/
+.sandcastle/.env
