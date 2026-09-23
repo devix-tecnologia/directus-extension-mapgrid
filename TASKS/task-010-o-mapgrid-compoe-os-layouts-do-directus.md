@@ -79,6 +79,13 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 ### Fase 2: a composição
 - [ ] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
 - [ ] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar
+- [ ] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
+      a tela do item quando não está em modo de seleção, então **clicar num ponto
+      hoje sai do MapGrid**. Antes da composição, clicar no marcador selecionava a
+      linha na grade, e o e2e que cobria isso ("should select the matching grid
+      row when clicking a map marker") saiu na reescrita do `mapgrid-layout.spec.ts`.
+      Trocar o `handleClick` como o `onRowClick` foi trocado, e devolver o e2e.
+      A task-006 parte daqui para "clicar no ponto define o registro atual"
 - [ ] Reverter as suposições de página inteira, que não estão na API e só o DOM
       revela: `.layout-tabular` traz `margin: 32px 0 132px`; o cabeçalho é
       `sticky` com deslocamento da altura do cabeçalho do app; `.layout-map`
