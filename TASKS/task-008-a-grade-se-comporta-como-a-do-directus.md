@@ -1,6 +1,6 @@
 # Task 008 — A grade se comporta como a do Directus
 
-Status: in-progress
+Status: done
 Type: refactor
 Assignee: sidartaveloso
 Difficulty: 4
