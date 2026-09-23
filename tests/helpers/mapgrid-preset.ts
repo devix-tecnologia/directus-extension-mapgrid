@@ -19,6 +19,16 @@ export const mapGridPresetFor = (collection: string): Omit<Preset, 'id'> => ({
       page: 1,
       limit: 25,
       sort: ['name'],
+      /*
+       * As colunas vao explicitas de proposito.
+       *
+       * Sem `fields`, quem escolhe e o layout tabular do Directus, que mostra
+       * todos os campos visiveis da colecao — inclusive `status`. O spec que
+       * acrescenta `status` pelo cabecalho entao comecava com ele ja na tela e
+       * media nada. A semente passa a dizer de qual estado todo spec parte, em
+       * vez de herda-lo de um padrao deles que pode mudar de versao.
+       */
+      fields: ['name', 'location'],
     },
   },
   layout_options: {
