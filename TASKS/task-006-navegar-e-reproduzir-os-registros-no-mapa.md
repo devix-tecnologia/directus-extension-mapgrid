@@ -4,15 +4,15 @@ Status: pending
 Type: feat
 Assignee: sidartaveloso
 Difficulty: 3
-Priority: 40
+Priority: 700
 
 ## Description
 
 Percorrer os registros da coleção a partir do layout: primeiro, anterior,
 próximo, último, e reprodução automática com parada. A grade e o mapa mostram
-sempre o mesmo registro — a linha destacada e rolada até a vista, o balão aberto
-no ponto correspondente — e a paginação acompanha: se o registro pedido está em
-outra página, a página é trocada antes de ele ser mostrado.
+sempre o mesmo registro — a linha destacada e rolada até a vista, o mapa
+enquadrando o item correspondente — e a paginação acompanha: se o registro
+pedido está em outra página, a página é trocada antes de ele ser mostrado.
 
 O caso que motiva: uma coleção de posições de rastreamento veicular. Com sort
 por data/hora, apertar play faz a câmera percorrer o trajeto na ordem em que ele
@@ -23,63 +23,72 @@ escolher se o mapa persegue a posição atual e como.
 
 ## O que mudou desde que esta task foi escrita
 
-A grade agora é o `v-table` do Directus, o mesmo componente do layout tabular, e
-o mapa deve convergir para a configuração de mapa do projeto (task-007, que
-concluiu não existir um componente de mapa registrado para importar: o caminho é
-ler a mesma configuração, não reusar o componente).
+Esta task foi reescrita duas vezes. A primeira versão partia da grade e do mapa
+**nossos** (`TableComponent` e `MapComponent`, sobre MapLibre). A segunda já
+contava com o `v-table` do Directus na grade, mas ainda com o mapa próprio.
 
-**Consequência para esta task: não escrever nada que dependa de nome de função
-interna, de evento ou de controle existente hoje.** O que está descrito abaixo é
-comportamento; os nomes citados são referência de onde procurar, e podem já ter
-mudado quando alguém pegar a task. O que precisa continuar valendo é o contrato
-entre as três camadas:
+A [task-010](task-010-o-mapgrid-compoe-os-layouts-do-directus.md) trocou os dois
+pelos **layouts do Directus**: o MapGrid compõe o layout tabular e o layout de
+mapa, e a nossa parte é a composição e a sincronia. Isso muda esta task em três
+direções:
 
-- **layout (`src/index.ts`)** — dono da consulta: `items`, `page`, `limit`,
-  `sort`, `totalPages`. É o único que pode trocar de página.
-- **template (`MapgridLayout.vue`)** — dono do registro atual. Recebe os itens e
-  a paginação por prop, manda a grade destacar e o mapa focar, e pede a troca de
-  página por emit.
-- **grade e mapa** — recebem qual é o registro atual e o mostram. Nenhum dos
-  dois decide qual é o próximo, nem mexe na página.
+- **Parte dos pré-requisitos já veio pronta.** Paginação, `sort` sempre definido
+  e um balão sem injeção de HTML existem nos layouts deles.
+- **Grade e mapa não recebem mais "o registro atual" por prop.** Não são nossos
+  componentes: a única forma de mandar neles é pelo estado que o `setup()` deles
+  devolve (`embutirLayout`, em `src/services/embedded-layout/`), trocando
+  handlers e escrevendo nas chaves que eles leem.
+- **O Storybook deixou de alcançar grade e mapa**, porque lá o SDK é um mock nosso
+  e o registro de layouts não existe. O comportamento desta task se prova no e2e.
 
-Hoje o registro atual está espalhado: a grade guarda um `selectedItemId` seu, o
-mapa abre o balão por conta própria e os dois se falam por `ref` do template
-(`focusOnItem` / `selectItem`). Com navegação, isso não se sustenta — o estado
-precisa subir para o template, em uma peça só.
+Conferido na fonte do Directus 10.13.1 (`app/src/layouts/tabular/` e
+`app/src/layouts/map/`), a versão que o e2e roda.
+
+## O contrato entre as camadas
+
+- **layout (`src/index.ts`)** — dono da consulta única (`layoutQuery`), dividida
+  pelos dois layouts embutidos. É o único que troca de página, e troca
+  escrevendo `page` na consulta (o tabular expõe `toPage`, que faz o mesmo).
+- **template (`MapgridLayout.vue`)** — dono do registro atual. Lê itens,
+  `page` e `totalPages` do estado da grade embutida e decide qual é o próximo.
+- **grade e mapa (layouts do Directus)** — mostram o registro atual porque o
+  template escreve no estado deles, não porque recebem prop nossa. Nenhum dos
+  dois decide qual é o próximo.
+
+## O que os layouts do Directus já dão, e o que falta
+
+| Assunto | Como está depois da task-010 | Consequência para esta task |
+| --- | --- | --- |
+| Paginação | O tabular desenha `v-pagination` no rodapé e expõe `page`, `totalPages` e `toPage` | Não há controle de página a inventar: virar a página é chamar o mesmo caminho |
+| Ordem | O tabular grava `sort` com um padrão (`defaultSort`: o campo de sort da coleção ou a chave primária) | Sempre há uma ordem. Mas ordem pela chave primária não é ordem temporal — ver pré-requisitos |
+| Tamanho da página | O tabular força o `limit` ao tamanho de página do `usePageSize` (padrão 25); o mapa, sozinho, usaria 1000 | Com a consulta compartilhada, conferir se o mapa mostra só a página da grade ou mais. Isso decide se "próximo" pode sair do que está desenhado |
+| Balão | O layout de mapa mostra um `itemPopup` no **hover**, com o `displayTemplate` renderizado pelo template do Directus | A injeção de HTML do `setHTML` antigo não existe mais. Não há onde pôr botão dentro do balão |
+| Clique na linha | Trocado pelo nosso `onRowClick`, que enquadra o item em vez de navegar | É uma das duas portas de entrada para "registro atual" |
+| Clique no ponto | O `handleClick` deles faz `router.push` para a tela do item quando não está em modo de seleção | **Hoje clicar num ponto sai do MapGrid.** Precisa ser trocado como o `onRowClick` foi |
+| Linha em destaque | O `v-table` não tem "linha atual"; o único destaque visível é a `selection`, das caixas de marcação | Destacar sem usar `selection`, porque ela aciona as ações em lote (apagar, editar) |
+| Câmera | `cameraOptions` (centro, zoom e `bbox` visível) no estado do mapa, gravado em `layoutOptions.map` | É por aqui que o template move a câmera e lê os limites visíveis para o "seguir" |
 
 ## Pré-requisitos de projeto
 
 Três decisões precisam sair antes do código, porque mudam a implementação.
 
-**A ordem é o que define "próximo".** A sequência sai do `sort` da consulta. Sem
-sort definido, a ordem é a que o banco devolver, e a reprodução pula de um lado
-para o outro do mapa sem sentido. Definir o comportamento: exigir sort, assumir
-um padrão, ou avisar na interface que a reprodução precisa de um campo de
-ordenação.
+**A ordem é o que define "próximo".** Sempre existe um `sort`, mas o padrão pode
+ser a chave primária, e aí a reprodução percorre a ordem de inserção, não a do
+trajeto. Definir: aceitar a ordem que estiver, ou avisar na interface quando o
+`sort` não é um campo de data/hora.
 
-**A paginação não existe na interface do layout.** `page`, `totalPages` e
-`itemCount` saem do `setup` mas não chegam ao template: `MapgridLayoutProps` não
-os declara, e não há controle de página desenhado em lugar nenhum. Esta task
-precisa deles de qualquer forma para virar a página, então é aqui que a
-paginação aparece — e vale conferir como o layout tabular do Directus desenha a
-dele antes de inventar uma.
+**Como destacar a linha atual.** O `v-table` não oferece isso, e usar a
+`selection` confunde "estou vendo este" com "marquei este para uma ação em lote".
+Candidatos: uma classe aplicada pelo template na linha do DOM (frágil, depende
+da estrutura do `v-table`, mas não mexe em estado), ou propor o recurso ao
+Directus. Escolher e registrar o motivo.
 
-**O balão hoje não comporta botão.** O popup é montado com `setHTML` e uma
-string crua, onde não há como ligar evento de Vue. Se os botões de navegação
-forem morar no balão, é preciso conteúdo montado (`setDOMContent` com um
-componente, ou delegação de evento no container). A troca também é a hora de
-corrigir uma falha que existe hoje: o rótulo vem do dado do item e entra sem
-escape no HTML, então um registro com `<img onerror=...>` no campo do título
-executa script. **Essa correção vale mesmo que os botões fiquem só na barra do
-mapa** — não é opcional.
-
-**O controle de câmera absorve parte do `zoomOnClick`.** A opção booleana que
-existe hoje mistura duas coisas: se a câmera se move e se ela também aproxima.
-Ligada, focar um item dá um `flyTo` com zoom fixo; desligada, só move quando o
-ponto está fora da área visível — ou seja, o estado "seguir" descrito abaixo já
-está implementado, escondido atrás de um booleano. Com o controle de três
-estados, `zoomOnClick` deve deixar de decidir movimento e passar a significar
-apenas "aproximar ao focar", que é uma escolha ortogonal.
+**O controle de câmera absorve parte do `zoomOnClick`.** A opção booleana, que
+continua nossa, mistura duas coisas: se a câmera se move e se ela também
+aproxima. Hoje o `enquadrarItem` sempre move e, com `zoomOnClick`, aplica zoom
+fixo. Com o controle de três estados, `zoomOnClick` deve deixar de decidir
+movimento e passar a significar apenas "aproximar ao focar", que é uma escolha
+ortogonal.
 
 ## Os seis controles
 
@@ -95,9 +104,12 @@ apenas "aproximar ao focar", que é uma escolha ortogonal.
 Regras que valem para os seis:
 
 - Enquanto a página nova está carregando, a navegação espera. Não pula registros
-  nem dispara um passo em cima de uma lista que ainda é a antiga.
+  nem dispara um passo em cima de uma lista que ainda é a antiga. O estado da
+  grade tem `loading` para isso.
 - Trocar de página nunca reenquadra a coleção inteira: quem manda na câmera é o
-  estado de acompanhamento, não o refetch.
+  estado de acompanhamento, não o refetch. O mapa deles só reenquadra sozinho
+  quando não há `cameraOptions` gravado ou quando alguém pede `fitDataBounds` —
+  conferir que a troca de página não cai em nenhum dos dois.
 - Filtro, busca, sort ou limite mudaram: a sequência é outra. Definir o que
   acontece com o registro atual — provavelmente parar a reprodução e recomeçar do
   primeiro.
@@ -114,12 +126,12 @@ discussão:
 | Estado | pt-BR | en-US | Comportamento | Ícone |
 | --- | --- | --- | --- | --- |
 | `off` | Livre | Free | O mapa fica onde a pessoa deixou | `gps_off` |
-| `follow` | Seguir | Follow | Move só quando o ponto sai da área visível | `gps_not_fixed` |
-| `center` | Centralizar | Keep centred | Mantém o ponto sempre no centro | `gps_fixed` |
+| `follow` | Seguir | Follow | Move só quando o item sai da área visível | `gps_not_fixed` |
+| `center` | Centralizar | Keep centred | Mantém o item sempre no centro | `gps_fixed` |
 
 Os três ícones são o idioma consagrado dos aplicativos de navegação e já vêm no
 Material Symbols que o projeto carrega, então o controle único pode ser um botão
-que cicla entre os três estados, junto dos demais controles sobre o mapa.
+que cicla entre os três estados, na `MapToolbar`.
 
 ## Tasks
 
@@ -128,131 +140,119 @@ que cicla entre os três estados, junto dos demais controles sobre o mapa.
       posição da página no total, responde o que é primeiro, anterior, próximo e
       último — e quando a resposta exige trocar de página, diz qual página e se o
       alvo é o primeiro ou o último item dela
-- [ ] Decidir e documentar o comportamento sem sort definido
+- [ ] Decidir e documentar o que fazer quando o `sort` não é temporal
 - [ ] Testes cobrindo: primeiro e último da página, primeiro e último da consulta
       inteira, item ausente da lista, lista vazia, e uma página só
 
 ### Fase 2: o registro atual sobe para o template
-- [ ] Um lugar só para "qual é o registro atual", no template, alimentando grade
-      e mapa por prop em vez de cada um guardar o seu
+- [ ] Um lugar só para "qual é o registro atual", no template
+- [ ] Trocar o `handleClick` do mapa como o `onRowClick` foi trocado: clicar no
+      ponto define o registro atual, em vez de navegar para a tela do item
 - [ ] Clicar na linha e clicar no ponto passam a ser duas formas de definir o
       mesmo estado, e não dois caminhos separados
-- [ ] A grade destaca e rola até a linha do registro atual, como já faz hoje
-- [ ] O mapa foca e abre o balão do registro atual, respeitando o acompanhamento
-      de câmera da Fase 4
+- [ ] A grade destaca e rola até a linha do registro atual, pela forma decidida
+      nos pré-requisitos, sem usar `selection`
+- [ ] O mapa enquadra o registro atual pelo `cameraOptions`, respeitando o
+      acompanhamento de câmera da Fase 6
 
 ### Fase 3: navegação manual
-- [ ] Os quatro controles de passo, com a borda de cada um conforme a tabela
+- [ ] Os quatro controles de passo na `MapToolbar`, com a borda de cada um
+      conforme a tabela
 - [ ] Desabilitar primeiro/anterior na primeira posição e próximo/último na
       última, em vez de deixá-los clicáveis sem efeito
-- [ ] Trocar o balão para conteúdo montado, se os botões forem morar nele
-- [ ] Escapar o rótulo, fechando a injeção de HTML que existe hoje
 - [ ] Atalhos de teclado, ativos só quando o layout tem foco, conferindo que não
       colidem com os atalhos do próprio Directus
 
 ### Fase 4: reprodução automática
 - [ ] Play e stop, e intervalo entre passos configurável nas opções do layout
-- [ ] A câmera acompanha o item em reprodução sem reenquadrar a coleção inteira:
-      cuidado com o enquadramento inicial de uma vez só e com o refetch
-      cancelando a animação, que foi exatamente o defeito corrigido em `9861ffa`
+      (na nossa seção do painel, junto do `zoomOnClick`, e não dentro das seções
+      deles)
+- [ ] A câmera acompanha o item em reprodução sem reenquadrar a coleção inteira
 - [ ] Parar sozinho no último registro da última página
-- [ ] Avaliar desligar o agrupamento durante a reprodução: um ponto dentro de um
-      cluster não aparece sozinho, e a reprodução ficaria invisível
+- [ ] Avaliar o agrupamento durante a reprodução: um ponto dentro de um cluster
+      não aparece sozinho, e a reprodução ficaria invisível. O `clusterData` é
+      opção do mapa deles, gravada no preset — desligá-lo só durante a
+      reprodução não pode gravar a mudança
 
 ### Fase 5: virar a página
-- [ ] `page` e `totalPages` chegam ao template; trocar de página é um emit que o
-      `setup` grava na consulta (o `page` gravável já existe em
-      `useWritableLayoutQuery`)
-- [ ] Controle de paginação na interface, olhando antes como o layout tabular do
-      Directus desenha o dele
+- [ ] Virar a página pelo mesmo caminho do rodapé do tabular (`page` na consulta
+      ou `toPage`), sem controle de paginação novo
 - [ ] Próximo no fim da página avança e cai no primeiro item da próxima;
       anterior no começo recua e cai no **último** item da anterior
 - [ ] Cobrir a espera pela busca: a navegação pausa enquanto a página carrega, em
       vez de pular registros
-- [ ] Medir com uma coleção de rastreamento de verdade. Com o limite padrão de 25
-      por página, um trajeto de mil pontos são quarenta requisições durante a
-      reprodução — avaliar aumentar o limite ou buscar a próxima página antes de
-      precisar dela
+- [ ] Medir com uma coleção de rastreamento de verdade. Com 25 por página, um
+      trajeto de mil pontos são quarenta requisições durante a reprodução — e,
+      com a consulta compartilhada, possivelmente o dobro (a task-010 registrou
+      uma busca por layout). Avaliar um tamanho de página maior durante a
+      reprodução, ou buscar a próxima página antes de precisar dela
 
 ### Fase 6: acompanhamento da câmera
-- [ ] Módulo puro que, dado o estado, o ponto e os limites visíveis, decide se a
-      câmera se move e para onde — `off` não move, `follow` move só fora dos
-      limites (é o `isOutsideBounds` que já existe), `center` move sempre
+- [ ] Módulo puro que, dado o estado, o item e os limites visíveis
+      (`cameraOptions.bbox`), decide se a câmera se move e para onde — `off` não
+      move, `follow` move só fora dos limites (o `isOutsideBounds` de
+      `src/services/geo/map-camera.ts` continua valendo), `center` move sempre
+- [ ] Para item que não é ponto, "onde está o item" é o bbox da geometria, e não o
+      primeiro vértice — mesmo cálculo da Fase 2 da task-007, que deve vir antes
 - [ ] Controle único ciclando entre os três estados, com ícone e rótulo por estado
-- [ ] Persistir o estado nas opções do layout, com `follow` como padrão, que é o
-      comportamento de hoje
+- [ ] Persistir o estado nas opções do layout, com `follow` como padrão
 - [ ] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
 - [ ] Textos em en-US e pt-BR
 
 ### Fase 6b: onde ficam os controles
 
 Veio da task-008, que propunha levar controles do painel lateral para o mapa.
-Ficou aqui porque é a mesma decisão: quem desenha a barra do mapa desenha ela
-inteira. Esta task acrescenta seis controles de navegação, o de acompanhamento
-de câmera e a paginação — decidir isoladamente onde cada um fica, e depois mover
-outros para o mesmo lugar, sai torto.
+Depois da task-010 o painel lateral é outro: tem as seções dos dois layouts do
+Directus e uma nossa, só com o `zoomOnClick`. O aperto que motivava esta fase —
+títulos quebrando em `Popup Pin Map` e `Table Columns` — não existe mais, e o
+centro do mapa deixou de ser opção digitada: o mapa deles grava a câmera sozinho.
 
-Duas evidências de que o painel lateral está apertado: na captura do README os
-títulos das seções quebram em duas linhas (`Popup Pin Map`, `Table Columns`) e as
-seções se espremem em duas colunas.
-
-- [ ] Decidir onde mora cada grupo: passo e reprodução, acompanhamento de câmera,
-      paginação. Sobre o mapa, entre o mapa e a grade, ou no rodapé do layout
-- [ ] Decidir o que sai do painel para o mapa. Candidatos: o centro do mapa, que
-      hoje pede digitar coordenadas quando arrastar e fixar seria mais direto, e
-      o zoom ao clicar na linha
-- [ ] Avaliar o `ButtonControl` do Directus
-      (`app/src/utils/geometry/controls.ts`), que é um botão sobre o mapa no
-      padrão do MapLibre, contra o posicionamento absoluto por CSS usado hoje
-- [ ] Definir o que sobra no painel: provavelmente só configuração de coleção,
-      como o campo de geolocalização e o template do popup
+- [ ] Decidir onde mora cada grupo: passo e reprodução, acompanhamento de câmera.
+      A paginação já mora no rodapé da grade
+- [ ] A `MapToolbar` fica sobre o componente deles, por posicionamento absoluto.
+      O `ButtonControl` do Directus (`app/src/utils/geometry/controls.ts`) exigiria
+      acesso à instância do MapLibre dentro do layout deles, que não é exposta —
+      confirmar antes de descartar
 
 ### Fase 7: verificação
 
-Toda função desta task tem de ter story com `play`, e não só teste unitário. O
-mapa é WebGL: no happy-dom ele nem inicializa, então é no navegador do Storybook
-que o comportamento de câmera pode ser exercitado de verdade.
+O Storybook não alcança os layouts do Directus, então o `play` fica para o que é
+nosso: a `MapToolbar` com os controles novos e os módulos puros. Grade, mapa e a
+sincronia entre eles se provam no e2e.
 
-O componente já entrega os dois ganchos de que o `play` precisa, sem depender de
-detalhe interno do maplibre: `data-center` e `data-zoom` no container, e
-`getCameraState()` no `defineExpose`. É por eles que a asserção deve passar.
+Os ganchos `data-center` e `data-zoom` e o `getCameraState()` eram do
+`MapComponent` e saíram com ele. A câmera se lê agora pelo `cameraOptions` do
+estado do mapa, ou pelo que ele grava em `layoutOptions.map` do preset.
 
-- [ ] `play` de navegação: próximo avança um registro, o balão troca e a linha
-      destacada na grade acompanha; anterior desfaz o passo
-- [ ] `play` de primeiro e último, conferindo que caem nas pontas da consulta e
-      não nas pontas da página
-- [ ] `play` de atalho de teclado, disparando a tecla e conferindo o mesmo efeito
-- [ ] `play` de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
+- [ ] Unitários dos módulos puros (sequência e acompanhamento de câmera)
+- [ ] Stories com `play` da `MapToolbar`: cada controle emite o que deve, e os de
+      borda aparecem desabilitados
+- [ ] `pnpm check:stories` limpo
+- [ ] e2e de navegação: próximo avança um registro, a linha destacada acompanha e
+      a câmera vai ao item; anterior desfaz o passo
+- [ ] e2e de primeiro e último, caindo nas pontas da consulta e não da página
+- [ ] e2e de clique no ponto: define o registro atual e **não** sai do MapGrid
+- [ ] e2e de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
       que parou onde deveria
-- [ ] `play` de virada de página nos dois sentidos, com uma coleção do catálogo
-      maior que uma página: próximo no fim de uma página cai no primeiro item da
-      seguinte, anterior no começo cai no último item da anterior
-- [ ] `play` por estado da câmera: em `off` o centro não muda; em `follow` só muda
-      quando o ponto sai dos limites; em `center` muda a cada passo
-- [ ] Unitários dos módulos puros
-- [ ] `pnpm check:stories` limpo — ele já abre cada story e falha a qualquer
-      mensagem de console, então o `play` roda nele sem configuração nova
-- [ ] e2e percorrendo uma coleção com mais registros que uma página, indo e
-      voltando pela virada
-- [ ] Refazer `docs/tela.jpg` com os controles de navegação e o de acompanhamento
-      de câmera visíveis
+- [ ] e2e de virada de página nos dois sentidos, com uma coleção maior que uma
+      página
+- [ ] e2e por estado da câmera: em `off` o `cameraOptions` não muda; em `follow`
+      só muda quando o item sai do `bbox`; em `center` muda a cada passo
+- [ ] Refazer a captura do README com os controles novos visíveis
 - [ ] Descrever os controles novos nas duas versões do README, que são dois
       documentos completos e não um com trechos traduzidos
 
 ## Notes
 
-A task-005 fechou: as colunas saem de `layoutQuery.fields` e `page`, `limit` e
-`sort` já são graváveis em `useWritableLayoutQuery` — justamente o que a Fase 5
-precisa para virar a página.
+Depende da task-010 estar integrada: tudo aqui é feito sobre a composição. E a
+Fase 6 depende da Fase 2 da task-007 (enquadrar por bbox para geometria que não é
+ponto), que é o caso do trajeto como `LineString`.
 
-A task-008 fechou levando escolha de colunas e ordenação para o cabeçalho do
-`v-table`. A Fase 6b herda dela a pergunta que sobrou: o que mais sai do painel
-lateral.
+Todos os e2e dividem o mesmo preset do admin, e por isso a suíte roda com um
+worker só (`playwright.config.ts`). Um e2e desta task que grave `page`, `sort`
+ou câmera não pode supor que outro teste não mexeu no preset antes dele: cada um
+parte do `ensureMapGridPreset`.
 
-A task-007 pode trocar a origem do estilo do mapa e ampliar as geometrias
-aceitas. Ela não muda o que esta task faz, mas muda o arquivo — por isso os
-critérios acima falam de comportamento, e não dos nomes de hoje.
-
-Um atalho de teclado por registro tem limite prático: em reprodução rápida, cada
-passo dispara uma animação de câmera de um segundo (`GEO_ANIMATION_DURATION`).
-Ou o intervalo respeita a animação, ou a animação encurta durante a reprodução.
+Um passo por registro tem limite prático: em reprodução rápida, cada passo pede
+uma animação de câmera ao mapa deles. Ou o intervalo respeita a animação, ou a
+reprodução pede a câmera sem animação.

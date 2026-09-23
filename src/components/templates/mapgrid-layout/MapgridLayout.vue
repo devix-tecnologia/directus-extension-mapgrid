@@ -1,99 +1,90 @@
 <template>
   <div class="mapgrid-layout">
-    <v-info v-if="loading" icon="refresh" :title="t('loading')" center>
-      <template #append>
-        <v-progress-circular indeterminate />
-      </template>
+    <v-info v-if="faltaLayout" icon="warning" :title="t('missingLayout')" center>
+      {{ t('missingLayoutHint') }}
     </v-info>
 
-    <v-info
-      v-else-if="items.length === 0"
-      icon="map"
-      :title="t('noItems')"
-      :subtitle="t('noItemsHint')"
-      center
-    />
-
     <div v-else class="mapgrid-container">
-      <MapComponent
-        ref="mapComponent"
-        :items="items"
-        :geolocation="geolocation ?? ''"
-        :title="title ?? ''"
-        :zoom-on-click="zoomOnClick"
-        :map-center-lng="mapCenterLng"
-        :map-center-lat="mapCenterLat"
-        :map-zoom="mapZoom"
-        @select-item="handleSelectItem"
-      />
-      <TableComponent
-        ref="tableComponent"
-        :items="items"
-        :headers="headers"
-        :collection="collection"
-        :selected-items="selectedItems"
-        :can-edit="canEdit"
-        :can-delete="canDelete"
-        :sort="sort"
-        @update:selected-items="selectedItems = $event"
-        @update:sort="emit('update:sort', $event)"
-        @update:fields="emit('update:fields', $event)"
-        @focus-on-item="handleFocusOnItem"
-        @edit-item="editItem"
-      />
+      <div class="mapgrid-pane mapgrid-pane--map">
+        <component :is="mapa?.component" v-if="mapa?.component" v-bind="propsDoMapa" />
+        <MapToolbar class="mapgrid-toolbar" @reset="reenquadrar" />
+      </div>
+
+      <div class="mapgrid-pane mapgrid-pane--grid">
+        <component :is="grade?.component" v-if="grade?.component" v-bind="propsDaGrade" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
-import type { Header } from '../../../services/table/index';
+import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 import { MESSAGES } from '../../../shared/messages';
-import MapComponent from '../../organisms/map-component/MapComponent.vue';
-import TableComponent from '../../organisms/table-component/TableComponent.vue';
-import type { MapgridLayoutEmits, MapgridLayoutProps } from './MapgridLayout.types';
+import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 
-const props = withDefaults(defineProps<MapgridLayoutProps>(), {
-  canEdit: true,
-  canDelete: true,
-});
-
-const emit = defineEmits<MapgridLayoutEmits>();
+const props = defineProps<{
+  grade?: LayoutEmbutido | null;
+  mapa?: LayoutEmbutido | null;
+  zoomOnClick?: boolean;
+}>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
-const mapComponent = ref<InstanceType<typeof MapComponent> | null>(null);
-const tableComponent = ref<InstanceType<typeof TableComponent> | null>(null);
+/** Zoom aplicado ao enquadrar um item pelo clique na linha. */
+const ZOOM_AO_CLICAR = 14;
+
+const faltaLayout = computed(() => !props.grade?.component || !props.mapa?.component);
+
+const doMapa = <T>(chave: string): T | undefined => props.mapa?.state[chave] as T | undefined;
 
 /**
- * The selection lives in the layout, which is what hands it to the delete
- * action. This component only mirrors it, with a writable computed instead of
- * the Directus SDK's `useSync`: without that import the template no longer
- * depends on the host app, and mounts the same in Storybook, in a test and
- * inside Directus.
+ * Reenquadrar é do mapa deles: `fitDataBounds` reajusta ao conjunto atual. Sem
+ * isso a barra do mapa teria de falar com uma instância do MapLibre que não é
+ * nossa.
  */
-const selectedItems = computed<GeoItem[]>({
-  get: () => props.selectedItems,
-  set: (items) => emit('update:selectedItems', items),
-});
-
-const headers = computed<Header[]>(() =>
-  (props.fields ?? []).map((field) => ({ text: field, value: field }))
-);
-
-const handleFocusOnItem = (item: GeoItem): void => {
-  mapComponent.value?.focusOnItem(item);
+const reenquadrar = (): void => {
+  doMapa<() => void>('fitDataBounds')?.();
 };
 
-const handleSelectItem = (id: string | number): void => {
-  tableComponent.value?.selectItem(id);
+/**
+ * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
+ * do Directus navega para a tela do item, que é o oposto de sincronizar com o
+ * mapa — a razão de existir desta extensão.
+ */
+const enquadrarItem = (payload: unknown): void => {
+  const item = (payload as { item?: GeoItem } | null)?.item;
+  const coordenadas = coordenadasDe(item);
+  if (!coordenadas) return;
+
+  const camera = doMapa<Record<string, unknown>>('cameraOptions') ?? {};
+  const atualizar = doMapa<(valor: unknown) => void>('onUpdate:cameraOptions');
+
+  atualizar?.({
+    ...camera,
+    center: coordenadas,
+    zoom: props.zoomOnClick ? ZOOM_AO_CLICAR : (camera.zoom ?? ZOOM_AO_CLICAR),
+  });
 };
 
-const editItem = (item: GeoItem): void => {
-  emit('edit-item', item);
+const coordenadasDe = (item?: GeoItem): [number, number] | null => {
+  const campo = doMapa<string>('geometryField');
+  const geometria = campo ? (item?.[campo] as { coordinates?: unknown } | undefined) : undefined;
+  const coordenadas = geometria?.coordinates;
+
+  return Array.isArray(coordenadas) && coordenadas.length >= 2
+    ? [Number(coordenadas[0]), Number(coordenadas[1])]
+    : null;
 };
+
+const propsDaGrade = computed(() => ({
+  ...(props.grade?.state ?? {}),
+  onRowClick: enquadrarItem,
+}));
+
+const propsDoMapa = computed(() => ({ ...(props.mapa?.state ?? {}) }));
 </script>
 
 <style scoped>
@@ -118,13 +109,52 @@ const editItem = (item: GeoItem): void => {
   overflow: hidden;
 }
 
-.mapgrid-container :deep(.map-wrapper) {
-  flex: 1 1 auto;
+.mapgrid-pane {
   min-height: 0;
+  position: relative;
 }
 
-.mapgrid-container :deep(.table-container) {
+.mapgrid-pane--map {
+  flex: 1 1 auto;
+  display: flex;
+  overflow: hidden;
+}
+
+.mapgrid-pane--grid {
   flex: 0 0 40%;
+  overflow: auto;
+}
+
+.mapgrid-toolbar {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  z-index: 2;
+}
+
+/*
+ * Os layouts do Directus assumem a página inteira em detalhes que não estão na
+ * API, e compor exige desfazer cada um. Os três abaixo foram medidos no DOM,
+ * não deduzidos:
+ *
+ * - `.layout-tabular` traz `margin: 32px 0 132px`, a folga de cabeçalho e
+ *   paginação de uma página inteira — em meia tela vira buraco;
+ * - o cabeçalho da grade é `sticky` com deslocamento da altura do cabeçalho do
+ *   app: o `tr.fixed` caía 60px abaixo do topo da tabela, com as primeiras
+ *   linhas correndo por baixo dele. Aqui quem rola é o painel;
+ * - `.layout-map` nasce `flex: 0 1 auto` e não estica, deixando faixa branca.
+ */
+.mapgrid-pane--grid :deep(.layout-tabular) {
+  margin-block: 0;
+}
+
+.mapgrid-pane--grid :deep(thead.table-header tr.fixed) {
+  top: 0;
+}
+
+.mapgrid-pane--map :deep(.layout-map) {
+  flex: 1 1 auto;
+  height: 100%;
   min-height: 0;
 }
 </style>

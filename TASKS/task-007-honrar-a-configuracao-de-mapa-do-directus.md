@@ -3,87 +3,100 @@
 Status: pending
 Type: feat
 Assignee: A definir
-Difficulty: 4
-Priority: 10
+Difficulty: 2
+Priority: 40
 
 ## Description
 
-O mapa da extensão desenha em cima de tiles do OpenStreetMap escritos no código.
-O Directus deixa o administrador configurar os basemaps do projeto em Project
-Settings → Map, e todo mapa nativo do app respeita essa escolha. O nosso não.
+O MapGrid precisa mostrar o mapa que o administrador configurou em Project
+Settings → Map, com os basemaps do projeto e a chave do Mapbox, como faz todo
+mapa nativo do app. Uma instalação com imagem de satélite ou tiles corporativos
+não pode ver o mapa de rua padrão só no MapGrid.
 
-Na prática: uma instalação que configurou imagem de satélite, tiles corporativos
-ou uma chave do Mapbox vê essa configuração em toda parte, menos no MapGrid —
-que continua mostrando o mapa de rua padrão. Esta task fecha essa diferença.
+## O que mudou desde que esta task foi escrita
 
-## O que dá para reaproveitar, e o que não dá
+A versão original partia de um mapa **nosso**: um `MapComponent` sobre MapLibre,
+com tiles do OpenStreetMap escritos no código. O plano era ler o settings store
+por `useStores()`, portar a conversão de basemap em estilo do MapLibre
+(`getBasemapSources` e `getStyleFromBasemapSource`, internos do app) e estender
+`parsePointCoordinates` para outras geometrias.
 
-Levantado na fonte aberta antes de escrever a task.
+A [task-010](task-010-o-mapgrid-compoe-os-layouts-do-directus.md) trocou esse
+mapa pelo **layout de mapa do próprio Directus**, composto dentro do MapGrid. O
+`MapComponent`, o `parsePointCoordinates` e a fonte de tiles fixa saíram. Com
+isso, quase tudo o que esta task pretendia construir vem pronto do layout deles.
+O que sobra é **provar** que vem, e fechar os furos que a composição abriu.
 
-**Não existe componente de mapa registrado globalmente.** A lista de
-`app/src/components/register.ts` traz `VTable`, `VFieldList`, `DrawerCollection`
-e dezenas de outros, mas nenhum mapa. O mapa do Directus vive dentro do layout e
-da interface de mapa, não como componente compartilhado. Então "usar o
-componente nativo" não pode ser literal: não há o que importar.
+## O que o layout de mapa do Directus já faz
 
-**A configuração, essa sim, é alcançável.** `app/src/utils/geometry/basemap.ts`
-tem `getBasemapSources()`, que lê `useSettingsStore()` — `settings.mapbox_key` e
-`settings.basemaps` — e `getStyleFromBasemapSource()`, que converte um basemap em
-`StyleSpecification` do MapLibre. Esse arquivo é interno do app e não é exportado
-para extensões, mas a fonte do dado é pública: `useStores()` do
-`@directus/extensions-sdk` entrega o settings store, e a conversão em si é
-pequena (fonte raster, camada, e a expansão de `{a-c}` na URL do tile).
+Conferido na fonte do Directus 10.13.1 (`app/src/layouts/map/`), a versão que o
+e2e roda:
 
-Ou seja, o caminho é ler a mesma configuração e portar a conversão, não importar
-o componente.
+| Assunto | Onde mora | Consequência para o MapGrid |
+| --- | --- | --- |
+| Basemap escolhido | `useAppStore().basemap` — por usuário, no app, **não no preset** | É a mesma escolha de todos os mapas do app. Não há o que gravar no nosso preset |
+| Lista de basemaps | `getBasemapSources()` — Project Settings + `mapbox_key` | Vem pronta. A "Fase 2" original (escolher entre basemaps) já está no painel deles |
+| Campo de geometria, template, câmera, agrupamento | `layoutOptions` do layout: `geometryField`, `displayTemplate`, `cameraOptions`, `clusterData` | No MapGrid ficam em `layoutOptions.map`, separados da grade |
+| Tipos de geometria | Todo o GeoJSON, inclusive `Multi*` e `GeometryCollection` | A "Fase 3" original (geometrias além do ponto) já está resolvida no desenho |
+| Agrupamento | Desabilitado quando `geometryType !== 'Point'` | Comportamento deles, não precisamos decidir |
+| `fitDataBounds` | Com geometria `native`, só marca `shouldUpdateCamera` e o enquadramento acontece na **próxima busca**; nos outros formatos, usa o bbox do GeoJSON na hora | O botão de reenquadrar da nossa `MapToolbar` pode não fazer nada visível até a lista recarregar |
 
-**Segunda diferença: geometria.** `parsePointCoordinates` aceita só `Point` e
-descarta o resto. O mapa nativo trabalha com o conjunto do GeoJSON. Para o caso
-de rastreamento da task-006, um trajeto é naturalmente um `LineString` — hoje
-uma coleção assim aparece vazia no mapa, sem explicação. Confirmar contra a fonte
-quais tipos a interface de mapa oferece antes de decidir o escopo.
+## O que ainda é nosso, e está incompleto
+
+**O clique na linha só entende ponto.** O `enquadrarItem` de
+`MapgridLayout.vue` lê `geometria.coordinates[0]` e `[1]` como longitude e
+latitude. Isso vale para um `Point`. Num `LineString` ou `Polygon`, o primeiro
+elemento já é um par ou uma lista de pares, e o `Number()` devolve `NaN`: o
+clique na linha empurra uma câmera inválida para o mapa deles. O caso é
+justamente o do rastreamento veicular da task-006, em que um trajeto é
+naturalmente um `LineString`.
+
+**O clique na linha também só entende formato nativo.** Ele lê
+`item[geometryField].coordinates`, que é a forma do GeoJSON nativo. O layout
+deles aceita também campo `json`, `csv` e `lnglat`, e para esses a leitura
+direta não serve.
 
 ## Tasks
 
-### Fase 1: basemap vindo das configurações
-- [ ] Ler `mapbox_key` e `basemaps` pelo settings store, via `useStores()`
-- [ ] Portar a conversão de basemap em estilo do MapLibre, incluindo a expansão
-      de `{a-c}` e `{0-2}` nas URLs de tile
-- [ ] Manter o OpenStreetMap como queda, para instalação sem nada configurado
-- [ ] Preservar a atribuição do basemap escolhido, que é exigência de licença da
-      maioria dos provedores
-- [ ] Módulo puro e testado: configuração entra, `StyleSpecification` sai
+### Fase 1: provar que a configuração do projeto chega
+- [ ] e2e contra um Directus com um basemap configurado em Project Settings
+      (além do padrão), conferindo que o mapa do MapGrid oferece e usa esse
+      basemap
+- [ ] e2e trocando o basemap pelo painel do MapGrid e conferindo que outro mapa
+      do app (o layout de mapa puro da mesma coleção) passa a usar o mesmo, o
+      que prova que a escolha é a do app e não uma cópia nossa
+- [ ] Conferir se a atribuição do basemap aparece no canto do mapa, que é
+      exigência de licença da maioria dos provedores
+- [ ] Conferir se o botão de reenquadrar da `MapToolbar` enquadra na hora com
+      geometria nativa, já que o `fitDataBounds` deles só marca o pedido para a
+      próxima busca; se não enquadrar, disparar a busca ou calcular o bbox aqui
 
-### Fase 2: escolher entre os basemaps disponíveis
-- [ ] Quando o projeto tiver mais de um basemap, deixar escolher nas opções do
-      layout, guardando a escolha no preset
-- [ ] Cair no primeiro disponível quando o basemap gravado não existir mais,
-      em vez de abrir um mapa em branco
+### Fase 2: o clique na linha para qualquer geometria
+- [ ] Extrair o cálculo de "para onde a câmera vai" do `enquadrarItem` para um
+      módulo puro em `src/services/`, testado antes da implementação
+- [ ] `Point` enquadra no ponto, como hoje; `LineString`, `Polygon` e `Multi*`
+      enquadram no **bbox** da geometria, e não no primeiro vértice
+- [ ] Item sem geometria, ou com geometria que não se lê, não mexe na câmera,
+      em vez de mandar `NaN` para o mapa deles
+- [ ] Decidir o que fazer com campo `json`, `csv` e `lnglat`: reaproveitar a
+      conversão para GeoJSON que o layout deles faz, ou restringir o clique ao
+      formato nativo e dizer isso no README
 
-### Fase 3: geometrias além do ponto
-- [ ] Confirmar na fonte quais tipos o mapa nativo aceita
-- [ ] Estender `parsePointCoordinates` para o que for decidido, sem afrouxar o
-      parse: hoje ele recusa geometria que não é ponto de propósito
-- [ ] Definir o que a grade e o balão mostram para uma geometria que não é ponto
-- [ ] Definir o comportamento do agrupamento, que só faz sentido para pontos
-
-### Fase 4: verificação
-- [ ] Stories com `play` cobrindo: sem configuração, um basemap, vários basemaps,
-      e basemap gravado que sumiu
-- [ ] Mock do settings store no `directus-mocks`, junto dos outros
-- [ ] `pnpm check:stories` limpo
-- [ ] e2e contra um Directus com basemap configurado em Project Settings
-- [ ] Refazer `docs/tela.jpg`: o basemap é o fundo da tela inteira, então
-      qualquer mudança aqui invalida a captura por completo
-- [ ] Documentar nos dois idiomas que o basemap vem do Project Settings, para
-      quem vir uma tela diferente da do README entender por quê
+### Fase 3: verificação e documentação
+- [ ] e2e com uma coleção de `LineString`: o trajeto aparece no mapa e o clique
+      na linha enquadra o trajeto inteiro
+- [ ] Refazer a captura do README se o basemap do ambiente de teste mudar
+- [ ] Documentar nos dois idiomas que o basemap vem do Project Settings e é
+      escolhido por usuário, para quem vir uma tela diferente da do README
+      entender por quê
 
 ## Notes
 
-Vale fazer antes da task-006: se o rastreamento veicular for representado por
-`LineString`, a Fase 3 é pré-requisito, e não melhoria posterior.
+Esta task depende do que a task-010 entregar: ela é feita sobre a composição,
+não sobre o mapa antigo. A Fase 2 é pré-requisito da task-006 se o rastreamento
+for representado por `LineString`.
 
-O mapa hoje monta o estilo uma vez em `initializeMap`. Trocar de basemap sem
-recriar o mapa é `map.setStyle()`, que descarta fontes e camadas próprias — a
-fonte de pontos e as duas camadas precisam ser registradas de novo depois, ou os
-marcadores somem ao trocar.
+As opções `mapCenterLng`, `mapCenterLat`, `mapZoom`, `title` e `geolocation`
+ainda estão declaradas em `src/contract/layout-options.contract.ts`, mas o mapa
+deles usa `cameraOptions`, `displayTemplate` e `geometryField`. Decidir o que
+fazer com as nossas é da Fase 3 da task-010 ("o que sai"), não desta.

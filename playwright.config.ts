@@ -5,10 +5,18 @@ export default defineConfig({
   globalSetup: './tests/e2e/global-setup.ts',
   globalTeardown: './tests/e2e/global-teardown.ts',
   timeout: 180000,
-  fullyParallel: true,
+  /*
+   * Um worker so, sempre. Todos os specs dividem o mesmo Directus e o MESMO
+   * preset do admin, e varios o resetam com `ensureMapGridPreset` antes de
+   * medir. Em paralelo, um teste desfaz o preset no meio da espera do outro: o
+   * `sort` gravado volta a `name`, os `fields` somem, e a falha parece do codigo.
+   * O CI ja rodava assim; o local, com o padrao do Playwright, nao — e dava
+   * resultado diferente conforme o numero de nucleos da maquina.
+   */
+  fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   preserveOutput: 'always',
   outputDir: 'test-results',

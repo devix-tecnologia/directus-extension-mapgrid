@@ -1,64 +1,25 @@
 <template>
-  <v-detail icon="info" :label="t('optionPopup')">
-    <div class="field">
-      <v-collection-field-template v-model="title" :collection="collection" />
-    </div>
+  <!--
+    A configuração é a dos próprios layouts do Directus. O painel deles monta
+    aqui ligado ao MESMO estado que desenha a área, porque os dois nascem no
+    `setup()` de `src/index.ts` — que o Directus entrega ao componente e ao
+    painel. Criar wrapper próprio aqui daria estado separado e uma busca a mais.
+  -->
+  <v-detail icon="map" :label="t('optionMapSection')">
+    <component :is="mapa?.optionsComponent" v-if="mapa?.optionsComponent" v-bind="mapa.state" />
+    <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
   </v-detail>
 
-  <v-detail icon="place" :label="t('optionGeolocation')">
-    <div class="field">
-      <v-select
-        v-model="geolocation"
-        :collection="collection"
-        :items="[{ name: t('optionNone'), field: null }, ...geolocationFields]"
-        item-text="name"
-        item-value="field"
-        :placeholder="t('optionGeolocationPlaceholder')"
-        :show-deselect="true"
-      />
-    </div>
-  </v-detail>
-
-  <v-detail icon="map" :label="t('optionMapCenter')">
-    <div class="field">
-      <v-input
-        v-model="centerLng"
-        :label="t('optionLongitude')"
-        placeholder="-47.9292"
-        type="number"
-        step="0.0001"
-      />
-    </div>
-    <div class="field">
-      <v-input
-        v-model="centerLat"
-        :label="t('optionLatitude')"
-        placeholder="-15.7801"
-        type="number"
-        step="0.0001"
-      />
-    </div>
-    <div class="field">
-      <v-input
-        v-model="mapZoom"
-        :label="t('optionInitialZoom')"
-        placeholder="4"
-        type="number"
-        min="1"
-        max="20"
-      />
-    </div>
+  <v-detail icon="table_rows" :label="t('optionGridSection')">
+    <component :is="grade?.optionsComponent" v-if="grade?.optionsComponent" v-bind="grade.state" />
+    <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
   </v-detail>
 
   <v-detail icon="zoom_in" :label="t('optionZoomOnClick')">
     <div class="field">
-      <v-checkbox
-        v-model="zoomOnClick"
-        :label="t('optionZoomOnClickLabel')"
-      />
+      <v-checkbox v-model="zoomOnClick" :label="t('optionZoomOnClickLabel')" />
     </div>
   </v-detail>
-
 </template>
 
 <script setup lang="ts">
@@ -73,64 +34,22 @@ const emit = defineEmits<MapgridOptionsEmits>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
-const title = computed<string, string>({
-  get: () => props.title ?? '',
-  set: (value) => emit('update:title', value),
-});
-
-const geolocation = computed<string | null, string | null>({
-  get: () => props.geolocation ?? null,
-  set: (value) => emit('update:geolocation', value),
-});
-
-const toFiniteNumber = (value: unknown): number | undefined => {
-  if (value === '' || value === null || value === undefined) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-};
-
-const centerLng = computed<number | undefined, unknown>({
-  get: () => props.mapCenterLng,
-  set: (value) => {
-    const parsed = toFiniteNumber(value);
-    if (parsed !== undefined) emit('update:mapCenterLng', parsed);
-  },
-});
-
-const centerLat = computed<number | undefined, unknown>({
-  get: () => props.mapCenterLat,
-  set: (value) => {
-    const parsed = toFiniteNumber(value);
-    if (parsed !== undefined) emit('update:mapCenterLat', parsed);
-  },
-});
-
-const mapZoom = computed<number | undefined, unknown>({
-  get: () => props.mapZoom,
-  set: (value) => {
-    const parsed = toFiniteNumber(value);
-    if (parsed !== undefined) emit('update:mapZoom', parsed);
-  },
-});
+const grade = computed(() => props.grade);
+const mapa = computed(() => props.mapa);
 
 const zoomOnClick = computed<boolean | undefined, unknown>({
   get: () => props.zoomOnClick,
   set: (value) => emit('update:zoomOnClick', Boolean(value)),
 });
-
-/**
- * The fields that can hold a point. They come from the prop, not from a
- * `useCollection` of its own: the layout already resolved the collection once,
- * and fetching it again here was a second source of truth that could disagree
- * with the first.
- */
-const geolocationFields = computed(() =>
-  props.fieldsInCollection.filter((field) => field.meta?.interface === 'map')
-);
 </script>
 
 <style scoped>
 .field {
   margin-top: var(--form-vertical-gap);
+}
+
+.sem-painel {
+  color: var(--theme--foreground-subdued);
+  font-style: italic;
 }
 </style>

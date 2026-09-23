@@ -1,22 +1,27 @@
-import { defineLayout, useApi, useCollection, useItems, useSync } from '@directus/extensions-sdk';
-import type { Field } from '@directus/types';
-import type { MaybeRefOrGetter } from 'vue';
-import { computed, ref, toRefs, toValue } from 'vue';
+import {
+  defineLayout,
+  useApi,
+  useCollection,
+  useExtensions,
+  useSync,
+} from '@directus/extensions-sdk';
+import type { Field, LayoutProps } from '@directus/types';
+import { computed, reactive, ref, toRefs } from 'vue';
 import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
 import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 import type { GeoItem } from './contract/index';
-import { fieldsToFetch, normalizeLayoutOptions, useWritableLayoutQuery } from './contract/index';
-import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from './services/geo/index';
+import { useWritableLayoutQuery } from './contract/index';
+import {
+  embutirLayout,
+  LAYOUTS_EMBUTIDOS,
+  type LayoutEmbutido,
+} from './services/embedded-layout/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
-/** How many string fields to offer as columns before the user picks their own. */
-const DEFAULT_COLUMN_COUNT = 5;
-
 /**
- * Directus bookkeeping fields. They serve neither as a title nor as a column,
- * and picking one as a default would only mean changing it on every new
- * collection.
+ * Campos de controle do Directus. Nenhum serve como geometria, e escolher um
+ * como padrão só significaria trocá-lo em toda coleção nova.
  */
 const EXCLUDED_FIELDS = [
   'id',
@@ -28,41 +33,17 @@ const EXCLUDED_FIELDS = [
   'date_updated',
 ];
 
-interface DetectedField {
-  field: string;
-  type?: string;
-  name?: string;
-  meta?: { interface?: string; hidden?: boolean };
-}
+const detectarGeometria = (fields: Field[]): string | undefined => {
+  const campoDeMapa = fields.find((field) => field.meta?.interface === 'map');
+  if (campoDeMapa) return campoDeMapa.field;
 
-const toDetectedField = (field: Field): DetectedField => ({
-  field: field.field,
-  type: field.type,
-  name: field.name ?? field.field,
-  meta: field.meta
-    ? {
-        interface: field.meta.interface ?? undefined,
-        hidden: field.meta.hidden ?? undefined,
-      }
-    : undefined,
-});
-
-const detectGeolocationField = (fields: DetectedField[]): string | undefined => {
-  const mapField = fields.find((field) => field.meta?.interface === 'map');
-  if (mapField) return mapField.field;
-  const jsonField = fields.find(
+  const campoJson = fields.find(
     (field) => field.type === 'json' && !EXCLUDED_FIELDS.includes(field.field)
   );
-  return jsonField?.field;
+  return campoJson?.field;
 };
 
-const detectStringFields = (fields: DetectedField[]): string[] =>
-  fields
-    .filter(
-      (field) =>
-        field.type === 'string' && !EXCLUDED_FIELDS.includes(field.field) && !field.meta?.hidden
-    )
-    .map((field) => field.field);
+type Opcoes = { value: Record<string, unknown> };
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
@@ -77,153 +58,136 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
   setup(props, { emit }) {
     const layoutOptions = useSync(props, 'layoutOptions', emit);
     const layoutQuery = useSync(props, 'layoutQuery', emit);
+    const selection = useSync(props, 'selection', emit);
     const api = useApi();
 
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
-    /*
-     * Criado antes de qualquer uso: tanto `useLayoutQuery()` quanto
-     * `createLayoutOptions()` leem daqui, e uma `const` referenciada antes da
-     * linha que a declara derruba o `setup` inteiro por zona morta temporal —
-     * o layout nao monta e nem o mapa aparece.
-     */
+    const { layouts } = useExtensions();
+
     const writableQuery = useWritableLayoutQuery(layoutQuery);
+    const geometriaDetectada = computed(() => detectarGeometria(fieldsInCollection.value ?? []));
 
-    const { sort, limit, page, fields: queryFields } = useLayoutQuery();
-
-    const detectedFields = computed<DetectedField[]>(() =>
-      (fieldsInCollection.value ?? []).map(toDetectedField)
-    );
-
-    const detectedGeo = computed(() => detectGeolocationField(detectedFields.value));
-    const detectedStringFields = computed(() => detectStringFields(detectedFields.value));
-    const detectedTitle = computed(() => {
-      const first = detectedStringFields.value[0];
-      return first ? `{{${first}}}` : undefined;
+    /*
+     * Cada layout embutido guarda a configuração dele numa chave própria do
+     * nosso `layoutOptions`: o mapa o campo de geometria e o mapa base, a grade
+     * o espaçamento e o alinhamento. Numa chave só, um sobrescreveria o outro.
+     */
+    const opcoesDaGrade = computed<Record<string, unknown>>({
+      get: () => ({ ...((layoutOptions.value?.tabular ?? {}) as object) }),
+      set: (valor) => {
+        layoutOptions.value = { ...layoutOptions.value, tabular: valor };
+      },
     });
 
-    const layoutOptionBindings = createLayoutOptions();
-
-    const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
-      sort,
-      limit,
-      page,
-      fields: queryFields,
-      filter,
-      search,
+    const opcoesDoMapa = computed<Record<string, unknown>>({
+      get: () => ({
+        geometryField: geometriaDetectada.value,
+        ...((layoutOptions.value?.map ?? {}) as object),
+      }),
+      set: (valor) => {
+        layoutOptions.value = { ...layoutOptions.value, map: valor };
+      },
     });
 
-    const selectedItems = ref<GeoItem[]>([]);
+    /*
+     * A consulta é uma só, dividida pelos dois. Sem isto cada layout faz a
+     * própria busca, com campos e ordenação diferentes — medido no spike.
+     */
+    const consulta = computed<Record<string, unknown>>({
+      get: () => ({ ...(layoutQuery.value ?? {}) }),
+      set: (valor) => {
+        layoutQuery.value = valor as unknown as LayoutQuery;
+      },
+    });
 
-    const deleteItems = async (ids: (string | number)[]) => {
-      await api.delete(`/items/${collection.value}`, { data: ids });
-      items.value = items.value.filter((item) => !ids.includes(item.id));
-    };
+    const propsPara = (opcoes: Opcoes): LayoutProps =>
+      reactive({
+        collection,
+        selection,
+        layoutOptions: opcoes,
+        layoutQuery: consulta,
+        layoutProps: ref({}),
+        filter,
+        filterUser: ref(null),
+        filterSystem: ref(null),
+        search,
+        showSelect: ref('multiple'),
+        selectMode: ref(false),
+        readonly: ref(false),
+        resetPreset: ref(undefined),
+        clearFilters: ref(undefined),
+      }) as unknown as LayoutProps;
 
-    const deleteSelectedItems = async () => {
-      if (!selectedItems.value.length) return;
-      const ids = selectedItems.value.map((item) => item.id);
-      await deleteItems(ids);
-      selectedItems.value = [];
-    };
-
-    function createLayoutOptions() {
-      const title = createViewOption('title', detectedTitle);
-      const zoomOnClick = createViewOption('zoomOnClick');
-      const geolocation = createViewOption('geolocation', detectedGeo);
-      const [defaultLng, defaultLat] = DEFAULT_MAP_CENTER;
-      const mapCenterLng = createViewOption('mapCenterLng', defaultLng);
-      const mapCenterLat = createViewOption('mapCenterLat', defaultLat);
-      const mapZoom = createViewOption('mapZoom', DEFAULT_MAP_ZOOM);
-
-      /*
-       * The columns the grid shows, stored in `layoutQuery.fields` — the same
-       * place the Directus tabular layout keeps them. They were in
-       * `layoutOptions` at first, which is not where Directus looks.
-       *
-       * Three sources, in order: what the user chose, the numbered
-       * `coluna1..5` a preset written by an earlier version still carries, and
-       * finally what was detected from the collection. Only the first is ever
-       * written back.
-       */
-      const fields = computed<string[]>({
-        get() {
-          const chosen = writableQuery.fields.value;
-          if (chosen && chosen.length > 0) return chosen;
-
-          const legacy = normalizeLayoutOptions(layoutOptions.value).fields;
-          if (legacy && legacy.length > 0) return legacy;
-
-          return detectedStringFields.value.slice(0, DEFAULT_COLUMN_COUNT);
-        },
-        set(newValue) {
-          writableQuery.fields.value = newValue;
-        },
-      });
-
-      return {
-        fields,
-        title,
-        zoomOnClick,
-        geolocation,
-        mapCenterLng,
-        mapCenterLat,
-        mapZoom,
+    const emitirPara =
+      (opcoes: Opcoes) =>
+      (evento: string, valor: unknown): void => {
+        if (evento === 'update:layoutQuery') consulta.value = valor as Record<string, unknown>;
+        if (evento === 'update:layoutOptions') opcoes.value = valor as Record<string, unknown>;
+        if (evento === 'update:selection') selection.value = valor as (string | number)[];
       };
 
-      function createViewOption<Key extends keyof LayoutOptions>(
-        key: Key,
-        defaultValue?: MaybeRefOrGetter<LayoutOptions[Key] | undefined>
-      ) {
-        return computed<LayoutOptions[Key] | undefined>({
-          get() {
-            const configuredValue = layoutOptions.value?.[key];
-            if (configuredValue !== undefined) return configuredValue;
-            return toValue(defaultValue);
-          },
-          set(newValue: LayoutOptions[Key]) {
-            layoutOptions.value = { ...layoutOptions.value, [key]: newValue };
-          },
-        });
-      }
-    }
+    const embutir = (id: string, opcoes: Opcoes): LayoutEmbutido | null =>
+      embutirLayout({
+        id,
+        registro: layouts.value,
+        props: propsPara(opcoes),
+        emit: emitirPara(opcoes),
+      });
 
-    function useLayoutQuery() {
-      // page, limit and sort are two-way: the grid writes the sort when a header
-      // is clicked, and playback writes the page when it runs off the end of one
-      const { page, limit, sort } = writableQuery;
+    const grade = embutir(LAYOUTS_EMBUTIDOS.grade, opcoesDaGrade);
+    const mapa = embutir(LAYOUTS_EMBUTIDOS.mapa, opcoesDoMapa);
 
-      /*
-       * Only what is actually needed. This used to request every field of the
-       * collection to show a handful, so each page carried columns nobody was
-       * looking at.
-       */
-      const fields = computed(() =>
-        fieldsToFetch({
-          displayed: layoutOptionBindings.fields.value ?? [],
-          primaryKey: primaryKeyField.value?.field ?? 'id',
-          geolocation: layoutOptionBindings.geolocation.value,
-          titleTemplate: layoutOptionBindings.title.value,
-        })
-      );
+    /** A única opção que não vem de nenhum dos dois: é da composição. */
+    const zoomOnClick = computed<boolean | undefined>({
+      get: () => layoutOptions.value?.zoomOnClick,
+      set: (valor) => {
+        layoutOptions.value = { ...layoutOptions.value, zoomOnClick: valor };
+      },
+    });
 
-      return { sort, limit, page, fields };
-    }
+    /** O app lê estes daqui para desenhar paginação e contagem. */
+    const daGrade = <T>(chave: string, vazio: T) =>
+      computed<T>(() => (grade?.state[chave] as T) ?? vazio);
+
+    const items = daGrade<GeoItem[]>('items', []);
+
+    const selectedItems = computed<GeoItem[]>(() =>
+      items.value.filter((item) => selection.value.includes(item.id))
+    );
+
+    const deleteSelectedItems = async (): Promise<void> => {
+      if (selection.value.length === 0) return;
+
+      await api.delete(`/items/${collection.value}`, { data: [...selection.value] });
+      selection.value = [];
+      (grade?.state.refresh as (() => void) | undefined)?.();
+      (mapa?.state.refresh as (() => void) | undefined)?.();
+    };
 
     return {
       items,
-      loading,
-      error,
-      totalPages,
-      itemCount,
-      totalCount,
-      page,
-      limit,
-      sort,
+      loading: daGrade('loading', false),
+      error: daGrade<unknown>('error', null),
+      totalPages: daGrade('totalPages', 1),
+      itemCount: daGrade('itemCount', 0),
+      totalCount: daGrade('totalCount', 0),
+      page: writableQuery.page,
+      limit: writableQuery.limit,
+      sort: writableQuery.sort,
       fieldsInCollection,
+      primaryKeyField,
       selectedItems,
       deleteSelectedItems,
-      ...layoutOptionBindings,
+      zoomOnClick,
+      /*
+       * O Directus entrega o retorno deste `setup()` ao componente E ao painel
+       * de opções, que são irmãos na árvore. É por isso que os dois embutidos
+       * nascem aqui: a área que desenha e o painel que configura passam a
+       * enxergar o mesmo estado, sem um segundo wrapper e sem busca a mais.
+       */
+      grade,
+      mapa,
     };
   },
 });

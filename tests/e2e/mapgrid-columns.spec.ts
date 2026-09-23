@@ -8,7 +8,6 @@ import {
 } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
-import { readCamera, waitForCameraToSettle } from './helpers/map-camera';
 
 /**
  * The grid columns, end to end.
@@ -47,15 +46,6 @@ async function visibleColumns(page: Page): Promise<string[]> {
     .map((label) => label.trim())
     .filter((label) => label !== '' && label.toLowerCase() !== 'actions');
 }
-
-/*
- * Todo teste deste arquivo le e grava o MESMO preset do admin. O
- * `playwright.config.ts` roda `fullyParallel` com varios workers fora do CI, e
- * ai um teste reescreve o preset no meio do outro: a ordenacao gravada volta a
- * `name`, os `fields` somem. `default` mantem o arquivo num worker so, em ordem,
- * sem tornar um teste dependente do anterior como `serial` faria.
- */
-test.describe.configure({ mode: 'default' });
 
 test.describe('MapGrid sorting', () => {
   test.beforeAll(async () => {
@@ -105,39 +95,6 @@ test.describe('MapGrid sorting', () => {
     await expect(page.locator('.map-container')).toBeVisible({ timeout: 60_000 });
 
     expect((await firstCell().innerText()).trim()).toBe(reversed);
-  });
-
-  test('ordenar troca as linhas sem mexer no enquadramento do mapa', async ({ page }) => {
-    await ensureMapGridPreset();
-    await login(page);
-    await openCollection(page);
-
-    /*
-     * Ordenar refaz a consulta, e todo refetch da lista redesenha os marcadores.
-     * O enquadramento automatico, porem, roda uma vez so — o
-     * `performInitialFitBoundsOnce` guarda com um booleano justamente porque o
-     * `fitBounds` de um refetch cancelava o `flyTo` disparado por um clique na
-     * grade e puxava a camera de volta para o pais inteiro no meio da animacao.
-     * Reenquadrar depois disso e escolha do usuario, pelo botao da MapToolbar.
-     */
-    const cameraBefore = await waitForCameraToSettle(page);
-
-    const firstCell = () => page.locator('.v-table tbody tr td').nth(1);
-    await expect(firstCell()).toBeVisible({ timeout: 30_000 });
-    const ascending = (await firstCell().innerText()).trim();
-
-    await page.locator('.v-table thead th', { hasText: 'name' }).first().click();
-    await page.locator('[data-sort-desc="name"]').first().click();
-
-    // so vale conferir a camera depois que a grade de fato trocou de pagina:
-    // antes disso, um mapa parado nao prova nada
-    await expect
-      .poll(async () => (await firstCell().innerText()).trim(), { timeout: 20_000 })
-      .not.toBe(ascending);
-
-    const cameraAfter = await readCamera(page);
-    expect(cameraAfter.zoom).toBe(cameraBefore.zoom);
-    expect(cameraAfter.center).toEqual(cameraBefore.center);
   });
 });
 
