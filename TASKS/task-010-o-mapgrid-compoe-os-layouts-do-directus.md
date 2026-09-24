@@ -99,16 +99,20 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       revela: `.layout-tabular` traz `margin: 32px 0 132px`; o cabeçalho é
       `sticky` com deslocamento da altura do cabeçalho do app; `.layout-map`
       nasce `flex: 0 1 auto` e não estica
-- [ ] Decidir o destino do `MapToolbar`, do zoom ao clicar e do popup — **é
-      decisão reservada**, não do agente da rodada
+- [x] Decidir o destino do `MapToolbar`, do zoom ao clicar e do popup —
+      decidido por Sidarta em 2026-09-24, ver "A `MapToolbar` é do MapGrid",
+      abaixo
 
 ### Fase 3: o que sai
 - [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem —
       os dois primeiros já não têm arquivo, mas `src/components/index.ts` ainda
       os **exportava** de `./organisms/...`, um caminho que não existe. Nenhum
       gate pegou: o barril não tem importador, então nem o `vue-tsc` nem o build
-      chegam nele. As duas linhas saíram em 2026-09-24. O `MapToolbar` fica até
-      a decisão reservada
+      chegam nele. As duas linhas saíram em 2026-09-24. O `MapToolbar` **fica**
+      (decisão abaixo)
+- [ ] O "reenquadrar" da `MapToolbar` passa pelo `CentralizadorDoMapaDirectus`
+      (`enquadrarTudo`), em vez de chamar o `fitDataBounds` do layout do
+      Directus direto (`doMapa('fitDataBounds')`)
 - [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador.
       Inventário conferido em 2026-09-24, sem chamador de produção: `table-sort`
       (só o próprio teste e o barril `src/contract/index.ts`), `fieldsToFetch`
@@ -151,6 +155,27 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       nova já mostra dois defeitos conhecidos: os rótulos do painel se
       sobrepõem, e sobra branco embaixo da grade
 - [ ] README: a seção de colunas descreve a grade atual
+
+## A `MapToolbar` é do MapGrid — decidido em 2026-09-24
+
+A pergunta deixou de ser "o que o Directus já tem" e passou a ser "isto é do
+MapGrid ou do mapa?", porque o MapGrid deve poder usar qualquer mapa — o do
+Directus, o 3dmap do geohub e outros — atrás de um contrato próprio
+([task-011](task-011-o-mapgrid-aceita-qualquer-mapa-atras-de-um-contrato-proprio.md)).
+
+- **`MapToolbar` fica, e é do MapGrid.** Os controles dela falam com o contrato
+  do mapa, nunca com o Directus direto. É onde moram os controles da task-006
+  (passo, play, acompanhamento), que nenhum mapa oferece.
+- **O "reenquadrar" fica**, como operação do contrato (`enquadrarTudo`). O
+  layout do Directus tem o botão dele, mas outro mapa pode não ter. O botão
+  duplicado com o do Directus é aceito por ora; escondê-lo quando o mapa já
+  oferece o controle é a primeira capacidade que o contrato da task-011
+  declararia.
+- **`zoomOnClick` fica como está**: opção do MapGrid, que chega ao contrato
+  como `aproximar`.
+- **O popup fica com o mapa.** Cada mapa desenha o balão do seu jeito; se um dia
+  o mesmo balão for exigido em todos, o MapGrid fornece o conteúdo e o mapa só
+  posiciona.
 
 ## Evidência — o clique no marcador
 
