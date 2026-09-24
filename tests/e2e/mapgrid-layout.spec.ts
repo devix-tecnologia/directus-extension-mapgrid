@@ -14,11 +14,14 @@ import {
 } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
+  abrirOpcoesDoLayout,
+  abrirSecaoDasOpcoes,
   clicarNoPontoCentral,
   GRADE,
   linhaDe,
   login,
   MAPA,
+  OPCOES_DO_MAPA,
   openCollection,
   ordenarPor,
   PAINEL_GRADE,
@@ -147,5 +150,46 @@ test.describe('MapGrid — a composição', () => {
     // o cabecalho comeca no topo do painel; media 60px antes do acerto de CSS
     expect(folga).toBeGreaterThanOrEqual(0);
     expect(folga).toBeLessThan(12);
+  });
+
+  test('o cartão do MapGrid vai até o pé da tela', async ({ page }) => {
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+    await page.waitForTimeout(3_000);
+
+    const sobra = await page.evaluate(() => {
+      const cartao = document.querySelector('.mapgrid-container');
+      if (!cartao) return -1;
+      return Math.round(window.innerHeight - cartao.getBoundingClientRect().bottom);
+    });
+
+    // a folga de paginação de página inteira do Directus deixava 142px em branco
+    expect(sobra).toBeGreaterThanOrEqual(0);
+    expect(sobra).toBeLessThan(48);
+  });
+
+  test('as seções do painel de opções ocupam a largura do painel', async ({ page }) => {
+    await ensureMapGridPreset();
+    await login(page);
+    await openCollection(page);
+    await abrirOpcoesDoLayout(page);
+    await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
+
+    const proporcoes = await page.evaluate((secao) => {
+      const painel = document.querySelector('.layout-options');
+      const detalhe = document.querySelector(secao);
+      const seletor = document.querySelector(`${secao} .v-select`);
+      if (!painel || !detalhe || !seletor) return null;
+      const largura = painel.getBoundingClientRect().width;
+      return {
+        secao: detalhe.getBoundingClientRect().width / largura,
+        seletor: seletor.getBoundingClientRect().width / largura,
+      };
+    }, OPCOES_DO_MAPA);
+
+    expect(proporcoes).not.toBeNull();
+    expect(proporcoes?.secao).toBeGreaterThan(0.95);
+    expect(proporcoes?.seletor).toBeGreaterThan(0.9);
   });
 });
