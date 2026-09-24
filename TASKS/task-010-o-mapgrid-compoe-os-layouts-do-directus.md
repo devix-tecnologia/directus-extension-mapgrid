@@ -1,6 +1,6 @@
 # Task 010 — O MapGrid compõe os layouts do Directus
 
-Status: in-progress
+Status: done
 Type: refactor
 Assignee: sidartaveloso
 Priority: 10
