@@ -38,6 +38,35 @@ export const mapGridPresetFor = (collection: string): Omit<Preset, 'id'> => ({
   },
 });
 
+/**
+ * O mesmo preset, com a camera do mapa ja apontada para um ponto.
+ *
+ * Existe porque nao ha como achar um marcador num canvas de MapLibre sem saber
+ * onde a camera esta, e a instancia do mapa e do layout do Directus — de fora
+ * nao se alcanca. Dizendo de onde a camera parte, a projecao vira conta: o
+ * ponto semeado cai no centro do canvas, e o clique tem alvo certo.
+ *
+ * O caminho de mover a camera pela interface nao serve para isso: escrever
+ * `cameraOptions` grava no preset mas nao mexe no mapa desenhado (medido em
+ * 2026-09-24, ver task-010).
+ */
+export const mapGridPresetCentradoEm = (
+  collection: string,
+  centro: [number, number],
+  zoom: number
+): Omit<Preset, 'id'> => {
+  const preset = mapGridPresetFor(collection);
+  return {
+    ...preset,
+    layout_options: {
+      mapgrid: {
+        ...preset.layout_options?.mapgrid,
+        map: { geometryField: 'location', cameraOptions: { center: centro, zoom } },
+      },
+    },
+  };
+};
+
 async function deleteAllPresetsFor(collection: string): Promise<void> {
   const query = `filter[collection][_eq]=${collection}&fields=id&limit=-1`;
   const response = await apiRequest<DirectusCollectionResponse<Pick<Preset, 'id'>>>(
@@ -53,6 +82,16 @@ async function deleteAllPresetsFor(collection: string): Promise<void> {
 export async function ensureMapGridPreset(collection: string = COLLECTION_NAME): Promise<void> {
   await deleteAllPresetsFor(collection);
   await apiRequest('POST', '/presets', mapGridPresetFor(collection));
+}
+
+/** O preset da semente, com a camera do mapa ja apontada para um ponto. */
+export async function ensureMapGridPresetCentradoEm(
+  centro: [number, number],
+  zoom: number,
+  collection: string = COLLECTION_NAME
+): Promise<void> {
+  await deleteAllPresetsFor(collection);
+  await apiRequest('POST', '/presets', mapGridPresetCentradoEm(collection, centro, zoom));
 }
 
 /**

@@ -128,19 +128,40 @@ export function linhaDe(page: Page, texto: string) {
 }
 
 /**
- * Clica no centro do canvas do mapa.
+ * Clica no marcador que está no centro do canvas do mapa.
  *
- * Achar um marcador numa tela de MapLibre exige saber onde a câmera está, e a
- * instância do mapa é deles — não há como alcançá-la de fora. O caminho que
- * dispensa a projeção é pôr o marcador onde já se sabe: o clique na linha
- * centraliza o item, então depois dele o ponto daquele item está no centro.
+ * Duas coisas, e as duas precisam ser assim. Achar um marcador numa tela de
+ * MapLibre exige saber onde a câmera está, e a instância do mapa é do layout do
+ * Directus — de fora não se alcança; quem diz de onde a câmera parte é o preset
+ * semeado, e aí o ponto semeado nasce no centro.
+ *
+ * E esperar o canvas aparecer não basta: a camada de pontos desenha depois, e
+ * um clique antes disso cai no vazio — foi o que fez este spec falhar com o
+ * marcador na tela da captura. O sinal de que há ponto sob o mouse é o cursor
+ * do canvas virar `pointer`, que o próprio MapLibre troca ao entrar numa
+ * camada interativa. Medido: leva ~2s depois de a grade aparecer.
  */
-export async function clicarNoCentroDoMapa(page: Page): Promise<void> {
+export async function clicarNoPontoCentral(page: Page): Promise<void> {
   const canvas = page.locator(CANVAS_DO_MAPA);
   await expect(canvas).toBeVisible({ timeout: CARREGAMENTO });
 
   const caixa = await canvas.boundingBox();
   if (!caixa) throw new Error('O canvas do mapa não tem caixa delimitadora');
 
-  await page.mouse.click(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2);
+  const x = caixa.x + caixa.width / 2;
+  const y = caixa.y + caixa.height / 2;
+
+  await expect
+    .poll(
+      async () => {
+        // o cursor so muda com movimento: dois pontos, para haver `mousemove`
+        await page.mouse.move(x + 1, y);
+        await page.mouse.move(x, y);
+        return canvas.evaluate((elemento) => getComputedStyle(elemento).cursor);
+      },
+      { timeout: 30_000 }
+    )
+    .toBe('pointer');
+
+  await page.mouse.click(x, y);
 }

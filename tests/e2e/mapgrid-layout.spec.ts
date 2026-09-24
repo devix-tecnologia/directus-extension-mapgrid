@@ -7,10 +7,14 @@
  */
 import { expect, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
-import { ensureMapGridPreset, readMapGridPresetQuery } from '../helpers/mapgrid-preset';
+import {
+  ensureMapGridPreset,
+  ensureMapGridPresetCentradoEm,
+  readMapGridPresetQuery,
+} from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
-  clicarNoCentroDoMapa,
+  clicarNoPontoCentral,
   GRADE,
   linhaDe,
   login,
@@ -22,14 +26,18 @@ import {
 } from './helpers/mapgrid-page';
 
 /**
- * A cidade mais isolada da semente. Serve de alvo justamente por isso: no zoom
- * do clique na linha ela é o único ponto perto do centro, então o clique no
- * canvas não tem como cair noutro marcador nem num agrupamento.
+ * A cidade mais isolada da semente, e a câmera que a põe no centro do canvas.
+ *
+ * Achar um marcador numa tela de MapLibre exige saber onde a câmera está, e a
+ * instância do mapa é do layout do Directus. O preset resolve isso pelo outro
+ * lado: ele diz de onde a câmera parte, e aí o ponto semeado nasce no centro.
+ * Manaus porque é a mais isolada — no zoom 12 nenhum outro ponto da semente
+ * aparece, então o clique não tem como cair noutro marcador nem num
+ * agrupamento.
  */
 const CIDADE_ISOLADA = 'Manaus';
-
-/** Tempo do voo da câmera até o item, antes de o ponto estar no centro. */
-const VOO = 4_000;
+const MANAUS: [number, number] = [-60.0255, -3.119];
+const ZOOM_DE_CIDADE = 12;
 
 test.beforeAll(async () => {
   await setupTestEnvironment();
@@ -87,18 +95,15 @@ test.describe('MapGrid — a composição', () => {
    * MapGrid — o oposto de sincronizar as duas metades.
    */
   test('clicar num ponto marca a linha dele na grade, e não sai do MapGrid', async ({ page }) => {
-    await ensureMapGridPreset();
+    await ensureMapGridPresetCentradoEm(MANAUS, ZOOM_DE_CIDADE);
     await login(page);
     await openCollection(page);
 
     const linha = linhaDe(page, CIDADE_ISOLADA);
     await expect(linha).toBeVisible({ timeout: 60_000 });
+    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
 
-    // o clique na linha centraliza o item: e o que poe o marcador no centro
-    await linha.click();
-    await page.waitForTimeout(VOO);
-
-    await clicarNoCentroDoMapa(page);
+    await clicarNoPontoCentral(page);
 
     await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
       timeout: 15_000,

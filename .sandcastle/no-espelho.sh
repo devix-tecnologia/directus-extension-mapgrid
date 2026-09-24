@@ -38,7 +38,11 @@ case "$gitdir" in
 esac
 
 nome=$(basename "$gitdir")
-repo=$(dirname "$(dirname "$gitdir")")
+# O git-dir de uma worktree é `<repo>/.git/worktrees/<nome>`: são TRÊS níveis
+# até a raiz do repositório, não dois. Com dois, `repo` parava em `<repo>/.git`
+# e o espelho era procurado dentro do diretório do git, que nunca existiu — o
+# script abortava dizendo que a montagem não chegou, com a montagem no lugar.
+repo=$(dirname "$(dirname "$(dirname "$gitdir")")")
 espelho="$repo/.sandcastle/worktrees/$nome"
 
 # A prova de que o espelho é a MESMA árvore, e não um diretório de mesmo nome:
