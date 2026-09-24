@@ -53,6 +53,18 @@ const reenquadrar = (): void => {
  * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
  * do Directus navega para a tela do item, que é o oposto de sincronizar com o
  * mapa — a razão de existir desta extensão.
+ *
+ * **Enquadrar, porém, ainda não acontece na tela.** Medido em 2026-09-24: esta
+ * escrita chega a `layoutOptions.map.cameraOptions` e ao preset, com `center` e
+ * `zoom` certos, e o mapa desenhado não se mexe. O layout de mapa deles lê
+ * `cameraOptions` ao montar — uma câmera semeada no preset é honrada, e é assim
+ * que o e2e acha um marcador — e ignora a troca depois disso. As duas formas de
+ * `center` foram medidas, o par cru e o `{ lng, lat }` que eles mesmos gravam:
+ * nenhuma move o mapa vivo. O efeito só aparece na visita seguinte.
+ *
+ * Mover a câmera de verdade exige alcançar a instância do MapLibre deles, e
+ * isso é a mesma decisão reservada do `MapToolbar` e do zoom ao clicar. O e2e
+ * que prova o enquadramento está escrito e parado em `test.fixme`.
  */
 const enquadrarItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;

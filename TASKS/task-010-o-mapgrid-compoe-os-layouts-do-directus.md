@@ -79,7 +79,9 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 
 ### Fase 2: a composição
 - [x] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
-- [x] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar
+- [ ] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar —
+      **metade feito**: o clique deixou de navegar, mas o mapa não enquadra. Ver
+      "O enquadramento não acontece na tela", abaixo
 - [x] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
       a tela do item quando não está em modo de seleção, então **clicar num ponto
       hoje sai do MapGrid**. Antes da composição, clicar no marcador selecionava a
@@ -127,6 +129,34 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 - [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
 - [ ] `pnpm screenshot` e evidência antes/depois
 - [ ] README: a seção de colunas descreve a grade atual
+
+## O enquadramento não acontece na tela — medido em 2026-09-24
+
+Achado ao escrever o e2e do clique no ponto, e ele derruba um item que o
+documento dava por fechado.
+
+O `enquadrarItem` escreve `cameraOptions` no estado do mapa embutido. Essa
+escrita **chega**: `layoutOptions.map.cameraOptions` sai no preset com o
+`center` e o `zoom` certos, e dá para conferir pela API. O mapa desenhado, no
+entanto, **não se mexe** — a captura de falha mostra o mundo inteiro depois de
+um clique na linha que pediu zoom 14 em Manaus.
+
+O layout de mapa do Directus lê `cameraOptions` **ao montar** e ignora a troca
+depois disso. Duas medições sustentam a frase:
+
+- uma câmera semeada no preset antes do carregamento é honrada — é justamente
+  por isso que o e2e consegue achar um marcador;
+- as duas formas de `center` foram tentadas, o par cru e o `{ lng, lat }` que
+  eles mesmos gravam a cada `moveend`. Nenhuma move o mapa vivo.
+
+Ou seja: o zoom ao clicar só tem efeito na **visita seguinte**, quando o preset
+vira a câmera inicial.
+
+Mover a câmera de verdade exige alcançar a instância do MapLibre deles, que é a
+mesma decisão reservada do `MapToolbar` e do zoom ao clicar — por isso esta
+rodada parou aqui e não escolheu um caminho. O e2e que prova o enquadramento
+está escrito, e parado em `test.fixme` no `mapgrid-layout.spec.ts` com o motivo:
+ele passa a valer no dia em que a decisão sair.
 
 ## O clique no ponto — fechado em 2026-09-23
 
