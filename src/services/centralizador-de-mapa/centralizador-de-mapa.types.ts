@@ -15,6 +15,17 @@ export interface AgendaDoCentralizador {
   repetir(tarefa: () => void, intervaloMs: number): () => void;
 }
 
+/** Os itens da coleção, para quando o mapa não tem todos. */
+export interface FonteDaColecao {
+  /** Os itens da página da grade, sem filtro por área visível. */
+  itensDaGrade(): readonly Record<string, unknown>[];
+  /** Os itens das `chaves`, só com os `campos` pedidos. */
+  buscarItens(
+    chaves: readonly unknown[],
+    campos: readonly string[]
+  ): Promise<Record<string, unknown>[]>;
+}
+
 export interface OpcoesDeCentralizacao {
   /** Enquadra o ponto por si mesmo, até o `maxZoom` do Directus, em vez de manter o zoom. Padrão: `false`. */
   aproximar?: boolean;

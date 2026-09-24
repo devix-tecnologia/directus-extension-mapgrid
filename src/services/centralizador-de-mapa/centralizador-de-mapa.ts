@@ -1,5 +1,6 @@
 import type {
   AgendaDoCentralizador,
+  FonteDaColecao,
   ICentralizadorDeMapa,
   OpcoesDeCentralizacao,
   Retangulo,
@@ -40,7 +41,8 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
   private readonly estado: Record<string, unknown>;
   private readonly tamanhoDaTela: () => TamanhoDaTela | null;
   private readonly agenda: AgendaDoCentralizador;
-  private readonly itensDaGrade: () => readonly Record<string, unknown>[];
+  private readonly colecao: FonteDaColecao;
+  private pedidoDeGeometria = 0;
   private mapaPronto = false;
   private insistencia: Insistencia | null = null;
 
@@ -48,19 +50,18 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
    * @param estado o estado do layout de mapa embutido (`LayoutEmbutido.state`)
    * @param tamanhoDaTela o tamanho da área do mapa, para descontar o padding
    * @param agenda o relógio — `nextTick` e `setInterval` em produção
-   * @param itensDaGrade os itens da página da grade, que não são filtrados pela
-   *   área visível como os do mapa são com geometria nativa
+   * @param colecao os itens da grade, para quando o mapa não tem todos
    */
   constructor(
     estado: Record<string, unknown>,
     tamanhoDaTela: () => TamanhoDaTela | null,
     agenda: AgendaDoCentralizador,
-    itensDaGrade: () => readonly Record<string, unknown>[] = () => []
+    colecao: FonteDaColecao = { buscarItens: async () => [], itensDaGrade: () => [] }
   ) {
     this.estado = estado;
     this.tamanhoDaTela = tamanhoDaTela;
     this.agenda = agenda;
-    this.itensDaGrade = itensDaGrade;
+    this.colecao = colecao;
   }
 
   centralizar(geometria: unknown, opcoes: OpcoesDeCentralizacao = {}): boolean {
@@ -128,29 +129,66 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
   }
 
   centralizarItem(item: Record<string, unknown>, opcoes: OpcoesDeCentralizacao = {}): boolean {
+    const pedido = ++this.pedidoDeGeometria;
     const chave = this.estado.featureId;
     if (typeof chave !== 'string') return false;
     const features = (this.estado.geojson as { features?: unknown } | null | undefined)?.features;
-    if (!Array.isArray(features)) return false;
-    const feature = features.find(
+    const feature = (Array.isArray(features) ? features : []).find(
       (candidata) =>
         (candidata as { properties?: Record<string, unknown> } | null)?.properties?.[chave] ===
         item[chave]
     ) as { geometry?: unknown } | undefined;
     if (feature) return this.centralizar(feature.geometry, opcoes);
+
     const campo = this.campoDeGeometriaNativa();
-    return campo ? this.centralizar(item[campo], opcoes) : false;
+    if (!campo) return false;
+    if (item[campo] != null) return this.centralizar(item[campo], opcoes);
+
+    this.colecao
+      .buscarItens([item[chave]], [chave, campo])
+      .then(([buscado]) => {
+        if (pedido === this.pedidoDeGeometria && buscado) this.centralizar(buscado[campo], opcoes);
+      })
+      .catch(() => {});
+    return true;
   }
 
   enquadrarTudo(): void {
+    const pedido = ++this.pedidoDeGeometria;
     this.encerrarInsistencia();
     const campo = this.campoDeGeometriaNativa();
-    const pontos = campo ? this.itensDaGrade().flatMap((item) => this.pontosDe(item[campo])) : [];
-    if (pontos.length > 0) {
-      this.centralizar({ coordinates: pontos, type: 'MultiPoint' }, { somenteSeFora: false });
+    const chave = this.estado.featureId;
+    const fitDataBounds = () => (this.estado.fitDataBounds as (() => void) | undefined)?.();
+    if (!campo || typeof chave !== 'string') {
+      fitDataBounds();
       return;
     }
-    (this.estado.fitDataBounds as (() => void) | undefined)?.();
+
+    const enquadrar = (itens: readonly Record<string, unknown>[]) => {
+      const pontos = itens.flatMap((item) => this.pontosDe(item[campo]));
+      if (pontos.length > 0) {
+        this.centralizar({ coordinates: pontos, type: 'MultiPoint' }, { somenteSeFora: false });
+      } else {
+        fitDataBounds();
+      }
+    };
+
+    const itens = this.colecao.itensDaGrade();
+    const comGeometria = itens.filter((item) => item[campo] != null);
+    const semGeometria = itens.filter((item) => item[campo] == null).map((item) => item[chave]);
+    if (semGeometria.length === 0) {
+      enquadrar(comGeometria);
+      return;
+    }
+
+    this.colecao
+      .buscarItens(semGeometria, [chave, campo])
+      .then((buscados) => {
+        if (pedido === this.pedidoDeGeometria) enquadrar([...comGeometria, ...buscados]);
+      })
+      .catch(() => {
+        if (pedido === this.pedidoDeGeometria) fitDataBounds();
+      });
   }
 
   // com geometria nativa o Directus só busca os itens da área visível

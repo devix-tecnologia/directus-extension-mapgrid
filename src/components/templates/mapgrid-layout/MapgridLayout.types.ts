@@ -1,3 +1,4 @@
+import type { FonteDaColecao } from '../../../services/centralizador-de-mapa/index';
 import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 
 export interface MapgridLayoutType {
@@ -16,6 +17,8 @@ export interface MapgridLayoutProps {
   mapa?: LayoutEmbutido | null;
   /** Aproximar o mapa ao clicar numa linha. */
   zoomOnClick?: boolean;
+  /** Busca itens da coleção pela chave primária, só com os campos pedidos. */
+  buscarItens?: FonteDaColecao['buscarItens'];
 }
 
 export type MapgridLayoutEmits = Record<string, never>;

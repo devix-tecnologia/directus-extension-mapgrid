@@ -22,15 +22,11 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
 import { CentralizadorDoMapaDirectus } from '../../../services/centralizador-de-mapa/index';
-import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 import { MESSAGES } from '../../../shared/messages';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
+import type { MapgridLayoutProps } from './MapgridLayout.types';
 
-const props = defineProps<{
-  grade?: LayoutEmbutido | null;
-  mapa?: LayoutEmbutido | null;
-  zoomOnClick?: boolean;
-}>();
+const props = defineProps<MapgridLayoutProps>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
@@ -58,7 +54,10 @@ const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
         return () => clearInterval(id);
       },
     },
-    () => (props.grade?.state.items as Record<string, unknown>[] | undefined) ?? []
+    {
+      buscarItens: (chaves, campos) => props.buscarItens?.(chaves, campos) ?? Promise.resolve([]),
+      itensDaGrade: () => (props.grade?.state.items as Record<string, unknown>[] | undefined) ?? [],
+    }
   );
 });
 

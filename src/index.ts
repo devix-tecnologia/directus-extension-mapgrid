@@ -158,6 +158,22 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       },
     });
 
+    const buscarItens = async (
+      chaves: readonly unknown[],
+      campos: readonly string[]
+    ): Promise<Record<string, unknown>[]> => {
+      const chave = primaryKeyField.value?.field;
+      if (!chave || chaves.length === 0) return [];
+      const resposta = await api.get(`/items/${collection.value}`, {
+        params: {
+          fields: [...campos],
+          filter: { [chave]: { _in: [...chaves] } },
+          limit: chaves.length,
+        },
+      });
+      return (resposta.data?.data as Record<string, unknown>[] | undefined) ?? [];
+    };
+
     /** O app lê estes daqui para desenhar paginação e contagem. */
     const daGrade = <T>(chave: string, vazio: T) =>
       computed<T>(() => (grade?.state[chave] as T) ?? vazio);
@@ -200,6 +216,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
        */
       grade,
       mapa,
+      buscarItens,
     };
   },
 });
