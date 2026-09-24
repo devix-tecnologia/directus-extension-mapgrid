@@ -116,24 +116,19 @@ test.describe('MapGrid — a composição', () => {
   });
 
   /*
-   * PARADO, e o motivo é um defeito medido, não uma flutuação do ambiente.
+   * A única prova possível de que o enquadramento acontece na TELA: a escrita
+   * em `cameraOptions` chegaria ao preset mesmo com o mapa parado, então o
+   * preset não serve de testemunha. Se depois do clique na linha há um ponto
+   * clicável no centro do canvas, e clicar nele marca justamente aquela linha,
+   * o mapa foi até o item.
    *
-   * Esta é a única prova possível de que o enquadramento acontece na TELA: a
-   * escrita em `cameraOptions` chega ao preset mesmo quando o mapa não se mexe,
-   * então o preset não serve de testemunha. Se depois do clique na linha há um
-   * ponto clicável no centro do canvas, e clicar nele marca justamente aquela
-   * linha, o mapa enquadrou o item.
-   *
-   * Ele falha porque o mapa não enquadra: o layout de mapa do Directus lê
-   * `cameraOptions` ao montar — a câmera semeada no preset é honrada — e ignora
-   * a troca depois disso. Medido em 2026-09-24 com as duas formas de `center`,
-   * o par cru e o `{ lng, lat }` que eles mesmos gravam. A captura de falha
-   * mostra a câmera parada onde a semente a pôs, com o clique na linha já dado.
-   *
-   * Destravar exige alcançar a instância do MapLibre deles, que é a mesma
-   * decisão reservada do `MapToolbar` e do zoom ao clicar (task-010, Fase 2).
+   * Esteve em `test.fixme` enquanto o clique escrevia em `cameraOptions`, que o
+   * componente de mapa do Directus só lê ao montar. Passa pelo
+   * `CentralizadorDoMapaDirectus`, o contorno documentado dessa limitação: se
+   * uma atualização do Directus mudar o que o contorno usa, é este teste que
+   * reprova.
    */
-  test.fixme('clicar na linha enquadra o item no mapa', async ({ page }) => {
+  test('clicar na linha enquadra o item no mapa', async ({ page }) => {
     await ensureMapGridPresetCentradoEm(ATLANTICO, ZOOM_DE_MUNDO);
     await login(page);
     await openCollection(page);

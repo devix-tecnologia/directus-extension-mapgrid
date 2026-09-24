@@ -105,11 +105,17 @@ describe('MapgridLayout — o clique no ponto', () => {
     expect(composicao.atualizarSelecao).not.toHaveBeenCalled();
   });
 
-  it('não toca no clique da linha, que continua enquadrando o item no mapa', () => {
+  it('o clique na linha leva o mapa até o item pelo fitBounds do Directus, e não pelo cameraOptions', () => {
+    // o componente de mapa do Directus ignora cameraOptions depois de montado;
+    // quem move a câmera é o CentralizadorDoMapaDirectus, trocando o bbox do
+    // geojson e entregando um geojsonBounds novo, que o componente observa
     const composicao = montarComposicao();
     const atualizarCamera = vi.fn();
+    const geojson = { bbox: [-74, -34, -34, 5], features: [], type: 'FeatureCollection' };
     const mapa = embutidoFalso('map', {
       geometryField: 'location',
+      geojson,
+      geojsonBounds: undefined,
       selection: [],
       'onUpdate:selection': vi.fn(),
       cameraOptions: { center: [0, 0], zoom: 3 },
@@ -125,9 +131,13 @@ describe('MapgridLayout — o clique no ponto', () => {
     const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
     onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
 
-    expect(atualizarCamera).toHaveBeenCalledWith(
-      expect.objectContaining({ center: [BRASILIA[0], BRASILIA[1]] })
-    );
+    const [oeste, sul, leste, norte] = geojson.bbox as [number, number, number, number];
+    expect(oeste).toBeLessThanOrEqual(BRASILIA[0]);
+    expect(leste).toBeGreaterThanOrEqual(BRASILIA[0]);
+    expect(sul).toBeLessThanOrEqual(BRASILIA[1]);
+    expect(norte).toBeGreaterThanOrEqual(BRASILIA[1]);
+    expect(mapa.embutido.state.geojsonBounds).toEqual(geojson.bbox);
+    expect(atualizarCamera).not.toHaveBeenCalled();
     expect(composicao.atributosDaGrade.onRowClick).toBeTypeOf('function');
   });
 });

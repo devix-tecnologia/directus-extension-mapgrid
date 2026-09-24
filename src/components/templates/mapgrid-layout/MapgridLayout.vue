@@ -5,7 +5,7 @@
     </v-info>
 
     <div v-else class="mapgrid-container">
-      <div class="mapgrid-pane mapgrid-pane--map">
+      <div ref="painelDoMapa" class="mapgrid-pane mapgrid-pane--map">
         <component :is="mapa?.component" v-if="mapa?.component" v-bind="propsDoMapa" />
         <MapToolbar class="mapgrid-toolbar" @reset="reenquadrar" />
       </div>
@@ -18,9 +18,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
+import {
+  CentralizadorDoMapaDirectus,
+  type ICentralizadorDeMapa,
+} from '../../../services/centralizador-de-mapa/index';
 import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 import { MESSAGES } from '../../../shared/messages';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
@@ -32,9 +36,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
-
-/** Zoom aplicado ao enquadrar um item pelo clique na linha. */
-const ZOOM_AO_CLICAR = 14;
 
 const faltaLayout = computed(() => !props.grade?.component || !props.mapa?.component);
 
@@ -49,35 +50,46 @@ const reenquadrar = (): void => {
   doMapa<() => void>('fitDataBounds')?.();
 };
 
+const painelDoMapa = ref<HTMLElement | null>(null);
+
+/**
+ * Quem move a câmera do mapa embutido. O componente de mapa do Directus não
+ * oferece isso depois de montado; o contorno, e a razão de ele ser provisório,
+ * estão em `CentralizadorDoMapaDirectus`, que é o único lugar a trocar quando o
+ * Directus tiver suporte nativo.
+ */
+const centralizador = computed<ICentralizadorDeMapa | null>(() => {
+  const estado = props.mapa?.state;
+  if (!estado) return null;
+  return new CentralizadorDoMapaDirectus(
+    estado,
+    () => {
+      const painel = painelDoMapa.value;
+      return painel ? { altura: painel.clientHeight, largura: painel.clientWidth } : null;
+    },
+    (tarefa) => {
+      void nextTick(tarefa);
+    }
+  );
+});
+
 /**
  * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
  * do Directus navega para a tela do item, que é o oposto de sincronizar com o
  * mapa — a razão de existir desta extensão.
  *
- * **Enquadrar, porém, ainda não acontece na tela.** Medido em 2026-09-24: esta
- * escrita chega a `layoutOptions.map.cameraOptions` e ao preset, com `center` e
- * `zoom` certos, e o mapa desenhado não se mexe. O layout de mapa deles lê
- * `cameraOptions` ao montar — uma câmera semeada no preset é honrada, e é assim
- * que o e2e acha um marcador — e ignora a troca depois disso. As duas formas de
- * `center` foram medidas, o par cru e o `{ lng, lat }` que eles mesmos gravam:
- * nenhuma move o mapa vivo. O efeito só aparece na visita seguinte.
- *
- * Mover a câmera de verdade exige alcançar a instância do MapLibre deles, e
- * isso é a mesma decisão reservada do `MapToolbar` e do zoom ao clicar. O e2e
- * que prova o enquadramento está escrito e parado em `test.fixme`.
+ * Clicar é pedir para ver aquele item, então a câmera vai até ele mesmo que ele
+ * já esteja na tela (`somenteSeFora: false`). Com `zoomOnClick`, aproxima; sem,
+ * mantém o zoom de agora.
  */
 const enquadrarItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;
-  const coordenadas = coordenadasDe(item);
-  if (!coordenadas) return;
+  const campo = doMapa<string>('geometryField');
+  if (!item || !campo) return;
 
-  const camera = doMapa<Record<string, unknown>>('cameraOptions') ?? {};
-  const atualizar = doMapa<(valor: unknown) => void>('onUpdate:cameraOptions');
-
-  atualizar?.({
-    ...camera,
-    center: coordenadas,
-    zoom: props.zoomOnClick ? ZOOM_AO_CLICAR : (camera.zoom ?? ZOOM_AO_CLICAR),
+  centralizador.value?.centralizar(item[campo], {
+    aproximar: props.zoomOnClick === true,
+    somenteSeFora: false,
   });
 };
 
@@ -106,16 +118,6 @@ const selecionarItem = (payload: unknown): void => {
     : [...selecionados, id];
 
   doMapa<(valor: unknown) => void>('onUpdate:selection')?.(proxima);
-};
-
-const coordenadasDe = (item?: GeoItem): [number, number] | null => {
-  const campo = doMapa<string>('geometryField');
-  const geometria = campo ? (item?.[campo] as { coordinates?: unknown } | undefined) : undefined;
-  const coordenadas = geometria?.coordinates;
-
-  return Array.isArray(coordenadas) && coordenadas.length >= 2
-    ? [Number(coordenadas[0]), Number(coordenadas[1])]
-    : null;
 };
 
 const propsDaGrade = computed(() => ({
