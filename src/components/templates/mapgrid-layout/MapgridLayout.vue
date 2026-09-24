@@ -132,7 +132,8 @@ const propsDoMapa = computed(() => ({
   position: relative;
   padding: var(--content-padding);
   padding-top: 0;
-  padding-bottom: var(--content-padding-bottom);
+  /* não --content-padding-bottom: é a folga da paginação de página inteira */
+  padding-bottom: var(--content-padding);
 }
 
 .mapgrid-container {

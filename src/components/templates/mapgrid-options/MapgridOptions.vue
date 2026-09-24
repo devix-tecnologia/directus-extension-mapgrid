@@ -11,22 +11,26 @@
     versão; procurar "Map" no texto da página acharia meia tela. Mesma escolha
     dos painéis da área, `.mapgrid-pane--map` e `.mapgrid-pane--grid`.
   -->
-  <v-detail class="mapgrid-option mapgrid-option--map" icon="map" :label="t('optionMapSection')">
-    <component :is="mapa?.optionsComponent" v-if="mapa?.optionsComponent" v-bind="mapa.state" />
-    <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
+  <v-detail class="mapgrid-option mapgrid-option--map full" icon="map" :label="t('optionMapSection')">
+    <div class="mapgrid-option__campos">
+      <component :is="mapa?.optionsComponent" v-if="mapa?.optionsComponent" v-bind="mapa.state" />
+      <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
+    </div>
   </v-detail>
 
   <v-detail
-    class="mapgrid-option mapgrid-option--grid"
+    class="mapgrid-option mapgrid-option--grid full"
     icon="table_rows"
     :label="t('optionGridSection')"
   >
-    <component :is="grade?.optionsComponent" v-if="grade?.optionsComponent" v-bind="grade.state" />
-    <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
+    <div class="mapgrid-option__campos">
+      <component :is="grade?.optionsComponent" v-if="grade?.optionsComponent" v-bind="grade.state" />
+      <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
+    </div>
   </v-detail>
 
   <v-detail
-    class="mapgrid-option mapgrid-option--zoom"
+    class="mapgrid-option mapgrid-option--zoom full"
     icon="zoom_in"
     :label="t('optionZoomOnClick')"
   >
@@ -60,6 +64,14 @@ const zoomOnClick = computed<boolean | undefined, unknown>({
 <style scoped>
 .field {
   margin-top: var(--form-vertical-gap);
+}
+
+/* o mesmo grid do painel do Directus, para os `.field` dele caberem na seção */
+.mapgrid-option__campos {
+  display: grid;
+  grid-template-columns: [start] minmax(0, 1fr) [half] minmax(0, 1fr) [full];
+  gap: var(--theme--form--row-gap) var(--theme--form--column-gap);
+  margin-top: var(--theme--form--row-gap);
 }
 
 .sem-painel {
