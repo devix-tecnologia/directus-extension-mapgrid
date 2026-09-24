@@ -86,6 +86,17 @@ export async function ensureMapGridPreset(collection: string = COLLECTION_NAME):
   await apiRequest('POST', '/presets', mapGridPresetFor(collection));
 }
 
+/** O layout de mapa puro do Directus, sem o MapGrid, para comparar com ele. */
+export async function ensureMapLayoutPreset(collection: string): Promise<void> {
+  await deleteAllPresetsFor(collection);
+  await apiRequest('POST', '/presets', {
+    collection,
+    layout: 'map',
+    layout_options: { map: { geometryField: 'location' } },
+    layout_query: { map: {} },
+  });
+}
+
 /** O preset da semente, com a camera do mapa ja apontada para um ponto. */
 export async function ensureMapGridPresetCentradoEm(
   centro: [number, number],
