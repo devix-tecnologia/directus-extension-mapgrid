@@ -7,6 +7,16 @@ export interface TamanhoDaTela {
   altura: number;
 }
 
+/**
+ * O tempo, visto pelo centralizador. Injetado para o teste controlar o relógio.
+ */
+export interface AgendaDoCentralizador {
+  /** Roda depois de o Vue propagar as props — em produção, o `nextTick`. */
+  depoisDaAtualizacao(tarefa: () => void): void;
+  /** Roda a cada `intervaloMs` até a função devolvida ser chamada. */
+  repetir(tarefa: () => void, intervaloMs: number): () => void;
+}
+
 export interface OpcoesDeCentralizacao {
   /**
    * Aproxima em vez de manter o zoom: o ponto é enquadrado por si mesmo, e o

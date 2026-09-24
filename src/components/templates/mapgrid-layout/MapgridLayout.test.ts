@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, h, useAttrs } from 'vue';
+import { defineComponent, h, nextTick, reactive, useAttrs } from 'vue';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
 import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 import MapgridLayout from './MapgridLayout.vue';
@@ -139,5 +139,44 @@ describe('MapgridLayout — o clique no ponto', () => {
     expect(mapa.embutido.state.geojsonBounds).toEqual(geojson.bbox);
     expect(atualizarCamera).not.toHaveBeenCalled();
     expect(composicao.atributosDaGrade.onRowClick).toBeTypeOf('function');
+  });
+
+  it('enquanto o mapa carrega, insiste no bounds até o moveend do Directus gravar a câmera', async () => {
+    // o watch de bounds do Directus só existe depois do load do MapLibre; o
+    // moveend gravando cameraOptions é o que prova, de fora, que ele existe
+    vi.useFakeTimers();
+    try {
+      montarComposicao();
+      const bboxDaColecao = [-74, -34, -34, 5];
+      const geojson = { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' };
+      const estado = reactive<Record<string, unknown>>({
+        cameraOptions: { center: [0, 0], zoom: 3 },
+        geojson,
+        geojsonBounds: undefined,
+        geometryField: 'location',
+        selection: [],
+      });
+      const mapa = embutidoFalso('map', estado);
+      const grade = embutidoFalso('tabular', { items: [] });
+      mount(MapgridLayout, {
+        props: { grade: grade.embutido, mapa: mapa.embutido },
+        global: { components: directusComponentStubs },
+      });
+
+      const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+      onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
+      const primeiro = estado.geojsonBounds;
+      await vi.advanceTimersByTimeAsync(300);
+      expect(estado.geojsonBounds).not.toBe(primeiro);
+
+      estado.cameraOptions = { bbox: [-49, -17, -46, -14], center: BRASILIA, zoom: 8 };
+      await nextTick();
+      const ultimo = estado.geojsonBounds;
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(estado.geojsonBounds).toBe(ultimo);
+      expect(estado.geojson).toMatchObject({ bbox: bboxDaColecao });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

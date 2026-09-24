@@ -1,4 +1,5 @@
 import type {
+  AgendaDoCentralizador,
   ICentralizadorDeMapa,
   OpcoesDeCentralizacao,
   Retangulo,
@@ -12,6 +13,18 @@ import type {
  */
 const PADDING_DO_FIT_BOUNDS_DO_DIRECTUS = 100;
 const LATITUDE_MAXIMA_DE_MERCATOR = 85.05112878;
+/** De quanto em quanto tempo reentregar o `bounds` enquanto o mapa carrega. */
+const INTERVALO_DE_INSISTENCIA_MS = 250;
+/** Quanto esperar o mapa carregar antes de desistir de um alvo. */
+const PRAZO_PARA_O_MAPA_CARREGAR_MS = 10_000;
+
+interface Insistencia {
+  cancelar: () => void;
+  destino: Retangulo;
+  geojson: { bbox?: unknown };
+  original: unknown;
+  tentativas: number;
+}
 
 /**
  * Centraliza o mapa do layout de mapa do Directus, composto dentro do MapGrid.
@@ -42,6 +55,20 @@ const LATITUDE_MAXIMA_DE_MERCATOR = 85.05112878;
  * 3. depois da atualização, devolve-se o `bbox` original, para o "enquadrar
  *    tudo" deles não herdar o retângulo do alvo.
  *
+ * ### Antes de o mapa carregar
+ *
+ * O `watch` de `bounds` deles só é registrado no `load` do MapLibre — estilo e
+ * tiles baixados. Um pedido que chega antes disso (medido no e2e: a grade fica
+ * clicável cerca de um segundo antes do mapa) troca `bounds` sem ninguém
+ * escutando e se perde. Não há sinal de "carregou" fora do componente; o que há
+ * é o `moveend`, que também só é ligado no `load` e grava `cameraOptions` no
+ * estado. Então, enquanto a câmera nunca foi vista mudando, o centralizador
+ * **insiste**: reentrega um `bounds` novo a cada 250 ms, com o `bbox` do alvo
+ * mantido no `geojson`, até `aoMoverACamera` ser chamado (ou 10 s passarem). Se
+ * a câmera mudou mas o alvo não está na tela — o `fitBounds` inicial deles, dos
+ * dados, chegou antes —, o mapa agora escuta, e um `bounds` a mais basta. Visto
+ * o mapa se mover uma vez, os pedidos seguintes vão direto, sem insistência.
+ *
  * Para um ponto, o retângulo é a área visível de agora, descontado o `padding`
  * que o `fitBounds` deles aplica, e centrado no ponto: o zoom fica o mesmo. O
  * `maxZoom: 14` deles continua valendo — acima dele o mapa afasta até o 14.
@@ -57,22 +84,23 @@ const LATITUDE_MAXIMA_DE_MERCATOR = 85.05112878;
 export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
   private readonly estado: Record<string, unknown>;
   private readonly tamanhoDaTela: () => TamanhoDaTela | null;
-  private readonly depoisDaAtualizacao: (tarefa: () => void) => void;
+  private readonly agenda: AgendaDoCentralizador;
+  private mapaPronto = false;
+  private insistencia: Insistencia | null = null;
 
   /**
    * @param estado o estado do layout de mapa embutido (`LayoutEmbutido.state`)
    * @param tamanhoDaTela o tamanho da área do mapa, para descontar o padding
-   * @param depoisDaAtualizacao agenda para depois de o Vue propagar as props —
-   *   em produção, o `nextTick`
+   * @param agenda o relógio — `nextTick` e `setInterval` em produção
    */
   constructor(
     estado: Record<string, unknown>,
     tamanhoDaTela: () => TamanhoDaTela | null,
-    depoisDaAtualizacao: (tarefa: () => void) => void
+    agenda: AgendaDoCentralizador
   ) {
     this.estado = estado;
     this.tamanhoDaTela = tamanhoDaTela;
-    this.depoisDaAtualizacao = depoisDaAtualizacao;
+    this.agenda = agenda;
   }
 
   centralizar(geometria: unknown, opcoes: OpcoesDeCentralizacao = {}): boolean {
@@ -92,13 +120,83 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
       pontos.length === 1 && unico && !opcoes.aproximar
         ? this.retanguloQueMantemOZoom(unico, visivel)
         : alvo;
-    const original = geojson.bbox;
+
+    // o bbox a devolver é o de antes do primeiro pedido, não o de um alvo anterior
+    const original = this.insistencia?.original ?? geojson.bbox;
+    this.insistencia?.cancelar();
+    this.insistencia = null;
+
+    this.entregar(geojson, destino);
+    if (this.mapaPronto) {
+      this.agenda.depoisDaAtualizacao(() => {
+        geojson.bbox = original;
+      });
+      return true;
+    }
+
+    const insistencia: Insistencia = {
+      cancelar: () => {},
+      destino,
+      geojson,
+      original,
+      tentativas: 0,
+    };
+    const limite = Math.ceil(PRAZO_PARA_O_MAPA_CARREGAR_MS / INTERVALO_DE_INSISTENCIA_MS);
+    insistencia.cancelar = this.agenda.repetir(() => {
+      insistencia.tentativas += 1;
+      if (insistencia.tentativas >= limite) {
+        this.encerrarInsistencia();
+        return;
+      }
+      this.entregar(geojson, destino);
+    }, INTERVALO_DE_INSISTENCIA_MS);
+    this.insistencia = insistencia;
+    return true;
+  }
+
+  /**
+   * Avisa que o mapa gravou uma câmera nova — o `moveend` do Directus chegou ao
+   * `cameraOptions` do estado. É a única prova, de fora, de que o mapa terminou
+   * de carregar e o `watch` de `bounds` deles existe.
+   */
+  aoMoverACamera(): void {
+    this.mapaPronto = true;
+    const insistencia = this.insistencia;
+    if (!insistencia) return;
+
+    const visivel = this.areaVisivel();
+    const [oeste, sul, leste, norte] = insistencia.destino;
+    const centro: Retangulo = [
+      (oeste + leste) / 2,
+      (sul + norte) / 2,
+      (oeste + leste) / 2,
+      (sul + norte) / 2,
+    ];
+    if (visivel && this.contem(visivel, centro)) {
+      this.encerrarInsistencia();
+      return;
+    }
+
+    insistencia.cancelar();
+    this.insistencia = null;
+    this.entregar(insistencia.geojson, insistencia.destino);
+    this.agenda.depoisDaAtualizacao(() => {
+      insistencia.geojson.bbox = insistencia.original;
+    });
+  }
+
+  private encerrarInsistencia(): void {
+    const insistencia = this.insistencia;
+    if (!insistencia) return;
+    insistencia.cancelar();
+    insistencia.geojson.bbox = insistencia.original;
+    this.insistencia = null;
+  }
+
+  /** Põe o alvo onde o `fitBounds` deles lê, e troca o `bounds` que eles observam. */
+  private entregar(geojson: { bbox?: unknown }, destino: Retangulo): void {
     geojson.bbox = destino;
     this.estado.geojsonBounds = [...destino];
-    this.depoisDaAtualizacao(() => {
-      geojson.bbox = original;
-    });
-    return true;
   }
 
   private areaVisivel(): Retangulo | null {

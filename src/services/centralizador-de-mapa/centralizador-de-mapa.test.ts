@@ -11,7 +11,13 @@ import type { Retangulo } from './centralizador-de-mapa.types';
 const VISIVEL: Retangulo = [-40.4, -20.4, -40.2, -20.2];
 const TELA = { largura: 1000, altura: 600 };
 
-function montar(visivel: Retangulo | null = VISIVEL) {
+interface OpcoesDeMontagem {
+  /** O mapa já foi visto se movendo — o `watch` de `bounds` do Directus existe. */
+  pronto?: boolean;
+  visivel?: Retangulo | null;
+}
+
+function montar({ pronto = true, visivel = VISIVEL }: OpcoesDeMontagem = {}) {
   const bboxDaColecao: Retangulo = [-41, -21, -39, -19];
   const estado: Record<string, unknown> = {
     cameraOptions: visivel ? { bbox: [...visivel], zoom: 12 } : undefined,
@@ -19,13 +25,40 @@ function montar(visivel: Retangulo | null = VISIVEL) {
     geojsonBounds: undefined,
   };
   const pendentes: (() => void)[] = [];
-  const centralizador = new CentralizadorDoMapaDirectus(
-    estado,
-    () => TELA,
-    (tarefa) => pendentes.push(tarefa)
-  );
+  const repeticoes: { cancelada: boolean; intervalo: number; tarefa: () => void }[] = [];
+  const centralizador = new CentralizadorDoMapaDirectus(estado, () => TELA, {
+    depoisDaAtualizacao: (tarefa) => pendentes.push(tarefa),
+    repetir: (tarefa, intervalo) => {
+      const repeticao = { cancelada: false, intervalo, tarefa };
+      repeticoes.push(repeticao);
+      return () => {
+        repeticao.cancelada = true;
+      };
+    },
+  });
+  if (pronto) centralizador.aoMoverACamera();
   const bboxLido = () => (estado.geojson as { bbox: Retangulo }).bbox;
-  return { bboxDaColecao, bboxLido, centralizador, estado, pendentes };
+  /** Um tique de cada repetição ainda ativa — o intervalo passando. */
+  const tique = () => {
+    for (const repeticao of repeticoes) if (!repeticao.cancelada) repeticao.tarefa();
+  };
+  const ativas = () => repeticoes.filter((repeticao) => !repeticao.cancelada);
+  /** O `moveend` do Directus gravando a câmera nova no estado. */
+  const moverACamera = (bbox: Retangulo) => {
+    estado.cameraOptions = { bbox: [...bbox], zoom: 5 };
+    centralizador.aoMoverACamera();
+  };
+  return {
+    ativas,
+    bboxDaColecao,
+    bboxLido,
+    centralizador,
+    estado,
+    moverACamera,
+    pendentes,
+    repeticoes,
+    tique,
+  };
 }
 
 const ponto = (lng: number, lat: number) => ({ coordinates: [lng, lat], type: 'Point' });
@@ -162,8 +195,94 @@ describe('o que não se lê não mexe na câmera', () => {
   it('sem área visível conhecida, o ponto é enquadrado pelo próprio retângulo', () => {
     // antes do primeiro moveend não há cameraOptions.bbox para manter o zoom;
     // o fitBounds deles aplica o maxZoom 14
-    const { bboxLido, centralizador } = montar(null);
+    const { bboxLido, centralizador } = montar({ visivel: null });
     expect(centralizador.centralizar(ponto(-40.0, -20.0))).toBe(true);
     expect(bboxLido()).toEqual([-40.0, -20.0, -40.0, -20.0]);
+  });
+});
+
+describe('antes de o mapa do Directus terminar de carregar', () => {
+  /*
+   * O `watch` de `bounds` do Directus só é registrado no `load` do MapLibre —
+   * estilo e tiles baixados. Um clique que chega antes disso troca `bounds` sem
+   * ninguém escutando, e a mudança se perde. Não há sinal de "carregou" fora do
+   * componente; o que há é o `moveend`, que também só é ligado no `load`. Então,
+   * enquanto a câmera nunca foi vista mudando, insiste.
+   */
+  it('insiste: entrega um bounds novo a cada intervalo, com o mesmo retângulo', () => {
+    const { bboxLido, centralizador, estado, tique } = montar({ pronto: false });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    const primeiro = estado.geojsonBounds;
+    tique();
+    expect(estado.geojsonBounds).not.toBe(primeiro);
+    expect(estado.geojsonBounds).toEqual(primeiro);
+    expect(bboxLido()).toEqual(primeiro);
+  });
+
+  it('o bbox do alvo fica no geojson enquanto insiste — o fitBounds atrasado o lê', () => {
+    const { bboxDaColecao, bboxLido, centralizador, pendentes, tique } = montar({
+      pronto: false,
+    });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    for (const tarefa of pendentes) tarefa();
+    tique();
+    expect(bboxLido()).not.toEqual(bboxDaColecao);
+  });
+
+  it('a câmera mudar com o alvo na tela encerra a insistência e devolve o bbox', () => {
+    const { ativas, bboxDaColecao, bboxLido, centralizador, moverACamera } = montar({
+      pronto: false,
+    });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    expect(ativas()).toHaveLength(1);
+    moverACamera([-40.5, -20.5, -39.5, -19.5]);
+    expect(ativas()).toHaveLength(0);
+    expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('a câmera mudar sem o alvo na tela: o mapa agora escuta, então um bounds a mais e encerra', () => {
+    // o `fitBounds` inicial deles, dos dados, pode chegar antes do nosso
+    const { ativas, bboxDaColecao, bboxLido, centralizador, estado, moverACamera, pendentes } =
+      montar({ pronto: false });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    const antes = estado.geojsonBounds;
+    moverACamera([10, 10, 11, 11]);
+    expect(estado.geojsonBounds).not.toBe(antes);
+    expect(ativas()).toHaveLength(0);
+    for (const tarefa of pendentes) tarefa();
+    expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('desiste no prazo, e devolve o bbox da coleção', () => {
+    const { ativas, bboxDaColecao, bboxLido, centralizador, repeticoes, tique } = montar({
+      pronto: false,
+    });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    const [repeticao] = repeticoes;
+    const tiques = Math.ceil(10_000 / (repeticao?.intervalo ?? 1));
+    for (let i = 0; i < tiques; i++) tique();
+    expect(ativas()).toHaveLength(0);
+    expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('um alvo novo durante a insistência a substitui, e o bbox devolvido continua o da coleção', () => {
+    const { ativas, bboxDaColecao, bboxLido, centralizador, estado, moverACamera, tique } = montar({
+      pronto: false,
+    });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    centralizador.centralizar(ponto(-39.0, -19.5));
+    expect(ativas()).toHaveLength(1);
+    tique();
+    const [oeste, , leste] = estado.geojsonBounds as Retangulo;
+    expect((oeste + leste) / 2).toBeCloseTo(-39.0, 6);
+    moverACamera([-39.5, -20, -38.5, -19]);
+    expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('depois de a câmera mudar uma vez, o mapa está pronto: um bounds só, sem insistir', () => {
+    const { ativas, centralizador, moverACamera } = montar({ pronto: false });
+    moverACamera(VISIVEL);
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    expect(ativas()).toHaveLength(0);
   });
 });

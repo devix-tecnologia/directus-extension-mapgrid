@@ -18,13 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
-import {
-  CentralizadorDoMapaDirectus,
-  type ICentralizadorDeMapa,
-} from '../../../services/centralizador-de-mapa/index';
+import { CentralizadorDoMapaDirectus } from '../../../services/centralizador-de-mapa/index';
 import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 import { MESSAGES } from '../../../shared/messages';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
@@ -58,7 +55,7 @@ const painelDoMapa = ref<HTMLElement | null>(null);
  * estão em `CentralizadorDoMapaDirectus`, que é o único lugar a trocar quando o
  * Directus tiver suporte nativo.
  */
-const centralizador = computed<ICentralizadorDeMapa | null>(() => {
+const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
   const estado = props.mapa?.state;
   if (!estado) return null;
   return new CentralizadorDoMapaDirectus(
@@ -67,11 +64,26 @@ const centralizador = computed<ICentralizadorDeMapa | null>(() => {
       const painel = painelDoMapa.value;
       return painel ? { altura: painel.clientHeight, largura: painel.clientWidth } : null;
     },
-    (tarefa) => {
-      void nextTick(tarefa);
+    {
+      depoisDaAtualizacao: (tarefa) => {
+        void nextTick(tarefa);
+      },
+      repetir: (tarefa, intervaloMs) => {
+        const id = setInterval(tarefa, intervaloMs);
+        return () => clearInterval(id);
+      },
     }
   );
 });
+
+/*
+ * O `moveend` do mapa do Directus grava a câmera no estado; é o sinal de que o
+ * mapa terminou de carregar e já escuta o `bounds` que o centralizador entrega.
+ */
+watch(
+  () => props.mapa?.state?.cameraOptions,
+  () => centralizador.value?.aoMoverACamera()
+);
 
 /**
  * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
