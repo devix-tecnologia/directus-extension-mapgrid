@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
 import { DIRETORIO_DE_EVIDENCIAS, nomeDeEvidencia } from '../../scripts/captura-de-tela/index';
@@ -9,27 +9,80 @@ import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
 
 /**
- * A evidência do enquadramento pelo clique na linha, em vídeo.
+ * A evidência do enquadramento pelo clique na linha, em tira de quadros.
  *
  * O que a task-010 muda aqui é movimento: clicar numa linha leva o mapa até o
- * item. Uma imagem parada não distingue "o mapa voou até lá" de "o mapa já
- * estava lá", então a evidência é um vídeo. O "antes" mostra o mapa parado
- * enquanto as linhas são clicadas — o componente de mapa do Directus ignorava a
- * câmera escrita depois de montado; o "depois" mostra o voo, feito pelo
+ * item. Uma captura só não distingue "o mapa voou até lá" de "já estava lá",
+ * então a evidência é uma sequência: o painel do mapa fotografado parado em
+ * Brasília e depois de cada clique, lado a lado. O "antes" mostra quatro vezes
+ * Brasília — o componente de mapa do Directus ignorava a câmera escrita depois
+ * de montado; o "depois" mostra as quatro capitais, pelo
  * `CentralizadorDoMapaDirectus`.
  *
- * São dois vídeos, um por valor de `zoomOnClick`: desligado, o mapa centraliza
+ * Tira, e não vídeo nem GIF, por causa do teto de 300 KB por arquivo em
+ * `TASKS/assets` (`scripts/tamanho-de-evidencia`): o vídeo desta mesma
+ * sequência pesa 2 MB, a tira fica perto de 50 KB. O vídeo continua sendo
+ * gravado, em `test-results/video-evidencia/`, para quem precisar ver o voo.
+ *
+ * São dois casos, um por valor de `zoomOnClick`: desligado, o mapa centraliza
  * mantendo o zoom de cidade — é o caso da navegação entre leituras de placa
  * (task-381 do geohub); ligado, aproxima até o `maxZoom` do Directus.
  *
- * O nome segue a convenção das capturas (`nomeDeEvidencia`), com `.webm` no
- * lugar de `.png`, para o par aparecer lado a lado em `TASKS/assets/`.
+ * O nome segue a convenção das capturas (`nomeDeEvidencia`), com `.jpg` no
+ * lugar de `.png`.
  */
 
 const BRASILIA: [number, number] = [-47.9292, -15.7801];
 const ZOOM_DE_CIDADE = 9;
 const PERCURSO = ['Manaus', 'Recife', 'Curitiba'];
 const TELA = { width: 1600, height: 900 };
+/** Largura de cada quadro na tira: quatro lado a lado cabem numa tela comum. */
+const LARGURA_DO_QUADRO = 360;
+const QUALIDADE_DO_JPEG = 70;
+
+const INTERVALO_ENTRE_FOTOS_MS = 500;
+const PRAZO_PARA_O_MAPA_PARAR_MS = 20_000;
+
+const fotografarOMapa = (page: Page): Promise<Buffer> =>
+  page.locator('.mapgrid-pane--map').screenshot({ quality: QUALIDADE_DO_JPEG, type: 'jpeg' });
+
+/**
+ * O painel do mapa quando ele para: duas fotos seguidas iguais. Tempo fixo não
+ * serve — o voo do `fitBounds` do Directus dura mais de 4 s quando aproxima de
+ * zoom 9 a 14, e os tiles do destino ainda chegam depois dele (medido: com
+ * espera de 4 s, o quadro saía no meio do voo, borrado).
+ */
+async function fotografarOMapaParado(page: Page): Promise<Buffer> {
+  const prazo = Date.now() + PRAZO_PARA_O_MAPA_PARAR_MS;
+  let anterior = await fotografarOMapa(page);
+  while (Date.now() < prazo) {
+    await page.waitForTimeout(INTERVALO_ENTRE_FOTOS_MS);
+    const atual = await fotografarOMapa(page);
+    if (atual.equals(anterior)) return atual;
+    anterior = atual;
+  }
+  throw new Error(`O mapa não parou em ${PRAZO_PARA_O_MAPA_PARAR_MS / 1000} s`);
+}
+
+/**
+ * Junta os quadros numa tira, desenhada numa página em branco do próprio
+ * navegador — sem depender de ferramenta de imagem no container.
+ */
+async function montarTira(page: Page, quadros: Buffer[]): Promise<Buffer> {
+  const imagens = quadros
+    .map((q) => `<img src="data:image/jpeg;base64,${q.toString('base64')}">`)
+    .join('');
+  // inline-flex com align-items: flex-start — sem isso o flex estica cada
+  // quadro até a altura da página, e a tira sai deformada
+  await page.setContent(
+    `<style>body{margin:0;background:#fff}` +
+      `#tira{display:inline-flex;align-items:flex-start;gap:4px}` +
+      `img{width:${LARGURA_DO_QUADRO}px;height:auto;flex:none}</style>` +
+      `<div id="tira">${imagens}</div>`
+  );
+  await page.waitForFunction(() => [...document.images].every((img) => img.complete));
+  return page.locator('#tira').screenshot({ quality: QUALIDADE_DO_JPEG, type: 'jpeg' });
+}
 
 const CASOS = [
   { rotulo: 'enquadramento-mantendo-o-zoom', zoomOnClick: false },
@@ -46,7 +99,7 @@ const evidencia = (rotulo: string): string | undefined => {
     );
   }
   const png = nomeDeEvidencia({ momento, rotulo, task });
-  return `${DIRETORIO_DE_EVIDENCIAS}/${png.replace(/\.png$/, '.webm')}`;
+  return `${DIRETORIO_DE_EVIDENCIAS}/${png.replace(/\.png$/, '.jpg')}`;
 };
 
 async function login(page: Page): Promise<void> {
@@ -85,20 +138,32 @@ for (const { rotulo, zoomOnClick } of CASOS) {
     await expect(page.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(2_000);
 
+    const quadros = [await fotografarOMapaParado(page)];
     for (const cidade of PERCURSO) {
       const linha = linhaDe(page, cidade);
       await expect(linha).toBeVisible({ timeout: 30_000 });
       await linha.click();
-      // o fitBounds do Directus voa com speed 1.3: tempo de a animação terminar
-      await page.waitForTimeout(4_000);
+      // dá tempo de o voo começar antes de procurar o mapa parado
+      await page.waitForTimeout(1_000);
+      quadros.push(await fotografarOMapaParado(page));
     }
 
-    const video = page.video();
+    // A evidência não pode mentir: um "depois" em que o mapa não saiu do lugar
+    // é falha, não imagem. Aconteceu — o load do MapLibre às vezes atrasa além
+    // do prazo do centralizador, e a tira saía com quatro Brasílias.
+    if (process.env.EVIDENCE_MOMENT === 'depois') {
+      for (let i = 1; i < quadros.length; i++) {
+        expect(
+          quadros[i]?.equals(quadros[i - 1] as Buffer),
+          `o mapa não se moveu para ${PERCURSO[i - 1]}`
+        ).toBe(false);
+      }
+    }
+
+    const tira = await montarTira(await contexto.newPage(), quadros);
     await contexto.close();
-    const gravado = await video?.path();
-    if (!gravado) throw new Error('O Playwright não entregou o vídeo gravado');
 
     mkdirSync(dirname(caminho), { recursive: true });
-    copyFileSync(gravado, caminho);
+    writeFileSync(caminho, tira);
   });
 }
