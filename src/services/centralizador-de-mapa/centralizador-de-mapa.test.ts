@@ -6,12 +6,13 @@ const VISIVEL: Retangulo = [-40.4, -20.4, -40.2, -20.2];
 const TELA = { largura: 1000, altura: 600 };
 
 interface OpcoesDeMontagem {
+  itens?: Record<string, unknown>[];
   pronto?: boolean;
   visivel?: Retangulo | null;
   camera?: Record<string, unknown>;
 }
 
-function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem = {}) {
+function montar({ camera, itens = [], pronto = true, visivel = VISIVEL }: OpcoesDeMontagem = {}) {
   const bboxDaColecao: Retangulo = [-41, -21, -39, -19];
   const estado: Record<string, unknown> = {
     cameraOptions: camera ?? (visivel ? { bbox: [...visivel], zoom: 12 } : undefined),
@@ -21,16 +22,21 @@ function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem =
   };
   const pendentes: (() => void)[] = [];
   const repeticoes: { cancelada: boolean; intervalo: number; tarefa: () => void }[] = [];
-  const centralizador = new CentralizadorDoMapaDirectus(estado, () => TELA, {
-    depoisDaAtualizacao: (tarefa) => pendentes.push(tarefa),
-    repetir: (tarefa, intervalo) => {
-      const repeticao = { cancelada: false, intervalo, tarefa };
-      repeticoes.push(repeticao);
-      return () => {
-        repeticao.cancelada = true;
-      };
+  const centralizador = new CentralizadorDoMapaDirectus(
+    estado,
+    () => TELA,
+    {
+      depoisDaAtualizacao: (tarefa) => pendentes.push(tarefa),
+      repetir: (tarefa, intervalo) => {
+        const repeticao = { cancelada: false, intervalo, tarefa };
+        repeticoes.push(repeticao);
+        return () => {
+          repeticao.cancelada = true;
+        };
+      },
     },
-  });
+    () => itens
+  );
   if (pronto) centralizador.aoMoverACamera();
   const bboxLido = () => (estado.geojson as { bbox: Retangulo }).bbox;
   const tique = () => {
@@ -372,5 +378,72 @@ describe('centralizar um item pela feature que o Directus montou', () => {
     delete estado.featureId;
 
     expect(centralizador.centralizarItem({ codigo: 2 })).toBe(false);
+  });
+});
+
+describe('geometria nativa: o mapa do Directus só tem o que está na tela', () => {
+  const RIO_SP = {
+    coordinates: [
+      [-43.17, -22.9],
+      [-46.63, -23.55],
+    ],
+    type: 'LineString',
+  };
+  const MANAUS_BELEM = {
+    coordinates: [
+      [-60.02, -3.11],
+      [-48.5, -1.45],
+    ],
+    type: 'LineString',
+  };
+  const itens = [
+    { id: 1, trajeto: RIO_SP },
+    { id: 2, trajeto: MANAUS_BELEM },
+  ];
+
+  function nativo() {
+    const montagem = montar({ itens });
+    Object.assign(montagem.estado, {
+      featureId: 'id',
+      geometryField: 'trajeto',
+      isGeometryFieldNative: true,
+    });
+    // o layout só buscou o que cai na área visível: Rio–SP
+    (montagem.estado.geojson as { features: unknown[] }).features = [
+      { geometry: RIO_SP, properties: { id: 1 }, type: 'Feature' },
+    ];
+    return montagem;
+  }
+
+  it('reenquadrar enquadra os itens da grade, e não só o que o mapa buscou', () => {
+    const { bboxLido, centralizador, estado } = nativo();
+
+    centralizador.enquadrarTudo();
+
+    expect(bboxLido()).toEqual([-60.02, -23.55, -43.17, -1.45]);
+    expect(estado.fitDataBounds).not.toHaveBeenCalled();
+  });
+
+  it('o item fora da tela não tem feature, mas a geometria nativa já vem em GeoJSON no próprio item', () => {
+    const { bboxLido, centralizador } = nativo();
+
+    expect(centralizador.centralizarItem(itens[1] as Record<string, unknown>)).toBe(true);
+    expect(bboxLido()).toEqual([-60.02, -3.11, -48.5, -1.45]);
+  });
+
+  it('sem geometria nativa, o item sem feature continua sem mexer na câmera — o campo cru pode ser csv', () => {
+    const { centralizador, estado } = nativo();
+    estado.isGeometryFieldNative = false;
+
+    expect(centralizador.centralizarItem({ id: 2, trajeto: '-60.02,-3.11' })).toBe(false);
+  });
+
+  it('sem geometria nativa, reenquadrar segue sendo o fitDataBounds do Directus', () => {
+    const { centralizador, estado } = nativo();
+    estado.isGeometryFieldNative = false;
+
+    centralizador.enquadrarTudo();
+
+    expect(estado.fitDataBounds).toHaveBeenCalledOnce();
   });
 });

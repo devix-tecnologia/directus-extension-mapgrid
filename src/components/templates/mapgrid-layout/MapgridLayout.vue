@@ -57,7 +57,8 @@ const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
         const id = setInterval(tarefa, intervaloMs);
         return () => clearInterval(id);
       },
-    }
+    },
+    () => (props.grade?.state.items as Record<string, unknown>[] | undefined) ?? []
   );
 });
 

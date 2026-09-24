@@ -40,6 +40,7 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
   private readonly estado: Record<string, unknown>;
   private readonly tamanhoDaTela: () => TamanhoDaTela | null;
   private readonly agenda: AgendaDoCentralizador;
+  private readonly itensDaGrade: () => readonly Record<string, unknown>[];
   private mapaPronto = false;
   private insistencia: Insistencia | null = null;
 
@@ -47,15 +48,19 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
    * @param estado o estado do layout de mapa embutido (`LayoutEmbutido.state`)
    * @param tamanhoDaTela o tamanho da área do mapa, para descontar o padding
    * @param agenda o relógio — `nextTick` e `setInterval` em produção
+   * @param itensDaGrade os itens da página da grade, que não são filtrados pela
+   *   área visível como os do mapa são com geometria nativa
    */
   constructor(
     estado: Record<string, unknown>,
     tamanhoDaTela: () => TamanhoDaTela | null,
-    agenda: AgendaDoCentralizador
+    agenda: AgendaDoCentralizador,
+    itensDaGrade: () => readonly Record<string, unknown>[] = () => []
   ) {
     this.estado = estado;
     this.tamanhoDaTela = tamanhoDaTela;
     this.agenda = agenda;
+    this.itensDaGrade = itensDaGrade;
   }
 
   centralizar(geometria: unknown, opcoes: OpcoesDeCentralizacao = {}): boolean {
@@ -132,12 +137,26 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
         (candidata as { properties?: Record<string, unknown> } | null)?.properties?.[chave] ===
         item[chave]
     ) as { geometry?: unknown } | undefined;
-    return feature ? this.centralizar(feature.geometry, opcoes) : false;
+    if (feature) return this.centralizar(feature.geometry, opcoes);
+    const campo = this.campoDeGeometriaNativa();
+    return campo ? this.centralizar(item[campo], opcoes) : false;
   }
 
   enquadrarTudo(): void {
     this.encerrarInsistencia();
+    const campo = this.campoDeGeometriaNativa();
+    const pontos = campo ? this.itensDaGrade().flatMap((item) => this.pontosDe(item[campo])) : [];
+    if (pontos.length > 0) {
+      this.centralizar({ coordinates: pontos, type: 'MultiPoint' }, { somenteSeFora: false });
+      return;
+    }
     (this.estado.fitDataBounds as (() => void) | undefined)?.();
+  }
+
+  // com geometria nativa o Directus só busca os itens da área visível
+  private campoDeGeometriaNativa(): string | null {
+    const campo = this.estado.geometryField;
+    return this.estado.isGeometryFieldNative === true && typeof campo === 'string' ? campo : null;
   }
 
   private encerrarInsistencia(): void {

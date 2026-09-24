@@ -11,6 +11,7 @@ import { esperarOMapGrid, linhaDe, login } from './helpers/mapgrid-page';
 type Retangulo = [number, number, number, number];
 
 const RIO_SAO_PAULO: Retangulo = [-46.6333, -23.5505, -43.1729, -22.9068];
+const MANAUS_BELEM: Retangulo = [-60.0255, -3.119, -48.5044, -1.4558];
 const COLECAO_INTEIRA: Retangulo = [-60.0255, -23.5505, -43.1729, -1.4558];
 
 const contem = (externo: Retangulo, interno: Retangulo): boolean =>
@@ -75,6 +76,32 @@ test.describe('MapGrid — trajetos com geometria nativa', () => {
         async () => {
           const visivel = await areaVisivel();
           return visivel !== null && contem(visivel, COLECAO_INTEIRA);
+        },
+        { timeout: 30_000 }
+      )
+      .toBe(true);
+  });
+
+  test('clicar numa linha cujo trajeto está fora da tela leva o mapa até ele', async ({ page }) => {
+    // com geometria nativa o Directus só busca o que cai na área visível
+    await linhaDe(page, 'Rio → São Paulo').click();
+    await expect
+      .poll(
+        async () => {
+          const visivel = await areaVisivel();
+          return visivel !== null && !contem(visivel, MANAUS_BELEM);
+        },
+        { timeout: 30_000 }
+      )
+      .toBe(true);
+
+    await linhaDe(page, 'Manaus → Belém').click();
+
+    await expect
+      .poll(
+        async () => {
+          const visivel = await areaVisivel();
+          return visivel !== null && contem(visivel, MANAUS_BELEM);
         },
         { timeout: 30_000 }
       )
