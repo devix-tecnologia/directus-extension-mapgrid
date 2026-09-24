@@ -47,7 +47,9 @@ class RodadaAutenticada {
 
     console.log('Cole o token do `claude setup-token` (não aparece na tela) e tecle Enter.');
     for (let tentativa = 1; tentativa <= 3; tentativa++) {
-      const token = this.token.normalizar(await this.lerEscondido());
+      const colado = await this.lerEscondido();
+      const token = this.token.normalizar(colado);
+      console.log(`Colado: ${this.descrever(colado)}.`);
       if (!token) {
         console.error('Isso não é um token do `claude setup-token` (sk-ant-oat01-…). Tente de novo.');
         continue;
@@ -68,7 +70,22 @@ class RodadaAutenticada {
     const saida = `${conferencia.stdout ?? ''}${conferencia.stderr ?? ''}`;
     const ok = conferencia.status === 0 && !/401|invalid bearer|not logged in|authenticate/i.test(saida);
     console.log(ok ? 'aceito.' : 'recusado.');
+    if (!ok) {
+      const motivo = saida.split(token).join('<token>').trim().split('\n')[0] || `saída ${conferencia.status}`;
+      console.error(`  o claude disse: ${motivo.slice(0, 200)}`);
+    }
     return ok;
+  }
+
+  /** O que foi colado, sem revelar o token: prefixo, tamanho e o que não deveria estar ali. */
+  private descrever(colado: string): string {
+    const limpo = colado.replace(/\s+/g, '');
+    const estranhos = [...new Set(limpo.replace(/[\w-]/g, ''))].join('');
+    return [
+      `começa com "${limpo.slice(0, 13)}"`,
+      `${limpo.length} caracteres`,
+      estranhos ? `com caracteres inesperados: ${JSON.stringify(estranhos)}` : 'sem caracteres inesperados',
+    ].join(', ');
   }
 
   private lerEscondido(): Promise<string> {
