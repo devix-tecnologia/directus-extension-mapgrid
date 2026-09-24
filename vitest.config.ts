@@ -20,6 +20,7 @@ export default defineConfig({
       // novo — a suíte rodaria sobre uma cópia sua, com o dobro dos testes e
       // nenhum aviso de que isso aconteceu.
       '.sandcastle/fila-de-tarefas/*.test.ts',
+      '.sandcastle/credencial/*.test.ts',
     ],
     coverage: {
       provider: 'v8',
