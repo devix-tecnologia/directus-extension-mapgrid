@@ -40,6 +40,11 @@ direções:
   handlers e escrevendo nas chaves que eles leem.
 - **O Storybook deixou de alcançar grade e mapa**, porque lá o SDK é um mock nosso
   e o registro de layouts não existe. O comportamento desta task se prova no e2e.
+- **A câmera não se move pelo `cameraOptions`.** O componente de mapa do
+  Directus só lê a câmera ao montar. Quem move o mapa é o
+  `CentralizadorDoMapaDirectus` (`src/services/centralizador-de-mapa/`), atrás
+  do contrato `ICentralizadorDeMapa` — o contorno documentado dessa limitação.
+  Revisado em 2026-09-24, depois de a task-010 fechar.
 
 Conferido na fonte do Directus 10.13.1 (`app/src/layouts/tabular/` e
 `app/src/layouts/map/`), a versão que o e2e roda.
@@ -54,6 +59,10 @@ Conferido na fonte do Directus 10.13.1 (`app/src/layouts/tabular/` e
 - **grade e mapa (layouts do Directus)** — mostram o registro atual porque o
   template escreve no estado deles, não porque recebem prop nossa. Nenhum dos
   dois decide qual é o próximo.
+- **câmera** — o template pede ao `ICentralizadorDeMapa`, nunca ao estado do
+  mapa do Directus direto. É o começo do contrato de mapa da
+  [task-011](task-011-o-mapgrid-aceita-qualquer-mapa-atras-de-um-contrato-proprio.md),
+  e o que esta task acrescentar à câmera entra por ele.
 
 ## O que os layouts do Directus já dão, e o que falta
 
@@ -63,10 +72,10 @@ Conferido na fonte do Directus 10.13.1 (`app/src/layouts/tabular/` e
 | Ordem | O tabular grava `sort` com um padrão (`defaultSort`: o campo de sort da coleção ou a chave primária) | Sempre há uma ordem. Mas ordem pela chave primária não é ordem temporal — ver pré-requisitos |
 | Tamanho da página | O tabular força o `limit` ao tamanho de página do `usePageSize` (padrão 25); o mapa, sozinho, usaria 1000 | Com a consulta compartilhada, conferir se o mapa mostra só a página da grade ou mais. Isso decide se "próximo" pode sair do que está desenhado |
 | Balão | O layout de mapa mostra um `itemPopup` no **hover**, com o `displayTemplate` renderizado pelo template do Directus | A injeção de HTML do `setHTML` antigo não existe mais. Não há onde pôr botão dentro do balão |
-| Clique na linha | Trocado pelo nosso `onRowClick`, que enquadra o item em vez de navegar | É uma das duas portas de entrada para "registro atual" |
-| Clique no ponto | O `handleClick` deles faz `router.push` para a tela do item quando não está em modo de seleção | **Hoje clicar num ponto sai do MapGrid.** Precisa ser trocado como o `onRowClick` foi |
+| Clique na linha | Trocado pelo nosso `onRowClick`, que leva o mapa ao item pelo centralizador | É uma das duas portas de entrada para "registro atual" |
+| Clique no ponto | Trocado na task-010: em vez do `router.push` deles, marca o item na `selection` | Não sai mais do MapGrid, mas a `selection` arma as ações em lote. Passa a definir o registro atual |
 | Linha em destaque | O `v-table` não tem "linha atual"; o único destaque visível é a `selection`, das caixas de marcação | Destacar sem usar `selection`, porque ela aciona as ações em lote (apagar, editar) |
-| Câmera | `cameraOptions` (centro, zoom e `bbox` visível) no estado do mapa, gravado em `layoutOptions.map` | É por aqui que o template move a câmera e lê os limites visíveis para o "seguir" |
+| Câmera | `cameraOptions` (centro, zoom e `bbox` visível) no estado do mapa, gravado em `layoutOptions.map` a cada `moveend` | Serve para **ler** a área visível. Escrever nele não move o mapa; mover é com o centralizador |
 
 ## Pré-requisitos de projeto
 
@@ -85,8 +94,9 @@ Directus. Escolher e registrar o motivo.
 
 **O controle de câmera absorve parte do `zoomOnClick`.** A opção booleana, que
 continua nossa, mistura duas coisas: se a câmera se move e se ela também
-aproxima. Hoje o `enquadrarItem` sempre move e, com `zoomOnClick`, aplica zoom
-fixo. Com o controle de três estados, `zoomOnClick` deve deixar de decidir
+aproxima. Hoje o `enquadrarItem` sempre move (`somenteSeFora: false`) e, com
+`zoomOnClick`, aproxima (`aproximar: true`, até o `maxZoom` 14 do Directus). Com
+o controle de três estados, `zoomOnClick` deve deixar de decidir
 movimento e passar a significar apenas "aproximar ao focar", que é uma escolha
 ortogonal.
 
@@ -146,14 +156,15 @@ que cicla entre os três estados, na `MapToolbar`.
 
 ### Fase 2: o registro atual sobe para o template
 - [ ] Um lugar só para "qual é o registro atual", no template
-- [ ] Trocar o `handleClick` do mapa como o `onRowClick` foi trocado: clicar no
-      ponto define o registro atual, em vez de navegar para a tela do item
+- [ ] Clicar no ponto define o registro atual. O `handleClick` do mapa já foi
+      trocado na task-010 e deixou de navegar para a tela do item, mas hoje
+      marca a `selection` — que arma as ações em lote
 - [ ] Clicar na linha e clicar no ponto passam a ser duas formas de definir o
       mesmo estado, e não dois caminhos separados
 - [ ] A grade destaca e rola até a linha do registro atual, pela forma decidida
       nos pré-requisitos, sem usar `selection`
-- [ ] O mapa enquadra o registro atual pelo `cameraOptions`, respeitando o
-      acompanhamento de câmera da Fase 6
+- [ ] O mapa enquadra o registro atual pelo `ICentralizadorDeMapa`,
+      respeitando o acompanhamento de câmera da Fase 6
 
 ### Fase 3: navegação manual
 - [ ] Os quatro controles de passo na `MapToolbar`, com a borda de cada um
@@ -188,12 +199,15 @@ que cicla entre os três estados, na `MapToolbar`.
       reprodução, ou buscar a próxima página antes de precisar dela
 
 ### Fase 6: acompanhamento da câmera
-- [ ] Módulo puro que, dado o estado, o item e os limites visíveis
-      (`cameraOptions.bbox`), decide se a câmera se move e para onde — `off` não
-      move, `follow` move só fora dos limites (o `isOutsideBounds` de
-      `src/services/geo/map-camera.ts` continua valendo), `center` move sempre
-- [ ] Para item que não é ponto, "onde está o item" é o bbox da geometria, e não o
-      primeiro vértice — mesmo cálculo da Fase 2 da task-007, que deve vir antes
+- [ ] Traduzir o estado para o centralizador: `off` não chama, `follow` chama
+      `centralizar(item)` (o `somenteSeFora: true` padrão, que já compara com o
+      `cameraOptions.bbox`), `center` chama com `somenteSeFora: false`. O
+      cálculo de "fora da área visível" já existe e está testado no
+      centralizador; o `isOutsideBounds` que esta fase citava saiu com
+      `src/services/geo/`
+- [x] Para item que não é ponto, "onde está o item" é o bbox da geometria, e não o
+      primeiro vértice. Já feito: o centralizador enquadra linha, polígono e
+      `Multi*` pelo bbox (task-010)
 - [ ] Controle único ciclando entre os três estados, com ícone e rótulo por estado
 - [ ] Persistir o estado nas opções do layout, com `follow` como padrão
 - [ ] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
@@ -207,12 +221,14 @@ Directus e uma nossa, só com o `zoomOnClick`. O aperto que motivava esta fase �
 títulos quebrando em `Popup Pin Map` e `Table Columns` — não existe mais, e o
 centro do mapa deixou de ser opção digitada: o mapa deles grava a câmera sozinho.
 
-- [ ] Decidir onde mora cada grupo: passo e reprodução, acompanhamento de câmera.
-      A paginação já mora no rodapé da grade
-- [ ] A `MapToolbar` fica sobre o componente deles, por posicionamento absoluto.
-      O `ButtonControl` do Directus (`app/src/utils/geometry/controls.ts`) exigiria
-      acesso à instância do MapLibre dentro do layout deles, que não é exposta —
-      confirmar antes de descartar
+- [x] Decidir onde mora cada grupo: passo e reprodução, acompanhamento de câmera.
+      Decidido na task-010 ("A `MapToolbar` é do MapGrid"): os dois moram na
+      `MapToolbar`, que é do MapGrid e fala com o contrato do mapa. A paginação
+      segue no rodapé da grade
+- [x] A `MapToolbar` fica sobre o componente deles, por posicionamento absoluto.
+      O `ButtonControl` do Directus exigiria a instância do MapLibre, que não é
+      exposta — e prenderia os controles a um mapa só, contra a direção da
+      task-011
 
 ### Fase 7: verificação
 
@@ -244,9 +260,9 @@ estado do mapa, ou pelo que ele grava em `layoutOptions.map` do preset.
 
 ## Notes
 
-Depende da task-010 estar integrada: tudo aqui é feito sobre a composição. E a
-Fase 6 depende da Fase 2 da task-007 (enquadrar por bbox para geometria que não é
-ponto), que é o caso do trajeto como `LineString`.
+A task-010 está integrada (`develop` em `c513b29`), e o enquadramento por bbox
+que a Fase 6 esperava da task-007 veio com o centralizador. Nada mais bloqueia
+esta task.
 
 Todos os e2e dividem o mesmo preset do admin, e por isso a suíte roda com um
 worker só (`playwright.config.ts`). Um e2e desta task que grave `page`, `sort`
