@@ -89,7 +89,9 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
 
     const [unico] = pontos;
     const destino =
-      pontos.length === 1 && unico ? this.retanguloQueMantemOZoom(unico, visivel) : alvo;
+      pontos.length === 1 && unico && !opcoes.aproximar
+        ? this.retanguloQueMantemOZoom(unico, visivel)
+        : alvo;
     const original = geojson.bbox;
     geojson.bbox = destino;
     this.estado.geojsonBounds = [...destino];

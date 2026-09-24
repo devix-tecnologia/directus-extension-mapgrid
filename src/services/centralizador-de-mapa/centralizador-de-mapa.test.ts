@@ -93,6 +93,27 @@ describe('centralizar um ponto', () => {
   });
 });
 
+describe('aproximar ao centralizar', () => {
+  it('com aproximar, o ponto vira o próprio retângulo e o fitBounds do Directus aproxima até o maxZoom dele', () => {
+    const { bboxLido, centralizador } = montar();
+    centralizador.centralizar(ponto(-40.0, -20.0), { aproximar: true, somenteSeFora: false });
+    expect(bboxLido()).toEqual([-40.0, -20.0, -40.0, -20.0]);
+  });
+
+  it('aproximar não muda como uma linha é enquadrada', () => {
+    const { bboxLido, centralizador } = montar();
+    const linha = {
+      coordinates: [
+        [-40.1, -20.1],
+        [-39.7, -19.8],
+      ],
+      type: 'LineString',
+    };
+    centralizador.centralizar(linha, { aproximar: true });
+    expect(bboxLido()).toEqual([-40.1, -20.1, -39.7, -19.8]);
+  });
+});
+
 describe('centralizar o que não é ponto', () => {
   it('uma linha é enquadrada pelo próprio retângulo, e não pelo primeiro vértice', () => {
     const { bboxLido, centralizador } = montar();
