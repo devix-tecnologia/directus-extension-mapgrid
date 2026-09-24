@@ -148,30 +148,3 @@ export const fieldsFor = (kindId: string = DEFAULT_KIND_ID): CollectionFieldSumm
     meta: field === kind.geolocationField ? { interface: 'map' } : null,
   }));
 };
-
-/** The preset options this collection stands for, ready to spread into props. */
-export const layoutOptionsFor = (kindId: string = DEFAULT_KIND_ID) => {
-  const kind = mappableKind(kindId);
-  const [coluna1, coluna2, coluna3, coluna4, coluna5] = kind.columns;
-
-  return {
-    title: kind.titleTemplate,
-    geolocation: kind.geolocationField,
-    zoomOnClick: false,
-    ...kind.camera,
-    fields: [...kind.columns],
-    // still emitted so a fixture can stand in for a preset written before
-    // `fields` existed, which is what the contract migration reads
-    coluna1,
-    coluna2,
-    coluna3,
-    coluna4,
-    coluna5,
-  };
-};
-
-/** The default collection's items. A shortcut for mocks that only need a list. */
-export const mockGeoItems: GeoItem[] = mappableKind(DEFAULT_KIND_ID).items;
-
-/** The default collection's headers. */
-export const mockHeaders: Header[] = headersFor();

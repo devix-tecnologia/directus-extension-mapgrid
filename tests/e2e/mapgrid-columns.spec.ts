@@ -12,7 +12,6 @@
 import { expect, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
 import {
-  ensureLegacyMapGridPreset,
   ensureMapGridPreset,
   readMapGridPresetOptions,
   readMapGridPresetQuery,
@@ -91,30 +90,6 @@ test.describe('MapGrid columns', () => {
    */
   test.afterAll(async () => {
     await ensureMapGridPreset();
-  });
-
-  /*
-   * A migração do preset numerado (`coluna1..5`) para `layoutQuery.fields` saiu
-   * do código na task-010: o `normalizeLayoutOptions` continua em
-   * `src/contract/`, mas nada em `src/index.ts` o chama, e a grade embutida lê
-   * `fields` direto da consulta. Um preset da versão antiga não perde dados —
-   * as chaves seguem no `layout_options` —, mas as colunas dele deixam de ser
-   * honradas: a grade cai no padrão do layout tabular.
-   *
-   * Este teste fica parado, e não apagado, porque a decisão é de produto e não
-   * de teste: ou a migração volta, e ele é a prova dela, ou ela é abandonada de
-   * propósito, e aí ele sai junto com o `normalizeLayoutOptions`. Está
-   * registrado na Fase 3 da task-010.
-   */
-  test.fixme('a preset written before `fields` existed keeps showing its columns', async ({
-    page,
-  }) => {
-    await ensureLegacyMapGridPreset();
-    await login(page);
-    await openCollection(page);
-
-    // coluna1 and coluna3 were set, coluna2 was blank: the gap closes
-    expect(await colunasVisiveis(page)).toEqual(['name', 'status']);
   });
 
   test('the grid takes more columns than the five the old format could hold', async ({ page }) => {
