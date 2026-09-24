@@ -1,6 +1,6 @@
 # Task 007 — Honrar a configuração de mapa do Directus
 
-Status: pending
+Status: in-progress
 Type: feat
 Assignee: A definir
 Difficulty: 2
