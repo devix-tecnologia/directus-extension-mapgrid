@@ -68,13 +68,20 @@ class RodadaAutenticada {
       timeout: 90_000,
     });
     const saida = `${conferencia.stdout ?? ''}${conferencia.stderr ?? ''}`;
-    const ok = conferencia.status === 0 && !/401|invalid bearer|not logged in|authenticate/i.test(saida);
-    console.log(ok ? 'aceito.' : 'recusado.');
-    if (!ok) {
-      const motivo = saida.split(token).join('<token>').trim().split('\n')[0] || `saída ${conferencia.status}`;
+    const motivo = saida.split(token).join('<token>').trim().split('\n')[0] || `saída ${conferencia.status}`;
+    if (/\b401\b|invalid bearer|not logged in|access token is invalid/i.test(saida)) {
+      console.log('recusado.');
       console.error(`  o claude disse: ${motivo.slice(0, 200)}`);
+      return false;
     }
-    return ok;
+    if (conferencia.status === 0) {
+      console.log('aceito.');
+      return true;
+    }
+    // falha que não é de autenticação (ex.: o claude do host desatualizado): o token passou
+    console.log('sem recusa de autenticação.');
+    console.warn(`  aviso: a conferência falhou por outro motivo — ${motivo.slice(0, 200)}`);
+    return true;
   }
 
   /** O que foi colado, sem revelar o token: prefixo, tamanho e o que não deveria estar ali. */
