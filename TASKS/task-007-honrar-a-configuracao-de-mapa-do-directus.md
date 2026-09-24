@@ -1,6 +1,6 @@
 # Task 007 — Honrar a configuração de mapa do Directus
 
-Status: in-progress
+Status: done
 Type: feat
 Assignee: sidartaveloso
 Difficulty: 2
