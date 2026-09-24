@@ -179,17 +179,17 @@ test.describe('MapGrid — a composição', () => {
     const proporcoes = await page.evaluate((secao) => {
       const painel = document.querySelector('.layout-options');
       const detalhe = document.querySelector(secao);
-      const seletor = document.querySelector(`${secao} .v-select`);
-      if (!painel || !detalhe || !seletor) return null;
+      const campo = document.querySelector(`${secao} .field`);
+      if (!painel || !detalhe || !campo) return null;
       const largura = painel.getBoundingClientRect().width;
       return {
         secao: detalhe.getBoundingClientRect().width / largura,
-        seletor: seletor.getBoundingClientRect().width / largura,
+        campo: campo.getBoundingClientRect().width / largura,
       };
     }, OPCOES_DO_MAPA);
 
     expect(proporcoes).not.toBeNull();
     expect(proporcoes?.secao).toBeGreaterThan(0.95);
-    expect(proporcoes?.seletor).toBeGreaterThan(0.9);
+    expect(proporcoes?.campo).toBeGreaterThan(0.9);
   });
 });
