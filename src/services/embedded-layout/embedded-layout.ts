@@ -94,7 +94,9 @@ function relatarContrato(embutido: LayoutEmbutido): void {
  * - `onRowClick` e `handleClick` são as duas chaves que o
  *   `MapgridLayout.vue` **sobrescreve**: some a chave, some a sobrescrita, e o
  *   clique volta a levar a pessoa para fora do MapGrid;
- * - `geometryField`, `geojson`, `cameraOptions` e `fitDataBounds` são o mapa.
+ * - `geojson`, `geojsonBounds`, `geometryField`, `featureId`,
+ *   `isGeometryFieldNative`, `cameraOptions` e `fitDataBounds` são o que o
+ *   `CentralizadorDoMapaDirectus` lê e escreve no mapa.
  *
  * Os valores vêm da medição de 2026-09-24 contra o Directus 10.13.1, conferida
  * pelo `tests/e2e/mapgrid-contrato.spec.ts` — é lá que o Directus de verdade
@@ -117,7 +119,10 @@ export const CONTRATO_DOS_EMBUTIDOS = {
   map: [
     'items',
     'geojson',
+    'geojsonBounds',
     'geometryField',
+    'featureId',
+    'isGeometryFieldNative',
     'cameraOptions',
     'fitDataBounds',
     'handleClick',

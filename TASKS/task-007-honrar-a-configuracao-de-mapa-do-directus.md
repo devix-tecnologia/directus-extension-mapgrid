@@ -56,17 +56,19 @@ direta não serve.
 ## Tasks
 
 ### Fase 1: provar que a configuração do projeto chega
-- [ ] e2e contra um Directus com um basemap configurado em Project Settings
+- [x] e2e contra um Directus com um basemap configurado em Project Settings
       (além do padrão), conferindo que o mapa do MapGrid oferece e usa esse
-      basemap
-- [ ] e2e trocando o basemap pelo painel do MapGrid e conferindo que outro mapa
+      basemap — `tests/e2e/mapgrid-basemap.spec.ts`, com os tiles servidos por
+      um host que o teste intercepta
+- [x] e2e trocando o basemap pelo painel do MapGrid e conferindo que outro mapa
       do app (o layout de mapa puro da mesma coleção) passa a usar o mesmo, o
-      que prova que a escolha é a do app e não uma cópia nossa
-- [ ] Conferir se a atribuição do basemap aparece no canto do mapa, que é
-      exigência de licença da maioria dos provedores
-- [ ] Conferir se o botão de reenquadrar da `MapToolbar` enquadra na hora com
-      geometria nativa, já que o `fitDataBounds` deles só marca o pedido para a
-      próxima busca; se não enquadrar, disparar a busca ou calcular o bbox aqui
+      que prova que a escolha é a do app e não uma cópia nossa. Provado pela
+      atribuição, e não pela contagem de tiles: o segundo mapa os tira do cache
+- [x] Conferir se a atribuição do basemap aparece no canto do mapa, que é
+      exigência de licença da maioria dos provedores. Aparece
+- [ ] Reenquadrar e clique numa linha fora da tela com geometria nativa — adiado: a entrega depois da busca não chega ao mapa do Directus, ver "Geometria nativa", abaixo
+      Medido: não enquadra. A busca da geometria pela chave já existe e está
+      testada; os dois e2e estão em `test.fixme` em `mapgrid-trajetos.spec.ts`
 
 ### Fase 2: o clique na linha para qualquer geometria
 - [x] Extrair o cálculo de "para onde a câmera vai" do `enquadrarItem` para um
@@ -76,17 +78,46 @@ direta não serve.
       enquadram no **bbox** da geometria, e não no primeiro vértice (task-010)
 - [x] Item sem geometria, ou com geometria que não se lê, não mexe na câmera,
       em vez de mandar `NaN` para o mapa deles (task-010)
-- [ ] Decidir o que fazer com campo `json`, `csv` e `lnglat`: reaproveitar a
+- [x] Decidir o que fazer com campo `json`, `csv` e `lnglat`: reaproveitar a
       conversão para GeoJSON que o layout deles faz, ou restringir o clique ao
-      formato nativo e dizer isso no README
+      formato nativo e dizer isso no README. Decidido: reaproveitar. O
+      `centralizarItem` acha a feature do item no `geojson` do layout pela
+      `featureId` e enquadra pela geometria já convertida
 
 ### Fase 3: verificação e documentação
-- [ ] e2e com uma coleção de `LineString`: o trajeto aparece no mapa e o clique
-      na linha enquadra o trajeto inteiro
-- [ ] Refazer a captura do README se o basemap do ambiente de teste mudar
-- [ ] Documentar nos dois idiomas que o basemap vem do Project Settings e é
+- [x] e2e com uma coleção de `LineString`: o trajeto aparece no mapa e o clique
+      na linha enquadra o trajeto inteiro — com geometria nativa do PostGIS
+- [x] Refazer a captura do README se o basemap do ambiente de teste mudar. Não
+      mudou: o basemap de teste é configurado e removido pelo próprio e2e
+- [x] Documentar nos dois idiomas que o basemap vem do Project Settings e é
       escolhido por usuário, para quem vir uma tela diferente da do README
-      entender por quê
+      entender por quê. O README diz "escolha do app", que é o que o e2e prova
+
+## Geometria nativa — medido em 2026-09-24
+
+Com campo de geometria nativa (PostGIS), o layout de mapa do Directus filtra a
+busca pela área visível (`_intersects_bbox` sobre `cameraOptions.bbox`). O
+`geojson` dele só tem o que está na tela, e a grade só traz as colunas à vista
+— sem a coluna da geometria, os itens da grade chegam sem ela. Por isso o
+centralizador busca a geometria na API pela chave primária quando falta
+(`FonteDaColecao.buscarItens`), com a resposta de um pedido antigo descartada.
+Isso está testado e a busca responde certo no e2e.
+
+O que não funciona: **depois de o centralizador mover o mapa uma vez**, a
+entrega da busca chega ao estado do layout embutido (`geojsonBounds` com o
+retângulo novo), mas o componente de mapa do Directus continua recebendo o
+`bounds` anterior — o `MapgridLayout` não volta a renderizar. Descartado, cada
+um por medição: página travada, reatividade síncrona e agendador do Vue (duas
+sondas), duas instâncias do layout, estado diferente do desenhado, insistência
+presa, momento da entrega (esperar 5 s não muda). Num caso o mesmo caminho
+**funcionou**: afastando o mapa pelo botão "−" do Directus antes do clique.
+
+Achados do caminho, que valem para quem retomar:
+
+- o Directus lê `cameraOptions.bbox` sem conferir; um preset com câmera sem
+  `bbox` derruba o layout quando a geometria é nativa;
+- há um `SyntaxError` do `vue-i18n` a cada busca filtrada; não vem das nossas
+  mensagens.
 
 ## Notes
 

@@ -6,12 +6,23 @@ const VISIVEL: Retangulo = [-40.4, -20.4, -40.2, -20.2];
 const TELA = { largura: 1000, altura: 600 };
 
 interface OpcoesDeMontagem {
+  itens?: Record<string, unknown>[];
   pronto?: boolean;
   visivel?: Retangulo | null;
   camera?: Record<string, unknown>;
+  buscarItens?: (
+    chaves: readonly unknown[],
+    campos: readonly string[]
+  ) => Promise<Record<string, unknown>[]>;
 }
 
-function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem = {}) {
+function montar({
+  buscarItens = async () => [],
+  camera,
+  itens = [],
+  pronto = true,
+  visivel = VISIVEL,
+}: OpcoesDeMontagem = {}) {
   const bboxDaColecao: Retangulo = [-41, -21, -39, -19];
   const estado: Record<string, unknown> = {
     cameraOptions: camera ?? (visivel ? { bbox: [...visivel], zoom: 12 } : undefined),
@@ -21,16 +32,21 @@ function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem =
   };
   const pendentes: (() => void)[] = [];
   const repeticoes: { cancelada: boolean; intervalo: number; tarefa: () => void }[] = [];
-  const centralizador = new CentralizadorDoMapaDirectus(estado, () => TELA, {
-    depoisDaAtualizacao: (tarefa) => pendentes.push(tarefa),
-    repetir: (tarefa, intervalo) => {
-      const repeticao = { cancelada: false, intervalo, tarefa };
-      repeticoes.push(repeticao);
-      return () => {
-        repeticao.cancelada = true;
-      };
+  const centralizador = new CentralizadorDoMapaDirectus(
+    estado,
+    () => TELA,
+    {
+      depoisDaAtualizacao: (tarefa) => pendentes.push(tarefa),
+      repetir: (tarefa, intervalo) => {
+        const repeticao = { cancelada: false, intervalo, tarefa };
+        repeticoes.push(repeticao);
+        return () => {
+          repeticao.cancelada = true;
+        };
+      },
     },
-  });
+    { buscarItens, itensDaGrade: () => itens }
+  );
   if (pronto) centralizador.aoMoverACamera();
   const bboxLido = () => (estado.geojson as { bbox: Retangulo }).bbox;
   const tique = () => {
@@ -312,5 +328,212 @@ describe('enquadrar tudo', () => {
     const { centralizador, estado } = montar();
     delete estado.fitDataBounds;
     expect(() => centralizador.enquadrarTudo()).not.toThrow();
+  });
+});
+
+describe('centralizar um item pela feature que o Directus montou', () => {
+  const trajeto = {
+    coordinates: [
+      [-40.1, -20.1],
+      [-39.7, -19.8],
+    ],
+    type: 'LineString',
+  };
+
+  function comFeatures(features: unknown[]) {
+    const montagem = montar();
+    montagem.estado.featureId = 'codigo';
+    (montagem.estado.geojson as { features: unknown[] }).features = features;
+    return montagem;
+  }
+
+  it('enquadra pela geometria da feature, e não pelo campo cru — que pode ser csv, lnglat ou wkt', () => {
+    const { bboxLido, centralizador } = comFeatures([
+      { geometry: trajeto, properties: { codigo: 7 }, type: 'Feature' },
+    ]);
+
+    expect(centralizador.centralizarItem({ codigo: 7, local: '-40.1,-20.1' })).toBe(true);
+    expect(bboxLido()).toEqual([-40.1, -20.1, -39.7, -19.8]);
+  });
+
+  it('acha a feature pela chave primária que o layout declara, seja qual for o nome', () => {
+    const { bboxLido, centralizador } = comFeatures([
+      {
+        geometry: { coordinates: [-39, -19], type: 'Point' },
+        properties: { codigo: 1 },
+        type: 'Feature',
+      },
+      { geometry: trajeto, properties: { codigo: 2 }, type: 'Feature' },
+    ]);
+
+    centralizador.centralizarItem({ codigo: 2 }, { somenteSeFora: false });
+
+    expect(bboxLido()).toEqual([-40.1, -20.1, -39.7, -19.8]);
+  });
+
+  it('item sem feature — sem geometria, ou fora da página — não mexe na câmera', () => {
+    const { bboxDaColecao, bboxLido, centralizador, estado } = comFeatures([
+      { geometry: trajeto, properties: { codigo: 2 }, type: 'Feature' },
+    ]);
+
+    expect(centralizador.centralizarItem({ codigo: 9 })).toBe(false);
+    expect(estado.geojsonBounds).toBeUndefined();
+    expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('sem featureId no estado, não adivinha a chave', () => {
+    const { centralizador, estado } = comFeatures([
+      { geometry: trajeto, properties: { codigo: 2 }, type: 'Feature' },
+    ]);
+    delete estado.featureId;
+
+    expect(centralizador.centralizarItem({ codigo: 2 })).toBe(false);
+  });
+});
+
+describe('geometria nativa: o mapa do Directus só tem o que está na tela', () => {
+  const RIO_SP = {
+    coordinates: [
+      [-43.17, -22.9],
+      [-46.63, -23.55],
+    ],
+    type: 'LineString',
+  };
+  const MANAUS_BELEM = {
+    coordinates: [
+      [-60.02, -3.11],
+      [-48.5, -1.45],
+    ],
+    type: 'LineString',
+  };
+  const itens = [
+    { id: 1, trajeto: RIO_SP },
+    { id: 2, trajeto: MANAUS_BELEM },
+  ];
+
+  function nativo() {
+    const montagem = montar({ itens });
+    Object.assign(montagem.estado, {
+      featureId: 'id',
+      geometryField: 'trajeto',
+      isGeometryFieldNative: true,
+    });
+    // o layout só buscou o que cai na área visível: Rio–SP
+    (montagem.estado.geojson as { features: unknown[] }).features = [
+      { geometry: RIO_SP, properties: { id: 1 }, type: 'Feature' },
+    ];
+    return montagem;
+  }
+
+  it('reenquadrar enquadra os itens da grade, e não só o que o mapa buscou', () => {
+    const { bboxLido, centralizador, estado } = nativo();
+
+    centralizador.enquadrarTudo();
+
+    expect(bboxLido()).toEqual([-60.02, -23.55, -43.17, -1.45]);
+    expect(estado.fitDataBounds).not.toHaveBeenCalled();
+  });
+
+  it('o item fora da tela não tem feature, mas a geometria nativa já vem em GeoJSON no próprio item', () => {
+    const { bboxLido, centralizador } = nativo();
+
+    expect(centralizador.centralizarItem(itens[1] as Record<string, unknown>)).toBe(true);
+    expect(bboxLido()).toEqual([-60.02, -3.11, -48.5, -1.45]);
+  });
+
+  it('sem geometria nativa, o item sem feature continua sem mexer na câmera — o campo cru pode ser csv', () => {
+    const { centralizador, estado } = nativo();
+    estado.isGeometryFieldNative = false;
+
+    expect(centralizador.centralizarItem({ id: 2, trajeto: '-60.02,-3.11' })).toBe(false);
+  });
+
+  it('sem geometria nativa, reenquadrar segue sendo o fitDataBounds do Directus', () => {
+    const { centralizador, estado } = nativo();
+    estado.isGeometryFieldNative = false;
+
+    centralizador.enquadrarTudo();
+
+    expect(estado.fitDataBounds).toHaveBeenCalledOnce();
+  });
+});
+
+describe('geometria nativa que a grade não trouxe — a coluna não está à vista', () => {
+  const RIO_SP = {
+    coordinates: [
+      [-43.17, -22.9],
+      [-46.63, -23.55],
+    ],
+    type: 'LineString',
+  };
+  const MANAUS_BELEM = {
+    coordinates: [
+      [-60.02, -3.11],
+      [-48.5, -1.45],
+    ],
+    type: 'LineString',
+  };
+  const esperarBusca = () => new Promise((resolver) => setTimeout(resolver, 0));
+
+  function semGeometriaNaGrade(buscarItens: OpcoesDeMontagem['buscarItens']) {
+    const montagem = montar({ buscarItens, itens: [{ id: 1 }, { id: 2 }] });
+    Object.assign(montagem.estado, {
+      featureId: 'id',
+      geometryField: 'trajeto',
+      isGeometryFieldNative: true,
+    });
+    return montagem;
+  }
+
+  it('reenquadrar busca a geometria dos itens da página pela chave, e enquadra todos', async () => {
+    const buscarItens = vi.fn(async () => [
+      { id: 1, trajeto: RIO_SP },
+      { id: 2, trajeto: MANAUS_BELEM },
+    ]);
+    const { bboxLido, centralizador } = semGeometriaNaGrade(buscarItens);
+
+    centralizador.enquadrarTudo();
+    await esperarBusca();
+
+    expect(buscarItens).toHaveBeenCalledWith([1, 2], ['id', 'trajeto']);
+    expect(bboxLido()).toEqual([-60.02, -23.55, -43.17, -1.45]);
+  });
+
+  it('o clique numa linha fora da tela busca a geometria daquele item e vai até ele', async () => {
+    const buscarItens = vi.fn(async () => [{ id: 2, trajeto: MANAUS_BELEM }]);
+    const { bboxLido, centralizador } = semGeometriaNaGrade(buscarItens);
+
+    expect(centralizador.centralizarItem({ id: 2 })).toBe(true);
+    await esperarBusca();
+
+    expect(buscarItens).toHaveBeenCalledWith([2], ['id', 'trajeto']);
+    expect(bboxLido()).toEqual([-60.02, -3.11, -48.5, -1.45]);
+  });
+
+  it('a resposta de um clique antigo não vence a de um clique novo', async () => {
+    const respostas: Array<(itens: Record<string, unknown>[]) => void> = [];
+    const buscarItens = () =>
+      new Promise<Record<string, unknown>[]>((resolver) => respostas.push(resolver));
+    const { bboxLido, centralizador } = semGeometriaNaGrade(buscarItens);
+
+    centralizador.centralizarItem({ id: 1 });
+    centralizador.centralizarItem({ id: 2 });
+    respostas[1]?.([{ id: 2, trajeto: MANAUS_BELEM }]);
+    await esperarBusca();
+    respostas[0]?.([{ id: 1, trajeto: RIO_SP }]);
+    await esperarBusca();
+
+    expect(bboxLido()).toEqual([-60.02, -3.11, -48.5, -1.45]);
+  });
+
+  it('se a busca falha, reenquadrar cai no fitDataBounds do Directus', async () => {
+    const { centralizador, estado } = semGeometriaNaGrade(async () => {
+      throw new Error('rede');
+    });
+
+    centralizador.enquadrarTudo();
+    await esperarBusca();
+
+    expect(estado.fitDataBounds).toHaveBeenCalledOnce();
   });
 });

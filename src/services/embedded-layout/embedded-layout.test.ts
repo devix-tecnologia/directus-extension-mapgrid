@@ -233,4 +233,19 @@ describe('o contrato com os layouts do Directus', () => {
     expect(layoutEstaRegistrado(registro, LAYOUTS_EMBUTIDOS.grade)).toBe(true);
     expect(layoutEstaRegistrado(registro, LAYOUTS_EMBUTIDOS.mapa)).toBe(false);
   });
+
+  it('o contrato do mapa cobre o que o centralizador lê e escreve no estado dele', () => {
+    const mapa: readonly string[] = CONTRATO_DOS_EMBUTIDOS[LAYOUTS_EMBUTIDOS.mapa];
+    for (const chave of [
+      'geojson',
+      'geojsonBounds',
+      'geometryField',
+      'featureId',
+      'isGeometryFieldNative',
+      'cameraOptions',
+      'fitDataBounds',
+    ]) {
+      expect(mapa, chave).toContain(chave);
+    }
+  });
 });

@@ -109,8 +109,19 @@ describe('MapgridLayout — o clique no ponto', () => {
   it('o clique na linha leva o mapa até o item pelo fitBounds do Directus, e não pelo cameraOptions', () => {
     const composicao = montarComposicao();
     const atualizarCamera = vi.fn();
-    const geojson = { bbox: [-74, -34, -34, 5], features: [], type: 'FeatureCollection' };
+    const geojson = {
+      bbox: [-74, -34, -34, 5],
+      features: [
+        {
+          geometry: { coordinates: BRASILIA, type: 'Point' },
+          properties: { id: 1 },
+          type: 'Feature',
+        },
+      ],
+      type: 'FeatureCollection',
+    };
     const mapa = embutidoFalso('map', {
+      featureId: 'id',
       geometryField: 'location',
       geojson,
       geojsonBounds: undefined,
@@ -144,11 +155,22 @@ describe('MapgridLayout — o clique no ponto', () => {
     try {
       montarComposicao();
       const bboxDaColecao = [-74, -34, -34, 5];
-      const geojson = { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' };
+      const geojson = {
+        bbox: [...bboxDaColecao],
+        features: [
+          {
+            geometry: { coordinates: BRASILIA, type: 'Point' },
+            properties: { id: 1 },
+            type: 'Feature',
+          },
+        ],
+        type: 'FeatureCollection',
+      };
       const estado = reactive<Record<string, unknown>>({
         cameraOptions: { center: [0, 0], zoom: 3 },
         geojson,
         geojsonBounds: undefined,
+        featureId: 'id',
         geometryField: 'location',
         selection: [],
       });
@@ -187,7 +209,17 @@ describe('MapgridLayout — o clique no ponto', () => {
         fitDataBounds: vi.fn(() => {
           bboxLidoPeloDirectus = [...(estado.geojson as { bbox: number[] }).bbox];
         }),
-        geojson: { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' },
+        geojson: {
+          bbox: [...bboxDaColecao],
+          features: [
+            {
+              geometry: { coordinates: BRASILIA, type: 'Point' },
+              properties: { id: 1 },
+              type: 'Feature',
+            },
+          ],
+          type: 'FeatureCollection',
+        },
         geojsonBounds: undefined,
         geometryField: 'location',
         selection: [],
@@ -208,5 +240,39 @@ describe('MapgridLayout — o clique no ponto', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('o clique na linha enquadra pela feature do Directus, mesmo com o campo em csv', () => {
+    montarComposicao();
+    const trajeto = {
+      coordinates: [
+        [-40.1, -20.1],
+        [-39.7, -19.8],
+      ],
+      type: 'LineString',
+    };
+    const geojson = {
+      bbox: [-74, -34, -34, 5],
+      features: [{ geometry: trajeto, properties: { id: 3 }, type: 'Feature' }],
+      type: 'FeatureCollection',
+    };
+    const mapa = embutidoFalso('map', {
+      cameraOptions: { center: [0, 0], zoom: 3 },
+      featureId: 'id',
+      geojson,
+      geojsonBounds: undefined,
+      geometryField: 'local',
+      selection: [],
+    });
+    const grade = embutidoFalso('tabular', { items: [] });
+    mount(MapgridLayout, {
+      props: { grade: grade.embutido, mapa: mapa.embutido },
+      global: { components: directusComponentStubs },
+    });
+
+    const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+    onRowClick({ item: { id: 3, local: '-40.1,-20.1' } });
+
+    expect(geojson.bbox).toEqual([-40.1, -20.1, -39.7, -19.8]);
   });
 });
