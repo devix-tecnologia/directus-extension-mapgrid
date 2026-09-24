@@ -39,19 +39,16 @@ e2e roda:
 | Campo de geometria, template, câmera, agrupamento | `layoutOptions` do layout: `geometryField`, `displayTemplate`, `cameraOptions`, `clusterData` | No MapGrid ficam em `layoutOptions.map`, separados da grade |
 | Tipos de geometria | Todo o GeoJSON, inclusive `Multi*` e `GeometryCollection` | A "Fase 3" original (geometrias além do ponto) já está resolvida no desenho |
 | Agrupamento | Desabilitado quando `geometryType !== 'Point'` | Comportamento deles, não precisamos decidir |
-| `fitDataBounds` | Com geometria `native`, só marca `shouldUpdateCamera` e o enquadramento acontece na **próxima busca**; nos outros formatos, usa o bbox do GeoJSON na hora | O botão de reenquadrar da nossa `MapToolbar` pode não fazer nada visível até a lista recarregar |
+| `fitDataBounds` | Com geometria `native`, só marca `shouldUpdateCamera` e o enquadramento acontece na **próxima busca**; nos outros formatos, usa o bbox do GeoJSON na hora | O reenquadrar da nossa `MapToolbar` (`enquadrarTudo` do centralizador, que chama o `fitDataBounds`) pode não fazer nada visível até a lista recarregar |
 
 ## O que ainda é nosso, e está incompleto
 
-**O clique na linha só entende ponto.** O `enquadrarItem` de
-`MapgridLayout.vue` lê `geometria.coordinates[0]` e `[1]` como longitude e
-latitude. Isso vale para um `Point`. Num `LineString` ou `Polygon`, o primeiro
-elemento já é um par ou uma lista de pares, e o `Number()` devolve `NaN`: o
-clique na linha empurra uma câmera inválida para o mapa deles. O caso é
-justamente o do rastreamento veicular da task-006, em que um trajeto é
-naturalmente um `LineString`.
+**O clique na linha já entende qualquer geometria.** Resolvido na task-010 pelo
+`CentralizadorDoMapaDirectus`: ponto é centralizado, `LineString`, `Polygon` e
+`Multi*` são enquadrados pelo bbox, e geometria que não se lê não mexe na
+câmera. Revisado em 2026-09-24.
 
-**O clique na linha também só entende formato nativo.** Ele lê
+**O clique na linha só entende formato nativo.** Ele lê
 `item[geometryField].coordinates`, que é a forma do GeoJSON nativo. O layout
 deles aceita também campo `json`, `csv` e `lnglat`, e para esses a leitura
 direta não serve.
@@ -72,12 +69,13 @@ direta não serve.
       próxima busca; se não enquadrar, disparar a busca ou calcular o bbox aqui
 
 ### Fase 2: o clique na linha para qualquer geometria
-- [ ] Extrair o cálculo de "para onde a câmera vai" do `enquadrarItem` para um
-      módulo puro em `src/services/`, testado antes da implementação
-- [ ] `Point` enquadra no ponto, como hoje; `LineString`, `Polygon` e `Multi*`
-      enquadram no **bbox** da geometria, e não no primeiro vértice
-- [ ] Item sem geometria, ou com geometria que não se lê, não mexe na câmera,
-      em vez de mandar `NaN` para o mapa deles
+- [x] Extrair o cálculo de "para onde a câmera vai" do `enquadrarItem` para um
+      módulo puro em `src/services/`, testado antes da implementação — é o
+      `CentralizadorDoMapaDirectus` (task-010)
+- [x] `Point` enquadra no ponto, como hoje; `LineString`, `Polygon` e `Multi*`
+      enquadram no **bbox** da geometria, e não no primeiro vértice (task-010)
+- [x] Item sem geometria, ou com geometria que não se lê, não mexe na câmera,
+      em vez de mandar `NaN` para o mapa deles (task-010)
 - [ ] Decidir o que fazer com campo `json`, `csv` e `lnglat`: reaproveitar a
       conversão para GeoJSON que o layout deles faz, ou restringir o clique ao
       formato nativo e dizer isso no README
@@ -92,11 +90,14 @@ direta não serve.
 
 ## Notes
 
-Esta task depende do que a task-010 entregar: ela é feita sobre a composição,
-não sobre o mapa antigo. A Fase 2 é pré-requisito da task-006 se o rastreamento
-for representado por `LineString`.
+A task-010 está integrada, e o que a task-006 esperava da Fase 2 daqui (bbox
+para trajeto em `LineString`) veio com ela. O que sobra da Fase 2 é o formato do
+campo (`json`, `csv`, `lnglat`), que não bloqueia a task-006 quando o campo é
+nativo.
 
-As opções `mapCenterLng`, `mapCenterLat`, `mapZoom`, `title` e `geolocation`
-ainda estão declaradas em `src/contract/layout-options.contract.ts`, mas o mapa
-deles usa `cameraOptions`, `displayTemplate` e `geometryField`. Decidir o que
-fazer com as nossas é da Fase 3 da task-010 ("o que sai"), não desta.
+As opções antigas (`mapCenterLng`, `mapCenterLat`, `mapZoom`, `title`,
+`geolocation`) saíram do `LayoutOptions` na Fase 3 da task-010.
+
+O basemap é da implementação de mapa, não do MapGrid: na direção da
+[task-011](task-011-o-mapgrid-aceita-qualquer-mapa-atras-de-um-contrato-proprio.md),
+cada mapa honra a configuração do seu jeito, e esta task prova o do Directus.
