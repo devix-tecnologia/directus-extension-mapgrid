@@ -13,6 +13,8 @@ import type {
  */
 const PADDING_DO_FIT_BOUNDS_DO_DIRECTUS = 100;
 const LATITUDE_MAXIMA_DE_MERCATOR = 85.05112878;
+/** A largura do mundo, em pixels, no zoom 0 do MapLibre. */
+const TAMANHO_DO_TILE_DO_MAPLIBRE = 512;
 /** De quanto em quanto tempo reentregar o `bounds` enquanto o mapa carrega. */
 const INTERVALO_DE_INSISTENCIA_MS = 250;
 /** Quanto esperar o mapa carregar antes de desistir de um alvo. */
@@ -255,20 +257,32 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
    * A área visível de agora, menos o padding do `fitBounds` do Directus,
    * centrada no ponto. Em Mercator, porque é nessa projeção que o zoom do mapa
    * é linear: dividir graus de latitude distorceria a proporção longe do
-   * equador. Sem área visível conhecida, ou numa tela menor que o padding, não
-   * há zoom a manter e o ponto é enquadrado por si mesmo.
+   * equador. Sem área visível — antes do primeiro `moveend` —, ela sai do zoom
+   * da câmera e do tamanho da tela. Sem nenhum dos dois, ou numa tela menor que
+   * o padding, não há zoom a manter e o ponto é enquadrado por si mesmo.
    */
   private retanguloQueMantemOZoom(ponto: [number, number], visivel: Retangulo | null): Retangulo {
     const tela = this.tamanhoDaTela();
     const folga = 2 * PADDING_DO_FIT_BOUNDS_DO_DIRECTUS;
-    if (!visivel || !tela || tela.largura <= folga || tela.altura <= folga) {
+    const zoom = (this.estado.cameraOptions as { zoom?: unknown } | null | undefined)?.zoom;
+    const temZoom = typeof zoom === 'number' && Number.isFinite(zoom);
+    if ((!visivel && !temZoom) || !tela || tela.largura <= folga || tela.altura <= folga) {
       return [ponto[0], ponto[1], ponto[0], ponto[1]];
     }
 
-    const largura = ((visivel[2] - visivel[0]) * (tela.largura - folga)) / tela.largura;
-    const altura =
-      ((this.mercator(visivel[3]) - this.mercator(visivel[1])) * (tela.altura - folga)) /
-      tela.altura;
+    let largura: number;
+    let altura: number;
+    if (visivel) {
+      largura = ((visivel[2] - visivel[0]) * (tela.largura - folga)) / tela.largura;
+      altura =
+        ((this.mercator(visivel[3]) - this.mercator(visivel[1])) * (tela.altura - folga)) /
+        tela.altura;
+    } else {
+      // antes do primeiro moveend não há bbox, mas há o zoom com que o mapa nasceu
+      const mundo = TAMANHO_DO_TILE_DO_MAPLIBRE * 2 ** (zoom as number);
+      largura = (360 * (tela.largura - folga)) / mundo;
+      altura = (2 * Math.PI * (tela.altura - folga)) / mundo;
+    }
     const centroY = this.mercator(ponto[1]);
     return [
       ponto[0] - largura / 2,

@@ -15,12 +15,14 @@ interface OpcoesDeMontagem {
   /** O mapa já foi visto se movendo — o `watch` de `bounds` do Directus existe. */
   pronto?: boolean;
   visivel?: Retangulo | null;
+  /** A câmera sem `bbox`, como a do preset antes do primeiro `moveend`. */
+  camera?: Record<string, unknown>;
 }
 
-function montar({ pronto = true, visivel = VISIVEL }: OpcoesDeMontagem = {}) {
+function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem = {}) {
   const bboxDaColecao: Retangulo = [-41, -21, -39, -19];
   const estado: Record<string, unknown> = {
-    cameraOptions: visivel ? { bbox: [...visivel], zoom: 12 } : undefined,
+    cameraOptions: camera ?? (visivel ? { bbox: [...visivel], zoom: 12 } : undefined),
     geojson: { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' },
     geojsonBounds: undefined,
   };
@@ -190,6 +192,25 @@ describe('o que não se lê não mexe na câmera', () => {
     expect(centralizador.centralizar(geometria, { somenteSeFora: false })).toBe(false);
     expect(estado.geojsonBounds).toBeUndefined();
     expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('sem área visível, mas com o zoom da câmera, mantém esse zoom', () => {
+    // o preset traz center e zoom; o bbox só chega no primeiro moveend. O mapa
+    // nasceu com esse zoom (`new Map({ ...camera })`), e é ele que se mantém. No
+    // MapLibre o mundo tem 512·2^zoom pixels de largura.
+    const { bboxLido, centralizador } = montar({
+      camera: { center: [-47.9, -15.8], zoom: 9 },
+      visivel: null,
+    });
+    centralizador.centralizar(ponto(-40.0, -20.0), { somenteSeFora: false });
+    const [oeste, sul, leste, norte] = bboxLido();
+    const mundo = 512 * 2 ** 9;
+    expect(leste - oeste).toBeCloseTo((360 * (TELA.largura - 200)) / mundo, 9);
+    const mercator = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+    expect(mercator(norte) - mercator(sul)).toBeCloseTo(
+      (2 * Math.PI * (TELA.altura - 200)) / mundo,
+      9
+    );
   });
 
   it('sem área visível conhecida, o ponto é enquadrado pelo próprio retângulo', () => {
