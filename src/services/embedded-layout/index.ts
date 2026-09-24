@@ -13,3 +13,4 @@ export type {
   OpcoesDeEmbutir,
   RegistroDeLayouts,
 } from './embedded-layout.types';
+export { CHAVES_QUE_EXPLODEM_FORA_DO_RENDER, leitorDeEstadoEmbutido } from './leitor-de-estado';
