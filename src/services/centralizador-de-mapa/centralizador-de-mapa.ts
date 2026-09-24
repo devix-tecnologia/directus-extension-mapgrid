@@ -122,6 +122,19 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     });
   }
 
+  centralizarItem(item: Record<string, unknown>, opcoes: OpcoesDeCentralizacao = {}): boolean {
+    const chave = this.estado.featureId;
+    if (typeof chave !== 'string') return false;
+    const features = (this.estado.geojson as { features?: unknown } | null | undefined)?.features;
+    if (!Array.isArray(features)) return false;
+    const feature = features.find(
+      (candidata) =>
+        (candidata as { properties?: Record<string, unknown> } | null)?.properties?.[chave] ===
+        item[chave]
+    ) as { geometry?: unknown } | undefined;
+    return feature ? this.centralizar(feature.geometry, opcoes) : false;
+  }
+
   enquadrarTudo(): void {
     this.encerrarInsistencia();
     (this.estado.fitDataBounds as (() => void) | undefined)?.();

@@ -77,10 +77,9 @@ const reenquadrar = (): void => {
  */
 const enquadrarItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;
-  const campo = doMapa<string>('geometryField');
-  if (!item || !campo) return;
+  if (!item) return;
 
-  centralizador.value?.centralizar(item[campo], {
+  centralizador.value?.centralizarItem(item, {
     aproximar: props.zoomOnClick === true,
     somenteSeFora: false,
   });

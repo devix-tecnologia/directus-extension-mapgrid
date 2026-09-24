@@ -314,3 +314,63 @@ describe('enquadrar tudo', () => {
     expect(() => centralizador.enquadrarTudo()).not.toThrow();
   });
 });
+
+describe('centralizar um item pela feature que o Directus montou', () => {
+  const trajeto = {
+    coordinates: [
+      [-40.1, -20.1],
+      [-39.7, -19.8],
+    ],
+    type: 'LineString',
+  };
+
+  function comFeatures(features: unknown[]) {
+    const montagem = montar();
+    montagem.estado.featureId = 'codigo';
+    (montagem.estado.geojson as { features: unknown[] }).features = features;
+    return montagem;
+  }
+
+  it('enquadra pela geometria da feature, e não pelo campo cru — que pode ser csv, lnglat ou wkt', () => {
+    const { bboxLido, centralizador } = comFeatures([
+      { geometry: trajeto, properties: { codigo: 7 }, type: 'Feature' },
+    ]);
+
+    expect(centralizador.centralizarItem({ codigo: 7, local: '-40.1,-20.1' })).toBe(true);
+    expect(bboxLido()).toEqual([-40.1, -20.1, -39.7, -19.8]);
+  });
+
+  it('acha a feature pela chave primária que o layout declara, seja qual for o nome', () => {
+    const { bboxLido, centralizador } = comFeatures([
+      {
+        geometry: { coordinates: [-39, -19], type: 'Point' },
+        properties: { codigo: 1 },
+        type: 'Feature',
+      },
+      { geometry: trajeto, properties: { codigo: 2 }, type: 'Feature' },
+    ]);
+
+    centralizador.centralizarItem({ codigo: 2 }, { somenteSeFora: false });
+
+    expect(bboxLido()).toEqual([-40.1, -20.1, -39.7, -19.8]);
+  });
+
+  it('item sem feature — sem geometria, ou fora da página — não mexe na câmera', () => {
+    const { bboxDaColecao, bboxLido, centralizador, estado } = comFeatures([
+      { geometry: trajeto, properties: { codigo: 2 }, type: 'Feature' },
+    ]);
+
+    expect(centralizador.centralizarItem({ codigo: 9 })).toBe(false);
+    expect(estado.geojsonBounds).toBeUndefined();
+    expect(bboxLido()).toEqual(bboxDaColecao);
+  });
+
+  it('sem featureId no estado, não adivinha a chave', () => {
+    const { centralizador, estado } = comFeatures([
+      { geometry: trajeto, properties: { codigo: 2 }, type: 'Feature' },
+    ]);
+    delete estado.featureId;
+
+    expect(centralizador.centralizarItem({ codigo: 2 })).toBe(false);
+  });
+});

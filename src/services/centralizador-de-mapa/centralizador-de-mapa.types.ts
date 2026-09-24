@@ -31,6 +31,8 @@ export interface OpcoesDeCentralizacao {
 export interface ICentralizadorDeMapa {
   /** Devolve se pediu movimento ao mapa. */
   centralizar(geometria: unknown, opcoes?: OpcoesDeCentralizacao): boolean;
+  /** Centraliza um item da coleção pela geometria que o mapa montou para ele. */
+  centralizarItem(item: Record<string, unknown>, opcoes?: OpcoesDeCentralizacao): boolean;
   /** Enquadra a coleção inteira. */
   enquadrarTudo(): void;
 }
