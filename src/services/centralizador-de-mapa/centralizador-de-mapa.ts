@@ -122,6 +122,11 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     });
   }
 
+  enquadrarTudo(): void {
+    this.encerrarInsistencia();
+    (this.estado.fitDataBounds as (() => void) | undefined)?.();
+  }
+
   private encerrarInsistencia(): void {
     const insistencia = this.insistencia;
     if (!insistencia) return;
