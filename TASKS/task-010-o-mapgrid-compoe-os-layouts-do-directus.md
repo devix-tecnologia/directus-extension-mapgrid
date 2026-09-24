@@ -214,6 +214,23 @@ Provas:
   Manaus, a cidade mais isolada da semente, para o clique no centro não cair num
   agrupamento.
 
+## Onde a rodada de 2026-09-24 parou
+
+**Fechado:** o clique no ponto (Fase 2), com unitário, e2e e evidência.
+
+**Parou aqui, e de propósito:** o próximo item da Fase 2 é a decisão sobre o
+`MapToolbar`, o zoom ao clicar e o popup — reservada. Ela deixou de ser só
+desenho: o enquadramento pelo clique na linha depende dela, porque mover a
+câmera exige alcançar a instância do MapLibre deles (ver a seção acima). As
+Fases 3 e 4 têm itens que não dependem disso (o que sai por não ter chamador, os
+unitários de código morto, a regressão de persistência das duas seções do
+painel), mas vêm depois no documento.
+
+**Pronto para quem retomar:** o e2e do enquadramento já está escrito, parado em
+`test.fixme`; o roteiro de evidência do clique existe e tem par antes/depois; e
+`pnpm screenshot` e o `.sandcastle/no-espelho.sh` voltaram a funcionar — os dois
+estavam quebrados e falhavam por motivo próprio, não pelo código da extensão.
+
 ## Notes
 
 O `dist` da extensão resolve `@directus/extensions-sdk` como externo, então vale
