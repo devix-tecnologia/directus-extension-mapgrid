@@ -67,15 +67,18 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 
 ## Tasks
 
-### Fase 1: fundação
-- [ ] Extrair do spike o `embedLayout(id, options)`: chama o `setup()` do layout
+### Fase 1: fundação — fechada em 2026-09-24
+- [x] Extrair do spike o `embedLayout(id, options)`: chama o `setup()` do layout
       registrado, acrescenta os `onUpdate:<chave>`, devolve estado, componente e
-      `slots.options`. Sem `any` — o spike usa, a implementação não pode
-- [ ] Repassar `...toRefs(props)` junto do estado, como o `createLayoutWrapper`
+      `slots.options`. Sem `any` — o spike usa, a implementação não pode.
+      É o `embutirLayout` de `src/services/embedded-layout/`, e não há `any` nele
+- [x] Repassar `...toRefs(props)` junto do estado, como o `createLayoutWrapper`
       faz: o spike devolveu 68 chaves contra as 92 do wrapper, e a diferença são
       os props
-- [ ] Teste de contrato: falha alta se `tableHeaders`, `onSortChange`, `items`,
-      `geometryField` ou `slots.options` sumirem do que o Directus devolve
+- [x] Teste de contrato: falha alta se `tableHeaders`, `onSortChange`, `items`,
+      `geometryField` ou `slots.options` sumirem do que o Directus devolve.
+      Ver "O contrato deixa de ser um comentário", abaixo — o que existia no
+      lugar não tinha como falhar por causa do Directus
 
 ### Fase 2: a composição
 - [x] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
@@ -98,8 +101,18 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       decisão reservada**, não do agente da rodada
 
 ### Fase 3: o que sai
-- [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem
-- [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador
+- [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem —
+      os dois primeiros já não têm arquivo, mas `src/components/index.ts` ainda
+      os **exportava** de `./organisms/...`, um caminho que não existe. Nenhum
+      gate pegou: o barril não tem importador, então nem o `vue-tsc` nem o build
+      chegam nele. As duas linhas saíram em 2026-09-24. O `MapToolbar` fica até
+      a decisão reservada
+- [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador.
+      Inventário conferido em 2026-09-24, sem chamador de produção: `table-sort`
+      (só o próprio teste e o barril `src/contract/index.ts`), `fieldsToFetch`
+      (só o próprio teste) e o `ValueCell` inteiro — componente, story, mock e
+      teste — que era da célula do `TableComponent`. Apagar o `ValueCell` mexe
+      no padrão storytype da task-003, e por isso ficou fora desta rodada
 - [ ] A migração de preset da task-005 **fica**: `layoutQuery.fields` continua
       sendo o contrato
 - [ ] Decidir o destino da migração do formato numerado (`coluna1..5`). Ela saiu
@@ -214,7 +227,7 @@ Provas:
   Manaus, a cidade mais isolada da semente, para o clique no centro não cair num
   agrupamento.
 
-## Onde a rodada de 2026-09-24 parou
+## Onde a primeira rodada de 2026-09-24 parou
 
 **Fechado:** o clique no ponto (Fase 2), com unitário, e2e e evidência.
 
@@ -230,6 +243,81 @@ painel), mas vêm depois no documento.
 `test.fixme`; o roteiro de evidência do clique existe e tem par antes/depois; e
 `pnpm screenshot` e o `.sandcastle/no-espelho.sh` voltaram a funcionar — os dois
 estavam quebrados e falhavam por motivo próprio, não pelo código da extensão.
+
+## Onde a segunda rodada de 2026-09-24 parou
+
+**Fechado:** a **Fase 1 inteira**. Os dois primeiros itens já estavam no código
+desde a rodada da composição e só faltava conferir e marcar; o terceiro — o
+teste de contrato — existia de nome e foi refeito para poder falhar. Ver a seção
+acima.
+
+**Sem evidência de tela, e de propósito:** nada desta rodada desenha. O contrato
+grita no console do navegador, que é onde o e2e o lê; a tela é byte a byte a
+mesma de antes, e `pnpm screenshot` só produziria a captura já anexada.
+
+**Parou aqui:** a Fase 2 termina na decisão reservada (o `MapToolbar`, o zoom ao
+clicar e o popup), e o enquadramento pelo clique na linha depende dela. O que
+sobra sem depender da decisão está nas Fases 3 e 4 — o código sem chamador
+inventariado acima, os unitários que cobrem esse código, a regressão de
+persistência das duas seções do painel.
+
+## O contrato deixa de ser um comentário — 2026-09-24
+
+O item "teste de contrato" da Fase 1 tinha um bloco com esse nome em
+`embedded-layout.test.ts`, e ele **não podia falhar**: declarava duas listas
+literais e comparava cada uma com ela mesma (`expect(EXIGIDO_DA_GRADE).toEqual(
+expect.arrayContaining(['items', 'tableHeaders', 'onSortChange']))`). Nenhuma
+linha de produção lia essas listas, e nenhuma versão do Directus as alcançava.
+
+O que entrou no lugar tem os dois lados:
+
+- `CONTRATO_DOS_EMBUTIDOS`, em `src/services/embedded-layout/embedded-layout.ts`,
+  lista as chaves que a composição lê de cada layout embutido — 11 da grade, 7
+  do mapa, mais `slots.options` de cada um. Cada uma tem chamador nosso, e o
+  comentário diz qual;
+- `embutirLayout` confere a presença de cada chave a cada embutida e **grita no
+  console** o que faltou, com o id do layout e o nome das chaves. Gritar, e não
+  explodir: derrubar a tela por uma chave renomeada trocaria uma composição meio
+  quebrada por nenhuma composição.
+
+A conferência é de **presença**, não de valor: `cameraOptions` nasce sem valor
+enquanto ninguém mexeu na câmera e `error` fica nulo sem erro, então exigir
+valor daria alarme falso em toda primeira visita.
+
+Quem mede contra o Directus de verdade é `tests/e2e/mapgrid-contrato.spec.ts`:
+ele observa o console do navegador e reprova se a marca aparecer. Duas coisas
+que o spec faz de propósito, porque a asserção dele é uma **ausência**:
+
+- confere que mapa e grade estão na tela, senão "nenhuma reclamação" também
+  seria verdade numa tela onde nada montou;
+- tem um controle negativo que forja a mensagem na página e exige que o coletor
+  a veja — uma escuta de console quebrada daria o mesmo verde que um contrato
+  intacto.
+
+### O que a medição disse
+
+Contra o Directus 10.13.1, as **18 chaves existem**: a suíte passa com zero
+reclamações. E a falsificação foi feita, porque um teste que nasce verde não
+prova nada: com uma chave forjada acrescentada ao contrato, o e2e reprova com
+`o layout "tabular" do Directus não devolveu chaveForjadaQueNaoExiste`. A chave
+forjada saiu em seguida.
+
+### Achado de tabela: a composição embute duas vezes por visita
+
+A falsificação mostrou a mensagem **duas vezes** numa única visita à coleção —
+ou seja, o `setup()` do nosso layout roda duas vezes por carregamento, e cada
+par de layouts embutidos é criado duas vezes. Isso combina com o que o spec das
+buscas já media e ninguém tinha explicado: 4 requisições de itens para 2 URLs
+distintas. É um fio para a nota "sobra uma consulta sem atribuição", e não foi
+investigado aqui — quem embute duas vezes, nós ou o wrapper deles, segue sem
+medição.
+
+### Nota de ferramenta
+
+`node tests/run-docker-tests.js e2e -- <arquivo>` **ignora o filtro**: o runner
+avisa que argumentos extras só chegam ao runner de host (`--host`), que é
+justamente o caminho que não funciona daqui. De dentro do espelho, a suíte roda
+inteira ou não roda.
 
 ## Notes
 
