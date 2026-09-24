@@ -16,12 +16,13 @@ A Layout-type extension for Directus that displays a collection in map and grid 
 
 ### Features
 
-- **Interactive map**: items drawn on a MapLibre GL map
-- **Grid**: the same items in a sortable, selectable table
-- **Synchronised selection**: click a row to highlight its marker, click a marker to highlight its row
-- **Clustering**: automatic grouping where points are dense
-- **Configurable columns**: add, remove and reorder the grid's columns from its header
-- **Zoom on click**: fly to an item, or only pan when it is off screen
+- **Map and grid together**: the Directus map layout and the Directus table layout side by side,
+  over the same query and the same selection
+- **Click a row, the map goes there**: the map flies to the item, keeping the current zoom — or
+  zooming in, with *Zoom on table click*
+- **Click a marker, the row is selected**: instead of leaving the layout for the item page
+- **What the Directus layouts already do**: basemap, clustering and display template from the map
+  layout; columns, sorting and spacing from the table layout
 - **Reset view**: re-fit the map to the current result set at any time
 - **Bulk delete**: select rows and delete them from the layout header
 - **Bilingual interface**: follows the Directus app locale (en-US, pt-BR)
@@ -36,12 +37,13 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Make sure your collection has a field of type **Map** (geolocation).
 2. In the layout dropdown on the right, select **MapGrid**.
-3. Set the layout options:
-   - **Geolocation**: the map field to read on each item
-   - **Popup Pin Map**: the template shown in a marker's popup
-   - **Map Center**: the starting coordinates and zoom
+3. The layout options have three sections:
+   - **Map**: the Directus map layout's own options — basemap, geospatial field, display template
+     and clustering
+   - **Grid**: the Directus table layout's own options
+   - **Zoom on table click**: zoom in on the clicked item instead of keeping the current zoom
 
-The layout detects sensible defaults from the collection, so it is usable before any of these are set.
+The geospatial field is detected from the collection, so the layout works before anything is set.
 
 #### Columns
 
@@ -186,12 +188,13 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
 
 ### Recursos
 
-- **Mapa interativo**: os itens desenhados num mapa MapLibre GL
-- **Grade**: os mesmos itens numa tabela ordenável e selecionável
-- **Seleção sincronizada**: clicar numa linha destaca o marcador, clicar num marcador destaca a linha
-- **Agrupamento**: junção automática onde os pontos são densos
-- **Colunas configuráveis**: acrescente, remova e reordene as colunas pelo cabeçalho da grade
-- **Zoom ao clicar**: voar até o item, ou apenas deslocar quando ele está fora da tela
+- **Mapa e grade juntos**: o layout de mapa e o layout de tabela do Directus lado a lado, sobre a
+  mesma consulta e a mesma seleção
+- **Clicar na linha leva o mapa até o item**: o mapa voa até ele mantendo o zoom de agora — ou
+  aproximando, com *Zoom ao clicar na linha*
+- **Clicar no marcador seleciona a linha**: em vez de sair do layout para a página do item
+- **O que os layouts do Directus já fazem**: mapa base, agrupamento e template de exibição vêm do
+  layout de mapa; colunas, ordenação e espaçamento vêm do layout de tabela
 - **Reenquadrar**: reajustar o mapa ao resultado atual a qualquer momento
 - **Exclusão em lote**: selecionar linhas e excluí-las pelo cabeçalho do layout
 - **Interface bilíngue**: acompanha o idioma do app do Directus (en-US, pt-BR)
@@ -206,12 +209,14 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Garanta que a coleção possua um campo do tipo **Map** (geolocalização).
 2. No menu de layouts à direita, selecione **MapGrid**.
-3. Ajuste as opções do layout:
-   - **Geolocalização**: o campo de mapa a ler em cada item
-   - **Popup do marcador**: o template exibido no popup
-   - **Centro do mapa**: coordenadas e zoom iniciais
+3. As opções do layout têm três seções:
+   - **Mapa**: as opções do próprio layout de mapa do Directus — mapa base, campo geoespacial,
+     template de exibição e agrupamento
+   - **Grade**: as opções do próprio layout de tabela do Directus
+   - **Zoom ao clicar na linha**: aproximar do item clicado em vez de manter o zoom de agora
 
-O layout detecta padrões razoáveis a partir da coleção, então já é utilizável antes de qualquer uma dessas opções ser preenchida.
+O campo geoespacial é detectado a partir da coleção, então o layout funciona antes de qualquer
+opção ser preenchida.
 
 #### Colunas
 

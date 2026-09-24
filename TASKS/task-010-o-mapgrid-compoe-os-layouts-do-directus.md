@@ -146,11 +146,17 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       o e2e parado e o preset legado; o README avisa quem vem da 1.x
 
 ### Fase 4: verificação
-- [ ] Os 155 unitários de hoje se apoiam nos componentes que saem; refazer o que
-      continuar valendo e apagar o que virar teste de código morto
-- [ ] Stories: o Storybook não alcança os layouts do Directus, porque lá o SDK é
-      um mock nosso. Decidir o que resta de story
-- [ ] e2e é onde esta task se prova, e o ambiente do docker é o único lugar
+- [x] Os 155 unitários de hoje se apoiam nos componentes que saem; refazer o que
+      continuar valendo e apagar o que virar teste de código morto. Fechado em
+      2026-09-24: os de código morto saíram com ele na Fase 3; ficaram 96, todos
+      sobre código alcançável a partir de `src/index.ts`
+- [x] Stories: o Storybook não alcança os layouts do Directus, porque lá o SDK é
+      um mock nosso. Decidir o que resta de story. Decidido em 2026-09-24:
+      story só para os componentes nossos (`DeleteAction`, `MapToolbar`); a
+      composição com os layouts do Directus se prova no e2e. `build-storybook`
+      e `check:stories` verdes
+- [x] e2e é onde esta task se prova, e o ambiente do docker é o único lugar.
+      15 de 15 no docker em 2026-09-24, sem `fixme`
 - [x] Reancorar os specs que ainda miram os componentes que saíram. Os seletores
       passaram a morar em `tests/e2e/helpers/mapgrid-page.ts`, um lugar só: os
       specs partem dos dois painéis da composição e, dentro deles, das classes
@@ -163,14 +169,22 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       sobrescrevem, o que a regressão do `zoomOnClick` não alcança.
       Fechada em 2026-09-24 — ver "A janela de escrita no mesmo tick", abaixo.
       **Ela passa com e sem a correção**, e isso está medido e registrado lá
-- [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
-- [ ] `pnpm screenshot` e evidência antes/depois — **o comando voltou a
+- [x] Regressão visual do espaço em branco, que é custo recorrente do desenho.
+      Dois e2e, vistos vermelhos antes da correção: o cartão vai até o pé da
+      tela (sobravam 143 px, a folga de paginação de página inteira do Directus
+      no `padding-bottom`) e as seções do painel usam a largura toda (ocupavam
+      44%: eram filhas diretas do grid de formulário do Directus sem a classe
+      `full`)
+- [x] `pnpm screenshot` e evidência antes/depois — **o comando voltou a
       funcionar**, e a evidência do clique no marcador está acima. O `docs/tela.jpg`
       foi refeito. Não fecha porque falta a evidência das partes que ainda estão
       em aberto (o enquadramento, o destino do `MapToolbar`), e porque a imagem
       nova já mostra dois defeitos conhecidos: os rótulos do painel se
-      sobrepõem, e sobra branco embaixo da grade
-- [ ] README: a seção de colunas descreve a grade atual
+      sobrepõem, e sobra branco embaixo da grade. Fechado em 2026-09-24: os
+      dois defeitos corrigidos, evidência em "A tela composta", abaixo, e o
+      `docs/tela.jpg` refeito
+- [x] README: a seção de colunas descreve a grade atual. Recursos e
+      configuração também reescritos para a composição, nos dois idiomas
 
 ## A `MapToolbar` é do MapGrid — decidido em 2026-09-24
 
@@ -192,6 +206,18 @@ Directus, o 3dmap do geohub e outros — atrás de um contrato próprio
 - **O popup fica com o mapa.** Cada mapa desenha o balão do seu jeito; se um dia
   o mesmo balão for exigido em todos, o MapGrid fornece o conteúdo e o mapa só
   posiciona.
+
+## A tela composta — 2026-09-24
+
+| Antes | Depois |
+| --- | --- |
+| ![Antes](assets/task-010-tela-antes.png) | ![Depois](assets/task-010-tela-depois.png) |
+
+No "antes" (`develop` em `ab6f057`), as seções "Map" e "Grid" do painel ficam
+lado a lado, e os campos do mapa, espremidos em meia largura ("OpenS",
+"Locatio", o template de exibição sobreposto à caixa); o cartão termina a
+143 px do pé da tela. No "depois", o painel empilha as seções com os campos
+inteiros, e o cartão desce até o pé — a grade mostra uma linha a mais.
 
 ## Evidência — o clique no marcador
 
