@@ -127,8 +127,34 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       reload. Prova que `layoutOptions.map` e `layoutOptions.tabular` não se
       sobrescrevem, o que a regressão do `zoomOnClick` não alcança
 - [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
-- [ ] `pnpm screenshot` e evidência antes/depois
+- [ ] `pnpm screenshot` e evidência antes/depois — **o comando voltou a
+      funcionar**, e a evidência do clique no marcador está acima. O `docs/tela.jpg`
+      foi refeito. Não fecha porque falta a evidência das partes que ainda estão
+      em aberto (o enquadramento, o destino do `MapToolbar`), e porque a imagem
+      nova já mostra dois defeitos conhecidos: os rótulos do painel se
+      sobrepõem, e sobra branco embaixo da grade
 - [ ] README: a seção de colunas descreve a grade atual
+
+## Evidência — o clique no marcador
+
+| Antes | Depois |
+| --- | --- |
+| ![Antes](assets/task-010-clique-no-ponto-antes.png) | ![Depois](assets/task-010-clique-no-ponto-depois.png) |
+
+O "antes" não é o MapGrid: é a tela de edição do item, onde o clique no marcador
+deixava a pessoa. O "depois" continua no layout, com o marcador clicado em
+destaque, a linha do Manaus marcada na grade e as ações em lote acesas no
+cabeçalho — que é a ressalva registrada acima, visível na imagem.
+
+As duas saem do mesmo roteiro (`tests/screenshot/evidencia-clique-no-ponto.spec.ts`),
+mesmo Directus, mesma semente e mesma câmera; a única diferença é o
+`dist/index.js`, construído de `b91e601` para o "antes". A captura parada do
+layout não entra aqui porque não é evidência: rodada nos dois estados, ela sai
+byte a byte idêntica — esta mudança não acrescenta elemento à tela, troca o que
+o clique faz.
+
+    EVIDENCE_TASK=010 EVIDENCE_MOMENT=antes|depois \
+      .sandcastle/no-espelho.sh pnpm screenshot
 
 ## O enquadramento não acontece na tela — medido em 2026-09-24
 

@@ -50,7 +50,9 @@ const evidencia = (): string | undefined => {
 
   return `${DIRETORIO_DE_EVIDENCIAS}/${nomeDeEvidencia({
     task,
-    rotulo: process.env.EVIDENCE_LABEL ?? 'tela',
+    // `||`, e nao `??`: o compose entrega a variavel nao definida como string
+    // vazia, e `??` a aceitava — o roteiro entao morria em "rotulo invalido"
+    rotulo: process.env.EVIDENCE_LABEL || 'tela',
     momento,
   })}`;
 };
@@ -71,18 +73,22 @@ async function login(page: Page): Promise<void> {
 
 /**
  * Opens the layout options panel, so the shot shows how the layout is
- * configured. The section it expands is the popup template — the columns used
- * to live here, and moving them to the grid header left this panel with only
- * collection configuration.
+ * configured.
+ *
+ * A seção que se abre é a do mapa. Era a do template do popup, e ela não existe
+ * mais: depois da task-010 o painel hospeda a configuração dos próprios layouts
+ * do Directus, em duas seções — mapa e grade. O roteiro ficou procurando
+ * "Popup Pin Map" e falhava por 30s de espera, então `pnpm screenshot` deixou
+ * de produzir a imagem do README sem que ninguém percebesse.
  */
 async function openLayoutOptions(page: Page): Promise<void> {
   const header = page.getByRole('button', { name: /^layers/ });
   await expect(header).toBeVisible({ timeout: 30_000 });
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
 
-  const popup = page.getByText(/popup pin map|popup do marcador/i).first();
-  await expect(popup).toBeVisible({ timeout: 30_000 });
-  await popup.click();
+  const secaoDoMapa = page.getByText(/^(map|mapa)$/i).first();
+  await expect(secaoDoMapa).toBeVisible({ timeout: 30_000 });
+  await secaoDoMapa.click();
 }
 
 test('captures the README screenshot', async ({ page }) => {

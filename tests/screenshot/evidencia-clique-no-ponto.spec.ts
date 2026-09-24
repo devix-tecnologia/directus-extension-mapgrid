@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { DIRETORIO_DE_EVIDENCIAS, nomeDeEvidencia } from '../../scripts/captura-de-tela/index';
-import { clicarNoPontoCentral, esperarOMapGrid } from '../e2e/helpers/mapgrid-page';
+import { clicarNoPontoCentral, esperarOMapGrid, linhaDe } from '../e2e/helpers/mapgrid-page';
 import { COLLECTION_NAME } from '../helper-collection';
 import { ensureMapGridPresetCentradoEm } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
@@ -20,6 +20,7 @@ import { testEnv } from '../test-env';
  * do topo do README, que precisa mostrar o layout em repouso.
  */
 
+const CIDADE_ISOLADA = 'Manaus';
 const MANAUS: [number, number] = [-60.0255, -3.119];
 const ZOOM_DE_CIDADE = 12;
 
@@ -34,9 +35,16 @@ const evidencia = (): string | undefined => {
     );
   }
 
+  /*
+   * O rótulo é fixo, e não o `EVIDENCE_LABEL` do ambiente: a captura do README
+   * lê a mesma variável, e com as duas honrando o mesmo rótulo os dois
+   * roteiros escrevem no MESMO arquivo — a segunda captura apaga a primeira,
+   * sem erro nenhum. Aconteceu: o "depois" desta task saiu sendo a tela do
+   * README.
+   */
   return `${DIRETORIO_DE_EVIDENCIAS}/${nomeDeEvidencia({
     task,
-    rotulo: process.env.EVIDENCE_LABEL ?? 'clique-no-ponto',
+    rotulo: 'clique-no-ponto',
     momento,
   })}`;
 };
@@ -72,6 +80,15 @@ test('captura a tela depois do clique num marcador', async ({ page }) => {
   await expect(page.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
   await clicarNoPontoCentral(page);
   await page.waitForTimeout(3_000);
+
+  /*
+   * Traz a linha do item para dentro da grade visível. Sem isto a imagem prova
+   * metade: o marcador muda de cor e as ações em lote aparecem no cabeçalho,
+   * mas a linha marcada fica fora do que se vê. Guardado porque no "antes" o
+   * clique leva para a tela do item, e lá não há grade nenhuma.
+   */
+  const linha = linhaDe(page, CIDADE_ISOLADA);
+  if ((await linha.count()) > 0) await linha.scrollIntoViewIfNeeded();
 
   await page.screenshot({ path: caminho, animations: 'disabled' });
 });
