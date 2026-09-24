@@ -31,4 +31,6 @@ export interface OpcoesDeCentralizacao {
 export interface ICentralizadorDeMapa {
   /** Devolve se pediu movimento ao mapa. */
   centralizar(geometria: unknown, opcoes?: OpcoesDeCentralizacao): boolean;
+  /** Enquadra a coleção inteira. */
+  enquadrarTudo(): void;
 }

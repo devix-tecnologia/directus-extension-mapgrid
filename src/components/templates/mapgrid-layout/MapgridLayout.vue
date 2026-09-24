@@ -38,15 +38,6 @@ const faltaLayout = computed(() => !props.grade?.component || !props.mapa?.compo
 
 const doMapa = <T>(chave: string): T | undefined => props.mapa?.state[chave] as T | undefined;
 
-/**
- * Reenquadrar é do mapa deles: `fitDataBounds` reajusta ao conjunto atual. Sem
- * isso a barra do mapa teria de falar com uma instância do MapLibre que não é
- * nossa.
- */
-const reenquadrar = (): void => {
-  doMapa<() => void>('fitDataBounds')?.();
-};
-
 const painelDoMapa = ref<HTMLElement | null>(null);
 
 const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
@@ -74,6 +65,10 @@ watch(
   () => props.mapa?.state?.cameraOptions,
   () => centralizador.value?.aoMoverACamera()
 );
+
+const reenquadrar = (): void => {
+  centralizador.value?.enquadrarTudo();
+};
 
 /**
  * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade

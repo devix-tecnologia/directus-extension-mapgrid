@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick, reactive, useAttrs } from 'vue';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
 import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
+import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import MapgridLayout from './MapgridLayout.vue';
 
 /**
@@ -170,6 +171,40 @@ describe('MapgridLayout — o clique no ponto', () => {
       await vi.advanceTimersByTimeAsync(1_000);
       expect(estado.geojsonBounds).toBe(ultimo);
       expect(estado.geojson).toMatchObject({ bbox: bboxDaColecao });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('o reenquadrar da toolbar enquadra a coleção, mesmo com um clique na linha ainda pendente', async () => {
+    vi.useFakeTimers();
+    try {
+      montarComposicao();
+      const bboxDaColecao = [-74, -34, -34, 5];
+      let bboxLidoPeloDirectus: unknown;
+      const estado = reactive<Record<string, unknown>>({
+        cameraOptions: { center: [0, 0], zoom: 3 },
+        fitDataBounds: vi.fn(() => {
+          bboxLidoPeloDirectus = [...(estado.geojson as { bbox: number[] }).bbox];
+        }),
+        geojson: { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' },
+        geojsonBounds: undefined,
+        geometryField: 'location',
+        selection: [],
+      });
+      const mapa = embutidoFalso('map', estado);
+      const grade = embutidoFalso('tabular', { items: [] });
+      const wrapper = mount(MapgridLayout, {
+        props: { grade: grade.embutido, mapa: mapa.embutido },
+        global: { components: directusComponentStubs },
+      });
+
+      const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+      onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
+      wrapper.findComponent(MapToolbar).vm.$emit('reset');
+
+      expect(estado.fitDataBounds).toHaveBeenCalledOnce();
+      expect(bboxLidoPeloDirectus).toEqual(bboxDaColecao);
     } finally {
       vi.useRealTimers();
     }

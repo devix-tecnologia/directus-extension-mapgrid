@@ -104,30 +104,46 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       abaixo
 
 ### Fase 3: o que sai
-- [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem —
+- [x] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem —
       os dois primeiros já não têm arquivo, mas `src/components/index.ts` ainda
       os **exportava** de `./organisms/...`, um caminho que não existe. Nenhum
       gate pegou: o barril não tem importador, então nem o `vue-tsc` nem o build
       chegam nele. As duas linhas saíram em 2026-09-24. O `MapToolbar` **fica**
       (decisão abaixo)
-- [ ] O "reenquadrar" da `MapToolbar` passa pelo `CentralizadorDoMapaDirectus`
+      Fechado em 2026-09-24: não havia stub próprio dos componentes que saíram
+      (os de `directus-mocks.ts` são dos componentes do Directus, e seguem em
+      uso); o barril ficou sem o `ValueCell`
+- [x] O "reenquadrar" da `MapToolbar` passa pelo `CentralizadorDoMapaDirectus`
       (`enquadrarTudo`), em vez de chamar o `fitDataBounds` do layout do
       Directus direto (`doMapa('fitDataBounds')`)
-- [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador.
+      Fechado em 2026-09-24. O teste achou um defeito: reenquadrar com uma
+      insistência pendente enquadrava o alvo, porque o `fitDataBounds` lê o
+      `bbox` que o centralizador tinha trocado; `enquadrarTudo` o devolve antes
+- [x] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador.
       Inventário conferido em 2026-09-24, sem chamador de produção: `table-sort`
       (só o próprio teste e o barril `src/contract/index.ts`), `fieldsToFetch`
       (só o próprio teste) e o `ValueCell` inteiro — componente, story, mock e
       teste — que era da célula do `TableComponent`. Apagar o `ValueCell` mexe
       no padrão storytype da task-003, e por isso ficou fora desta rodada
-- [ ] A migração de preset da task-005 **fica**: `layoutQuery.fields` continua
+      Fechado em 2026-09-24 com Sidarta autorizando a remoção: saíram também
+      `services/geo`, `services/table`, `services/value-formatter`, `ValueCell`
+      e `is-record`, achados por alcançabilidade a partir de `src/index.ts`
+      (1.524 linhas). Os testes da integração que exercitavam essas funções
+      saíram; os da API ficaram
+- [x] A migração de preset da task-005 **fica**: `layoutQuery.fields` continua
       sendo o contrato
-- [ ] Decidir o destino da migração do formato numerado (`coluna1..5`). Ela saiu
+      `layoutQuery.fields` segue sendo o contrato, lido pela grade do Directus
+- [x] Decidir o destino da migração do formato numerado (`coluna1..5`). Ela saiu
       na prática: o `normalizeLayoutOptions` segue em `src/contract/`, mas nada
       em `src/index.ts` o chama, e a grade embutida lê `fields` direto da
       consulta. Um preset da versão antiga não perde dados, mas as colunas dele
       deixam de ser honradas. Ou a migração volta, ou ela é abandonada de
       propósito — e aí saem juntos o `normalizeLayoutOptions` e o e2e que a
       cobria, hoje parado em `test.fixme` no `mapgrid-columns.spec.ts`
+      Decidido por Sidarta em 2026-09-24: **abandonada** — ninguém usa uma
+      versão publicada do MapGrid. Saíram o `normalizeLayoutOptions`, as chaves
+      antigas do `LayoutOptions` (que fica com `tabular`, `map` e `zoomOnClick`),
+      o e2e parado e o preset legado; o README avisa quem vem da 1.x
 
 ### Fase 4: verificação
 - [ ] Os 155 unitários de hoje se apoiam nos componentes que saem; refazer o que

@@ -97,35 +97,6 @@ export async function ensureMapGridPresetCentradoEm(
   await apiRequest('POST', '/presets', mapGridPresetCentradoEm(collection, centro, zoom, opcoes));
 }
 
-/**
- * A preset in the shape written before `fields` existed: the grid columns live
- * in five numbered keys. Used to prove that a collection configured by an
- * earlier version of the extension still shows its columns.
- */
-export const legacyMapGridPresetFor = (collection: string): Omit<Preset, 'id'> => ({
-  collection,
-  layout: 'mapgrid',
-  layout_query: { mapgrid: { page: 1, limit: 25, sort: ['name'] } },
-  layout_options: {
-    mapgrid: {
-      zoomOnClick: true,
-      geolocation: 'location',
-      title: '{{name}}',
-      // deliberately leaves coluna2 blank: the gap has to close, not render
-      coluna1: 'name',
-      coluna3: 'status',
-    },
-  },
-});
-
-/** Replaces the collection's preset with one in the pre-`fields` format. */
-export async function ensureLegacyMapGridPreset(
-  collection: string = COLLECTION_NAME
-): Promise<void> {
-  await deleteAllPresetsFor(collection);
-  await apiRequest('POST', '/presets', legacyMapGridPresetFor(collection));
-}
-
 /*
  * Qual preset o Directus realmente le.
  *

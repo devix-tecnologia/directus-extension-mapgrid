@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CentralizadorDoMapaDirectus } from './centralizador-de-mapa';
 import type { Retangulo } from './centralizador-de-mapa.types';
 
@@ -17,6 +17,7 @@ function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem =
     cameraOptions: camera ?? (visivel ? { bbox: [...visivel], zoom: 12 } : undefined),
     geojson: { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' },
     geojsonBounds: undefined,
+    fitDataBounds: vi.fn(),
   };
   const pendentes: (() => void)[] = [];
   const repeticoes: { cancelada: boolean; intervalo: number; tarefa: () => void }[] = [];
@@ -283,5 +284,33 @@ describe('antes de o mapa do Directus terminar de carregar', () => {
     moverACamera(VISIVEL);
     centralizador.centralizar(ponto(-40.0, -20.0));
     expect(ativas()).toHaveLength(0);
+  });
+});
+
+describe('enquadrar tudo', () => {
+  it('pede ao Directus o enquadramento da coleção', () => {
+    const { centralizador, estado } = montar();
+    centralizador.enquadrarTudo();
+    expect(estado.fitDataBounds).toHaveBeenCalledOnce();
+  });
+
+  it('com uma insistência pendente, devolve o bbox da coleção antes — o fitDataBounds deles lê esse bbox', () => {
+    const { ativas, bboxDaColecao, bboxLido, centralizador, estado } = montar({ pronto: false });
+    centralizador.centralizar(ponto(-40.0, -20.0));
+    let bboxQuandoChamado: unknown;
+    (estado.fitDataBounds as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      bboxQuandoChamado = [...bboxLido()];
+    });
+
+    centralizador.enquadrarTudo();
+
+    expect(bboxQuandoChamado).toEqual(bboxDaColecao);
+    expect(ativas()).toHaveLength(0);
+  });
+
+  it('sem fitDataBounds no estado, não faz nada e não quebra', () => {
+    const { centralizador, estado } = montar();
+    delete estado.fitDataBounds;
+    expect(() => centralizador.enquadrarTudo()).not.toThrow();
   });
 });

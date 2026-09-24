@@ -1,15 +1,14 @@
 /**
  * The catalogue of mappable collections used by stories and tests.
  *
- * Each entry is a coherent collection — items, fields, popup template, columns
- * and camera — rather than a loose list of points. The set exists to show what
+ * Each entry is a coherent collection — items and fields — rather than a loose
+ * list of points. The set exists to show what
  * the extension is: scattered points, clustered points, points on both sides of
  * the date line, and a half-filled collection, all in the same component. One
  * story per kind covers the behaviour each of them exercises.
  */
 
-import type { GeoItem, MapCameraOptions, PointCoordinates } from '../contract/index';
-import type { Header } from '../services/table/table.types';
+import type { GeoItem } from '../contract/index';
 
 /** Um campo da coleção como o Storybook precisa vê-lo. */
 export interface CollectionFieldSummary {
@@ -23,24 +22,16 @@ export interface MappableKind {
   id: string;
   label: string;
   geolocationField: string;
-  titleTemplate: string;
-  columns: string[];
-  camera: MapCameraOptions;
   items: GeoItem[];
 }
 
-const pointAt = (coordinates: PointCoordinates) => ({ type: 'Point' as const, coordinates });
-
-const BRAZIL: MapCameraOptions = { mapCenterLng: -47.9292, mapCenterLat: -15.7801, mapZoom: 4 };
+const pointAt = (coordinates: [number, number]) => ({ type: 'Point' as const, coordinates });
 
 export const MAPPABLE_KINDS: MappableKind[] = [
   {
     id: 'landmarks',
     label: 'Scattered points',
     geolocationField: 'location',
-    titleTemplate: '{{name}}',
-    columns: ['name', 'city', 'location'],
-    camera: BRAZIL,
     items: [
       { id: 1, name: 'Praça da Sé', city: 'São Paulo', location: pointAt([-46.6333, -23.5505]) },
       {
@@ -74,9 +65,6 @@ export const MAPPABLE_KINDS: MappableKind[] = [
     id: 'units',
     label: 'Clustered points',
     geolocationField: 'position',
-    titleTemplate: '{{code}} — {{district}}',
-    columns: ['code', 'district', 'status'],
-    camera: { mapCenterLng: -46.64, mapCenterLat: -23.55, mapZoom: 12 },
     // a dozen points within a few blocks: this is what makes clustering show up,
     // and therefore the only way a story can demonstrate a cluster
     items: Array.from({ length: 12 }, (_, index) => ({
@@ -91,9 +79,6 @@ export const MAPPABLE_KINDS: MappableKind[] = [
     id: 'sensors',
     label: 'Points on both sides of the date line',
     geolocationField: 'coord',
-    titleTemplate: '{{station}}',
-    columns: ['station', 'coord'],
-    camera: { mapCenterLng: 179, mapCenterLat: 0, mapZoom: 3 },
     // both sides of the 180th meridian: exercises the whole-turn adjustment,
     // without which the popup opens on a copy of the world that is off screen
     items: [
@@ -106,9 +91,6 @@ export const MAPPABLE_KINDS: MappableKind[] = [
     id: 'works',
     label: 'Half-filled collection',
     geolocationField: 'site',
-    titleTemplate: '{{title}}',
-    columns: ['title', 'crew', 'site'],
-    camera: BRAZIL,
     // half the items have no point: they show in the grid and not on the map,
     // which is the behaviour buildPointFeatureCollection guarantees
     items: [
@@ -133,10 +115,6 @@ export const DEFAULT_KIND_ID = 'landmarks';
 const titleCase = (field: string): string =>
   field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, ' ');
 
-/** The grid headers for the collection's configured columns. */
-export const headersFor = (kindId: string = DEFAULT_KIND_ID): Header[] =>
-  mappableKind(kindId).columns.map((column) => ({ text: titleCase(column), value: column }));
-
 /** The collection's fields as the options panel sees them. */
 export const fieldsFor = (kindId: string = DEFAULT_KIND_ID): CollectionFieldSummary[] => {
   const kind = mappableKind(kindId);
@@ -148,30 +126,3 @@ export const fieldsFor = (kindId: string = DEFAULT_KIND_ID): CollectionFieldSumm
     meta: field === kind.geolocationField ? { interface: 'map' } : null,
   }));
 };
-
-/** The preset options this collection stands for, ready to spread into props. */
-export const layoutOptionsFor = (kindId: string = DEFAULT_KIND_ID) => {
-  const kind = mappableKind(kindId);
-  const [coluna1, coluna2, coluna3, coluna4, coluna5] = kind.columns;
-
-  return {
-    title: kind.titleTemplate,
-    geolocation: kind.geolocationField,
-    zoomOnClick: false,
-    ...kind.camera,
-    fields: [...kind.columns],
-    // still emitted so a fixture can stand in for a preset written before
-    // `fields` existed, which is what the contract migration reads
-    coluna1,
-    coluna2,
-    coluna3,
-    coluna4,
-    coluna5,
-  };
-};
-
-/** The default collection's items. A shortcut for mocks that only need a list. */
-export const mockGeoItems: GeoItem[] = mappableKind(DEFAULT_KIND_ID).items;
-
-/** The default collection's headers. */
-export const mockHeaders: Header[] = headersFor();
