@@ -165,3 +165,52 @@ export async function clicarNoPontoCentral(page: Page): Promise<void> {
 
   await page.mouse.click(x, y);
 }
+
+/**
+ * As seções do painel de opções. As classes são nossas, postas em
+ * `MapgridOptions.vue`: dentro de cada seção quem desenha é o painel do
+ * Directus, e os rótulos dele mudam de idioma e de versão.
+ */
+export const OPCOES_DO_MAPA = '.mapgrid-option--map';
+export const OPCOES_DA_GRADE = '.mapgrid-option--grid';
+export const OPCOES_DO_ZOOM = '.mapgrid-option--zoom';
+
+/**
+ * Abre a gaveta de opções do layout na barra lateral. Ela vem recolhida, e as
+ * opções só existem no DOM depois — procurar por elas antes disto acha nada.
+ */
+export async function abrirOpcoesDoLayout(page: Page): Promise<void> {
+  const cabecalho = page.getByRole('button', { name: /^layers/ });
+  await expect(cabecalho).toBeVisible({ timeout: 30_000 });
+  if ((await cabecalho.getAttribute('aria-expanded')) !== 'true') await cabecalho.click();
+
+  await expect(page.locator(OPCOES_DO_ZOOM)).toBeVisible({ timeout: 30_000 });
+}
+
+/**
+ * Expande uma seção do painel. O `v-detail` do Directus só põe o conteúdo no
+ * DOM quando está aberto, então a prova de que abriu é o `.content` existir —
+ * e não a classe do cabeçalho, que não muda.
+ */
+export async function abrirSecaoDasOpcoes(page: Page, secao: string): Promise<void> {
+  const detalhe = page.locator(secao);
+  await expect(detalhe).toBeVisible({ timeout: 30_000 });
+
+  const conteudo = detalhe.locator('.content');
+  if ((await conteudo.count()) === 0) await detalhe.locator('.v-divider').first().click();
+
+  await expect(conteudo).toBeVisible({ timeout: 30_000 });
+}
+
+/**
+ * Escolhe um item num `v-select` de dentro de uma seção. A lista do menu deles
+ * é desenhada num portal, fora da seção, então o clique no item não pode ser
+ * procurado dentro dela.
+ */
+export async function escolherNoSeletor(page: Page, secao: string, item: RegExp): Promise<void> {
+  await page.locator(`${secao} .v-select`).first().click();
+
+  const opcao = page.getByRole('listitem').filter({ hasText: item }).first();
+  await expect(opcao).toBeVisible({ timeout: 20_000 });
+  await opcao.click();
+}
