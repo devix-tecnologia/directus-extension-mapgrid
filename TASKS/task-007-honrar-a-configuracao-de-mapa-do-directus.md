@@ -2,7 +2,7 @@
 
 Status: in-progress
 Type: feat
-Assignee: A definir
+Assignee: sidartaveloso
 Difficulty: 2
 Priority: 40
 
