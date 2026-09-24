@@ -10,14 +10,24 @@ import { computed, type Ref, shallowRef, type WritableComputedRef, watch } from 
  * duas escritas**, e publica um objeto onde a primeira não existe.
  *
  * E quase toda escrita daqui é dessa forma, porque é a forma que os layouts do
- * Directus usam: `{ ...layoutQuery.value, sort }`, `{ ...layoutOptions.value,
- * [chave]: valor }`. Medido em `src/index.test.ts`:
+ * Directus usam. O `syncRefProperty` deles — que é como `spacing`,
+ * `cameraOptions`, `clusterData`, `displayTemplate`, `page`, `limit` e `sort`
+ * são escritos nos dois embutidos — é literalmente
+ * `ref.value = { ...ref.value, [chave]: valor }`, lido no pacote do Directus
+ * 10.13.1. Cada uma dessas escritas depende de o prop já ter voltado.
  *
- * - ordenar pelo cabeçalho da grade deles troca `sort` e devolve `page` a 1 na
- *   mesma volta, e o `sort` sumia;
- * - gravar uma opção do mapa e uma da grade no mesmo tick deixava só a da
- *   grade no preset — as duas seções que existem justamente para não se
- *   sobrescreverem.
+ * `src/index.test.ts` fixa seis pares que se perdiam: opção do mapa com opção
+ * da grade, duas opções do próprio mapa, `zoomOnClick` com opção de embutido,
+ * duas chaves da consulta, uma chave da consulta de cada embutido, e marcação
+ * do marcador com marcação da caixa.
+ *
+ * **O que NÃO está provado, e a medição é explícita nisto**: nenhum gesto de
+ * interface que eu tenha conseguido dirigir no 10.13.1 põe duas escritas no
+ * mesmo tick. O e2e de persistência das duas seções passa igual com e sem este
+ * módulo — foi rodado nos dois estados de propósito, e o resultado é o mesmo
+ * preset. Entre um clique e outro de uma pessoa o prop sempre voltou. Ou seja:
+ * isto fecha uma janela real do código, não um defeito observado na tela. Quem
+ * achar o gesto, anote aqui.
  *
  * O espelho guarda o último valor publicado e se apaga assim que o prop muda.
  * A partir daí quem manda é o preset de verdade — inclusive quando ele volta

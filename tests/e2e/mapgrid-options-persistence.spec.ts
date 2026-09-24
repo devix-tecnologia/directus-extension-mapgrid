@@ -91,6 +91,13 @@ test('uma opção mudada no painel sobrevive ao reload', async ({ page }) => {
  * escreve o objeto inteiro para trocar uma chave. Mexer numa opção só nunca
  * provaria que a outra seção sobreviveu — ela nem existia no preset.
  *
+ * **O que ela não distingue, e está medido**: este spec passa igual com e sem
+ * o `useEscritaOtimista`. Foi rodado nos dois estados, e o preset final é o
+ * mesmo. Ou seja, ele prova que as duas seções coexistem, e não prova o defeito
+ * de escrita no mesmo tick — esse mora em `src/index.test.ts`, onde o duplo de
+ * teste atrasa o prop como o Vue atrasa. Entre dois cliques de uma pessoa o
+ * prop sempre voltou.
+ *
  * Os dois controles não foram escolhidos por gosto, e sim por serem os únicos
  * dos dois painéis que gravam e dão para mudar aqui:
  *

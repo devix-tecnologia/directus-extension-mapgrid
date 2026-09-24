@@ -134,11 +134,13 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       specs partem dos dois painéis da composição e, dentro deles, das classes
       dos layouts do Directus. A captura do README vinha com o mesmo defeito e
       foi junto
-- [ ] Regressão de persistência herdada da task-009: gravar pelo painel uma
+- [x] Regressão de persistência herdada da task-009: gravar pelo painel uma
       opção de cada layout embutido (por exemplo `displayTemplate` do mapa e o
       espaçamento da grade) e conferir as duas no preset efetivo depois de um
       reload. Prova que `layoutOptions.map` e `layoutOptions.tabular` não se
-      sobrescrevem, o que a regressão do `zoomOnClick` não alcança
+      sobrescrevem, o que a regressão do `zoomOnClick` não alcança.
+      Fechada em 2026-09-24 — ver "A janela de escrita no mesmo tick", abaixo.
+      **Ela passa com e sem a correção**, e isso está medido e registrado lá
 - [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
 - [ ] `pnpm screenshot` e evidência antes/depois — **o comando voltou a
       funcionar**, e a evidência do clique no marcador está acima. O `docs/tela.jpg`
@@ -318,6 +320,92 @@ medição.
 avisa que argumentos extras só chegam ao runner de host (`--host`), que é
 justamente o caminho que não funciona daqui. De dentro do espelho, a suíte roda
 inteira ou não roda.
+
+## A janela de escrita no mesmo tick — medida em 2026-09-24
+
+A Fase 4 pedia a regressão como **conferência**: provar que `layoutOptions.map`
+e `layoutOptions.tabular` não se sobrescrevem. Escrevendo o teste apareceu que a
+separação por seção estava certa e não bastava, e que o problema é maior do que
+as duas seções.
+
+Os três estados que a composição divide — `layoutOptions`, `layoutQuery` e
+`selection` — são `useSync`: ler é ler o **prop**, escrever é `emit`. O Directus
+grava na hora, mas o prop do Vue só volta quando o pai re-renderiza, no tick
+seguinte. Quem escreve no meio desse intervalo lê o valor **anterior às duas
+escritas**, e publica um objeto onde a primeira não existe.
+
+E é a forma de quase toda escrita daqui, porque é a forma deles: o
+`syncRefProperty` que escreve `spacing`, `cameraOptions`, `clusterData`,
+`displayTemplate`, `page`, `limit` e `sort` nos dois layouts embutidos é
+literalmente `ref.value = { ...ref.value, [chave]: valor }` — lido no pacote do
+Directus 10.13.1, não suposto.
+
+`src/index.ts` não tinha teste unitário nenhum até aqui, e é onde a composição
+mora. Os 144 unitários passavam com a janela inteira aberta.
+
+### O que foi medido
+
+Seis pares, vermelhos antes e verdes depois, em `src/index.test.ts`: opção do
+mapa com opção da grade, duas opções do próprio mapa, `zoomOnClick` com opção de
+embutido, duas chaves da consulta, uma chave da consulta de cada embutido, e
+marcação vinda do marcador com a vinda da caixa da grade. O duplo de teste
+atrasa o prop de propósito — um que devolvesse o valor na hora esconderia
+exatamente a janela, e o teste nasceria verde sem provar nada.
+
+A correção é o `useEscritaOtimista`, em `src/services/optimistic-sync/`: espelha
+o último valor publicado e se apaga assim que o prop muda.
+
+### E o que a falsificação disse — o achado desta rodada
+
+**O e2e passa igual com e sem a correção.** Rodado nos dois estados de propósito,
+mesma semente, mesmo Directus: 12 passam nos dois, e o preset final é byte a
+byte o mesmo. Nenhum gesto de interface que eu tenha conseguido dirigir no
+10.13.1 põe duas escritas no mesmo tick — entre um clique e outro de uma pessoa
+o prop sempre voltou.
+
+Então, dito sem rodeio: a correção fecha uma janela real do **código**, e não um
+defeito observado na tela. Fica, porque é barata e o padrão de escrita que a
+abre está em toda parte no que embutimos; mas quem for cobrá-la de uma tela
+precisa primeiro achar o gesto. Se achar, o lugar de anotar é o docblock do
+módulo.
+
+Isso também corrige a leitura da task-009 pela metade: continua verdade que
+gravar **uma** opção sempre sobreviveu, que era o que ela media.
+
+### Uma inferência minha que o pacote derrubou
+
+Cheguei a registrar que ordenar pelo cabeçalho da grade deles troca `sort` e
+devolve `page` a 1 na mesma volta. O `onSortChange` do layout tabular do 10.13.1
+só escreve `sort`. A frase saiu do texto. O que **é** escrita de montagem: o
+componente de mapa deles faz `limit.value = ...` no próprio `setup()`, sem
+condição, então toda montagem publica em `layoutQuery`.
+
+### Nota para a task-007
+
+A caixa "Cluster Nearby Data" do painel do mapa nasce **desabilitada** na coleção
+de teste. Eles a desabilitam quando `geometryType !== 'Point'`, e o campo
+`location` da semente é `json` com `meta.options` vazio — o tipo não é conhecido.
+A task-007 é justamente sobre honrar a configuração de mapa deles, e esta é uma
+opção que hoje não se alcança.
+
+## Onde a terceira rodada de 2026-09-24 parou
+
+**Fechado:** a regressão de persistência das duas seções do painel (Fase 4), com
+unitário, e2e e a falsificação nos dois estados. Junto veio a correção da janela
+de escrita no mesmo tick, que o teste destapou.
+
+**Sem evidência de tela, e de propósito:** nada desta rodada desenha. As únicas
+mudanças de markup são três classes de âncora (`.mapgrid-option--map/grid/zoom`)
+em `MapgridOptions.vue`, que não têm estilo. A captura sairia idêntica à já
+anexada, e duas imagens iguais não são evidência.
+
+**Parou aqui:** a Fase 2 segue terminando na decisão reservada (o `MapToolbar`,
+o zoom ao clicar e o popup), e o enquadramento pelo clique na linha continua
+dependendo dela. Da Fase 3 continuam abertos o código sem chamador já
+inventariado (`table-sort`, `fieldsToFetch`, `ValueCell`) e o destino da migração
+do formato numerado — que também é decisão reservada. Da Fase 4 continuam
+abertos os unitários de código morto, as stories, a regressão visual do espaço
+em branco, e o README.
 
 ## Notes
 
