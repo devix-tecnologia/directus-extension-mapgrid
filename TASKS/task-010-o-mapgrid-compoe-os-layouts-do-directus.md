@@ -82,9 +82,11 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 
 ### Fase 2: a composição
 - [x] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
-- [ ] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar —
-      **metade feito**: o clique deixou de navegar, mas o mapa não enquadra. Ver
-      "O enquadramento não acontece na tela", abaixo
+- [x] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar.
+      O clique deixou de navegar e o mapa enquadra pelo
+      `CentralizadorDoMapaDirectus`, contorno documentado de uma limitação do
+      componente do Directus — ver "O enquadramento pelo clique na linha",
+      abaixo. Fechado em 2026-09-23
 - [x] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
       a tela do item quando não está em modo de seleção, então **clicar num ponto
       hoje sai do MapGrid**. Antes da composição, clicar no marcador selecionava a
@@ -171,7 +173,102 @@ o clique faz.
     EVIDENCE_TASK=010 EVIDENCE_MOMENT=antes|depois \
       .sandcastle/no-espelho.sh pnpm screenshot
 
+## O enquadramento pelo clique na linha — fechado em 2026-09-23
+
+O mapa enquadra, e o e2e "clicar na linha enquadra o item no mapa" saiu do
+`test.fixme` e passa no ambiente docker (13 de 13, com o `fixme` antigo de
+colunas pulado).
+
+### A limitação, e por que o contorno é provisório
+
+Medido no Directus 10.13.1, em `app/src/layouts/map/components/map.vue`: o
+componente de mapa **não oferece como mover a câmera depois de montado**. A
+instância do MapLibre é um `let map` privado, sem `defineExpose`; a prop
+`camera` só é lida no `new Map({ ...props.camera })`. Remontar o componente com
+uma câmera nova funciona, mas foi **descartado**: a navegação entre leituras de
+placa (task-381 do geohub) centraliza a cada passo e faria dezenas de
+remontagens, cada uma recriando o mapa e baixando os tiles.
+
+O que o componente oferece é um `watch` de `bounds` que chama
+`map.fitBounds(props.data.bbox, { padding: 100, speed: 1.3, maxZoom: 14 })`. O
+contorno troca o `bbox` do `geojson` (no mesmo objeto, para não reenviar a
+coleção à fonte do mapa), entrega um `geojsonBounds` novo e devolve o `bbox`
+original depois. Para manter o zoom, o retângulo é a área visível menos o
+padding deles, em Mercator.
+
+Tudo isso mora num lugar só, a classe `CentralizadorDoMapaDirectus`
+(`src/services/centralizador-de-mapa/`), que implementa `ICentralizadorDeMapa`.
+O JSDoc dela registra a limitação, a versão medida, os três detalhes internos de
+que o contorno depende (`geojson`/`geojsonBounds` no estado, o `watch` de
+`bounds`, o `fitBounds` ler `data.bbox`) e que ela deve ser trocada por uma
+chamada ao suporte nativo **quando o componente do Directus ganhar a operação**
+— é o único lugar a mudar. O `MapgridLayout` só chama `centralizar()`.
+
+### Dois achados do e2e, que o unitário não via
+
+1. **O clique chegava antes do mapa.** O `watch` de `bounds` deles só é
+   registrado dentro do `map.on('load')` — estilo e tiles baixados. A grade fica
+   clicável cerca de um segundo antes; a troca de `bounds` se perdia. Não há
+   sinal de "carregou" fora do componente; o que há é o `moveend`, ligado
+   também no `load`, gravando `cameraOptions` no estado. Então, enquanto a
+   câmera nunca foi vista mudando, o centralizador **insiste**: reentrega o
+   `bounds` a cada 250 ms (prazo de 10 s) até `aoMoverACamera`.
+2. **O primeiro `moveend` pode não ser o nosso.** Na segunda medição o mapa se
+   moveu — para o enquadramento da coleção inteira, o `fitBounds` inicial do
+   próprio Directus. Encerrar a insistência porque "o alvo está na tela" era
+   frouxo: uma visão de mundo contém Manaus. A regra ficou: o primeiro
+   `moveend` só prova que o mapa escuta, e recebe **sempre** mais um `bounds`.
+
+E um terceiro, visto no vídeo: sem `bbox` na câmera (o preset traz só `center` e
+`zoom`), manter o zoom caía em "enquadrar o ponto por si mesmo". A área visível
+agora sai do zoom com que o mapa nasceu — no MapLibre o mundo tem 512·2^zoom
+pixels.
+
+### Evidência — tira de quadros parados
+
+O que muda é movimento, e uma captura só não distingue "o mapa voou até lá" de
+"já estava lá". A evidência é uma sequência: o painel do mapa fotografado parado
+em Brasília (zoom 9) e depois de cada clique nas linhas de Manaus, Recife e
+Curitiba, da esquerda para a direita. O "antes" é a base da branch (`7250590`);
+o "depois" é a branch.
+
+**`zoomOnClick` desligado** — centraliza mantendo o zoom (o caso da task-381):
+
+![Antes: o mapa fica em Brasília nos quatro quadros](assets/task-010-enquadramento-mantendo-o-zoom-antes.jpg)
+![Depois: Brasília, Manaus, Recife e Curitiba, na mesma escala](assets/task-010-enquadramento-mantendo-o-zoom-depois.jpg)
+
+**`zoomOnClick` ligado** — aproxima até o `maxZoom` 14 do Directus:
+
+![Antes: o mapa fica em Brasília nos quatro quadros](assets/task-010-enquadramento-aproximando-antes.jpg)
+![Depois: Brasília, e as três capitais em nível de rua](assets/task-010-enquadramento-aproximando-depois.jpg)
+
+As tiras saem de `tests/screenshot/evidencia-enquadramento.spec.ts`, montadas no
+próprio navegador, e pesam de 34 a 45 KB cada:
+
+    EVIDENCE_TASK=task-010 EVIDENCE_MOMENT=antes|depois pnpm screenshot
+
+O vídeo da mesma sequência continua sendo gravado, em
+`test-results/video-evidencia/`, fora do repositório.
+
+**Por que tira, e não vídeo nem GIF.** A primeira versão desta evidência entrou
+como quatro `.webm` e quatro GIFs: 16 MB, oito vezes o pack inteiro do
+repositório (2 MiB). Sidarta fixou o teto de **300 KB por arquivo** em
+`TASKS/assets`, e `scripts/tamanho-de-evidencia/` reprova o `pnpm test` quando
+um arquivo versionado — ou prestes a ser — passa dele. Os arquivos pesados
+saíram do histórico da branch, que nunca foi publicada. O teto também pegou
+`task-008-spike-clique.png` (316 KB), recomprimido para 132 KB.
+
+**Dois cuidados da spec, ambos medidos.** Ela espera o mapa **parar** (duas
+fotos seguidas iguais) em vez de um tempo fixo: com `zoomOnClick` o voo de zoom 9
+a 14 dura mais de 4 s, e os quadros saíam no meio dele, borrados. E no "depois"
+ela **exige** que cada quadro difira do anterior: numa rodada o `load` do
+MapLibre atrasou além dos 10 s de insistência do centralizador, o mapa não se
+moveu, e a spec gravou quatro Brasílias com sucesso.
+
 ## O enquadramento não acontece na tela — medido em 2026-09-24
+
+> Superado pela seção acima: o diagnóstico abaixo continua certo, e é a
+> limitação que o `CentralizadorDoMapaDirectus` contorna.
 
 Achado ao escrever o e2e do clique no ponto, e ele derruba um item que o
 documento dava por fechado.

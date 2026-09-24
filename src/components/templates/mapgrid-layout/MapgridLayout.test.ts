@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, h, useAttrs } from 'vue';
+import { defineComponent, h, nextTick, reactive, useAttrs } from 'vue';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
 import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
 import MapgridLayout from './MapgridLayout.vue';
@@ -105,11 +105,14 @@ describe('MapgridLayout — o clique no ponto', () => {
     expect(composicao.atualizarSelecao).not.toHaveBeenCalled();
   });
 
-  it('não toca no clique da linha, que continua enquadrando o item no mapa', () => {
+  it('o clique na linha leva o mapa até o item pelo fitBounds do Directus, e não pelo cameraOptions', () => {
     const composicao = montarComposicao();
     const atualizarCamera = vi.fn();
+    const geojson = { bbox: [-74, -34, -34, 5], features: [], type: 'FeatureCollection' };
     const mapa = embutidoFalso('map', {
       geometryField: 'location',
+      geojson,
+      geojsonBounds: undefined,
       selection: [],
       'onUpdate:selection': vi.fn(),
       cameraOptions: { center: [0, 0], zoom: 3 },
@@ -125,9 +128,50 @@ describe('MapgridLayout — o clique no ponto', () => {
     const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
     onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
 
-    expect(atualizarCamera).toHaveBeenCalledWith(
-      expect.objectContaining({ center: [BRASILIA[0], BRASILIA[1]] })
-    );
+    const [oeste, sul, leste, norte] = geojson.bbox as [number, number, number, number];
+    expect(oeste).toBeLessThanOrEqual(BRASILIA[0]);
+    expect(leste).toBeGreaterThanOrEqual(BRASILIA[0]);
+    expect(sul).toBeLessThanOrEqual(BRASILIA[1]);
+    expect(norte).toBeGreaterThanOrEqual(BRASILIA[1]);
+    expect(mapa.embutido.state.geojsonBounds).toEqual(geojson.bbox);
+    expect(atualizarCamera).not.toHaveBeenCalled();
     expect(composicao.atributosDaGrade.onRowClick).toBeTypeOf('function');
+  });
+
+  it('enquanto o mapa carrega, insiste no bounds até o moveend do Directus gravar a câmera', async () => {
+    vi.useFakeTimers();
+    try {
+      montarComposicao();
+      const bboxDaColecao = [-74, -34, -34, 5];
+      const geojson = { bbox: [...bboxDaColecao], features: [], type: 'FeatureCollection' };
+      const estado = reactive<Record<string, unknown>>({
+        cameraOptions: { center: [0, 0], zoom: 3 },
+        geojson,
+        geojsonBounds: undefined,
+        geometryField: 'location',
+        selection: [],
+      });
+      const mapa = embutidoFalso('map', estado);
+      const grade = embutidoFalso('tabular', { items: [] });
+      mount(MapgridLayout, {
+        props: { grade: grade.embutido, mapa: mapa.embutido },
+        global: { components: directusComponentStubs },
+      });
+
+      const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+      onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
+      const primeiro = estado.geojsonBounds;
+      await vi.advanceTimersByTimeAsync(300);
+      expect(estado.geojsonBounds).not.toBe(primeiro);
+
+      estado.cameraOptions = { bbox: [-49, -17, -46, -14], center: BRASILIA, zoom: 8 };
+      await nextTick();
+      const ultimo = estado.geojsonBounds;
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(estado.geojsonBounds).toBe(ultimo);
+      expect(estado.geojson).toMatchObject({ bbox: bboxDaColecao });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
