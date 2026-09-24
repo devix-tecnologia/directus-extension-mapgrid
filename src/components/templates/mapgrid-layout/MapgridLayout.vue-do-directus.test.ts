@@ -10,6 +10,18 @@ it('roda com o Vue do Directus que o e2e usa, e não com o do projeto', () => {
   expect(version).toBe('3.4.27');
 });
 
+/**
+ * Sem esta guarda o arquivo inteiro mente: se o `mount` montar com outro Vue, o
+ * estado que o teste cria é de uma reatividade e o efeito de render é de outra,
+ * nada propaga, e todo teste de componente aqui reprova sem defeito nenhum.
+ */
+it('monta com esse mesmo Vue: uma reatividade só, não duas', () => {
+  const componente = defineComponent({ setup: () => () => h('div') });
+  const app = (mount(componente).vm.$ as { appContext: { app: { version: string } } }).appContext
+    .app;
+  expect(app.version).toBe(version);
+});
+
 function embutidoFalso(id: string, state: Record<string, unknown>) {
   const recebidos: { atributos: Record<string, unknown> } = { atributos: {} };
   const component = defineComponent({
@@ -41,7 +53,7 @@ describe('geometria nativa: entregar ao mapa depois de buscar a geometria que a 
   };
   const esperarBusca = () => new Promise((resolver) => setTimeout(resolver, 0));
 
-  it.fails('depois de um primeiro voo, o layout de mapa recebe o bounds do item buscado', async () => {
+  it('depois de um primeiro voo, o layout de mapa recebe o bounds do item buscado', async () => {
     const boundsRecebidos: unknown[] = [];
     const layoutDeMapa = defineComponent({
       inheritAttrs: false,
@@ -112,6 +124,8 @@ describe('geometria nativa: entregar ao mapa depois de buscar a geometria que a 
     await nextTick();
 
     expect(buscarItens).toHaveBeenCalledWith([2], ['id', 'trajeto']);
-    expect(boundsRecebidos[boundsRecebidos.length - 1]).toEqual([-60.0255, -3.119, -48.5044, -1.4558]);
+    expect(boundsRecebidos[boundsRecebidos.length - 1]).toEqual([
+      -60.0255, -3.119, -48.5044, -1.4558,
+    ]);
   });
 });
