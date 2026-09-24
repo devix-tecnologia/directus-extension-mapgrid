@@ -1,6 +1,15 @@
 import type { LayoutConfig, LayoutProps } from '@directus/types';
 import { describe, expect, it, vi } from 'vitest';
-import { embutirLayout, LAYOUTS_EMBUTIDOS, layoutEstaRegistrado } from './embedded-layout';
+import {
+  CONTRATO_DOS_EMBUTIDOS,
+  conferirContrato,
+  embutirLayout,
+  LAYOUTS_EMBUTIDOS,
+  layoutEstaRegistrado,
+  MARCA_DO_CONTRATO,
+  SLOT_DE_OPCOES,
+} from './embedded-layout';
+import type { LayoutEmbutido } from './embedded-layout.types';
 
 const propsDeLayout = (): LayoutProps => ({
   collection: 'cidades',
@@ -102,28 +111,120 @@ describe('embutirLayout', () => {
  *
  * Embutir os layouts do Directus depende do formato do `setup()` deles, que não
  * é API pública: uma atualização pode renomear uma chave e a composição para de
- * funcionar sem avisar. Estes testes não montam o Directus — eles fixam **o que
- * a implementação exige**, para que a exigência esteja escrita num lugar só.
+ * funcionar **sem avisar** — a grade fica vazia, o clique na linha volta a
+ * navegar, o mapa não acha a geometria. Nada disso levanta exceção.
  *
- * Quando o e2e quebrar contra uma versão nova, é aqui que se confere o que
- * mudou. As chaves vêm da medição de 2026-09-19 contra o Directus 10.13.1.
+ * Por isso o contrato mora no código, não num comentário: `conferirContrato`
+ * compara o que o layout devolveu com o que a composição lê, e `embutirLayout`
+ * grita no console o que faltou. A versão anterior deste bloco comparava uma
+ * lista literal com ela mesma e não tinha como falhar por causa do Directus.
+ *
+ * Aqui se fixa a regra; quem mede contra o Directus de verdade é o
+ * `tests/e2e/mapgrid-contrato.spec.ts`, que reprova se a mensagem aparecer.
  */
 describe('o contrato com os layouts do Directus', () => {
-  const EXIGIDO_DA_GRADE = ['items', 'tableHeaders', 'tableSort', 'onSortChange', 'onRowClick'];
-  const EXIGIDO_DO_MAPA = ['items', 'geojson', 'geometryField', 'fitDataBounds', 'cameraOptions'];
+  const estadoCompleto = (id: 'tabular' | 'map'): Record<string, unknown> =>
+    Object.fromEntries(CONTRATO_DOS_EMBUTIDOS[id].map((chave) => [chave, null]));
 
-  it('a grade precisa destas chaves, e o mapa destas outras', () => {
-    expect(EXIGIDO_DA_GRADE).toEqual(
-      expect.arrayContaining(['items', 'tableHeaders', 'onSortChange'])
-    );
-    expect(EXIGIDO_DO_MAPA).toEqual(
-      expect.arrayContaining(['geometryField', 'fitDataBounds', 'cameraOptions'])
-    );
+  it('não acusa nada quando o layout devolve tudo que a composição lê', () => {
+    const registro = [layoutFalso('tabular', () => estadoCompleto('tabular'))];
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const embutido = embutirLayout({
+      id: 'tabular',
+      registro,
+      props: propsDeLayout(),
+      emit: vi.fn(),
+    });
+
+    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([]);
+    expect(erro).not.toHaveBeenCalled();
+    erro.mockRestore();
+  });
+
+  it('acusa a chave que sumiu do que o layout devolveu', () => {
+    const semCabecalhos = estadoCompleto('tabular');
+    delete semCabecalhos.tableHeaders;
+    delete semCabecalhos.onSortChange;
+
+    const embutido = embutirLayout({
+      id: 'tabular',
+      registro: [layoutFalso('tabular', () => semCabecalhos)],
+      props: propsDeLayout(),
+      emit: vi.fn(),
+    });
+
+    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual(['tableHeaders', 'onSortChange']);
+  });
+
+  it('o painel de opções é do contrato: sem ele a barra lateral fica sem a configuração deles', () => {
+    const semPainel = {
+      ...layoutFalso('map', () => estadoCompleto('map')),
+      slots: {},
+    } as LayoutConfig;
+
+    const embutido = embutirLayout({
+      id: 'map',
+      registro: [semPainel],
+      props: propsDeLayout(),
+      emit: vi.fn(),
+    });
+
+    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([SLOT_DE_OPCOES]);
+  });
+
+  it('a chave que existe valendo `undefined` conta como entregue', () => {
+    /*
+     * `cameraOptions` nasce sem valor enquanto ninguém mexeu na câmera, e
+     * `error` fica nulo sem erro. Exigir valor transformaria o contrato num
+     * alarme falso a cada primeira visita; o que se exige é a chave.
+     */
+    const comVazios = { ...estadoCompleto('map'), cameraOptions: undefined };
+
+    const embutido = embutirLayout({
+      id: 'map',
+      registro: [layoutFalso('map', () => comVazios)],
+      props: propsDeLayout(),
+      emit: vi.fn(),
+    });
+
+    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([]);
+  });
+
+  it('grita no console ao embutir, que é como a falta chega ao e2e', () => {
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    embutirLayout({
+      id: 'map',
+      registro: [layoutFalso('map', () => ({}))],
+      props: propsDeLayout(),
+      emit: vi.fn(),
+    });
+
+    expect(erro).toHaveBeenCalledTimes(1);
+    const mensagem = String(erro.mock.calls[0]?.[0]);
+    expect(mensagem).toContain(MARCA_DO_CONTRATO);
+    expect(mensagem).toContain('map');
+    expect(mensagem).toContain('geometryField');
+    erro.mockRestore();
+  });
+
+  it('só cobra de quem tem contrato declarado, e não de um layout qualquer', () => {
+    const embutido = embutirLayout({
+      id: 'cards',
+      registro: [layoutFalso('cards', () => ({}))],
+      props: propsDeLayout(),
+      emit: vi.fn(),
+    });
+
+    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([]);
   });
 
   it('os ids procurados no registro são os do app, e não inventados', () => {
     expect(LAYOUTS_EMBUTIDOS.grade).toBe('tabular');
     expect(LAYOUTS_EMBUTIDOS.mapa).toBe('map');
+    expect(CONTRATO_DOS_EMBUTIDOS[LAYOUTS_EMBUTIDOS.grade]).toContain('tableHeaders');
+    expect(CONTRATO_DOS_EMBUTIDOS[LAYOUTS_EMBUTIDOS.mapa]).toContain('geometryField');
   });
 
   it('reconhece um layout ausente do registro, que é como a falta aparece', () => {

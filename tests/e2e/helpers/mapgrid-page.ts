@@ -31,6 +31,9 @@ export const LINHAS = `${PAINEL_GRADE} tbody tr`;
 /** O `+` que abre o seletor de campos, no cabeçalho do layout tabular deles. */
 export const ADICIONAR_CAMPO = `${PAINEL_GRADE} thead .add-field`;
 
+/** O canvas do MapLibre, que é onde os marcadores são desenhados. */
+export const CANVAS_DO_MAPA = `${PAINEL_MAPA} .maplibregl-canvas`;
+
 const CARREGAMENTO = 60_000;
 
 export async function login(page: Page): Promise<void> {
@@ -117,4 +120,101 @@ export async function ordenarPor(
 
   await expect(item).toBeVisible({ timeout: 20_000 });
   await item.click();
+}
+
+/** A linha da grade que fala de um item, achada pelo texto de uma célula. */
+export function linhaDe(page: Page, texto: string) {
+  return page.locator(LINHAS, { hasText: texto }).first();
+}
+
+/**
+ * Clica no marcador que está no centro do canvas do mapa.
+ *
+ * Duas coisas, e as duas precisam ser assim. Achar um marcador numa tela de
+ * MapLibre exige saber onde a câmera está, e a instância do mapa é do layout do
+ * Directus — de fora não se alcança; quem diz de onde a câmera parte é o preset
+ * semeado, e aí o ponto semeado nasce no centro.
+ *
+ * E esperar o canvas aparecer não basta: a camada de pontos desenha depois, e
+ * um clique antes disso cai no vazio — foi o que fez este spec falhar com o
+ * marcador na tela da captura. O sinal de que há ponto sob o mouse é o cursor
+ * do canvas virar `pointer`, que o próprio MapLibre troca ao entrar numa
+ * camada interativa. Medido: leva ~2s depois de a grade aparecer.
+ */
+export async function clicarNoPontoCentral(page: Page): Promise<void> {
+  const canvas = page.locator(CANVAS_DO_MAPA);
+  await expect(canvas).toBeVisible({ timeout: CARREGAMENTO });
+
+  const caixa = await canvas.boundingBox();
+  if (!caixa) throw new Error('O canvas do mapa não tem caixa delimitadora');
+
+  const x = caixa.x + caixa.width / 2;
+  const y = caixa.y + caixa.height / 2;
+
+  await expect
+    .poll(
+      async () => {
+        // o cursor so muda com movimento: dois pontos, para haver `mousemove`
+        await page.mouse.move(x + 1, y);
+        await page.mouse.move(x, y);
+        return canvas.evaluate((elemento) => getComputedStyle(elemento).cursor);
+      },
+      { timeout: 30_000 }
+    )
+    .toBe('pointer');
+
+  await page.mouse.click(x, y);
+}
+
+/**
+ * As seções do painel de opções. As classes são nossas, postas em
+ * `MapgridOptions.vue`: dentro de cada seção quem desenha é o painel do
+ * Directus, e os rótulos dele mudam de idioma e de versão.
+ */
+export const OPCOES_DO_MAPA = '.mapgrid-option--map';
+export const OPCOES_DA_GRADE = '.mapgrid-option--grid';
+export const OPCOES_DO_ZOOM = '.mapgrid-option--zoom';
+
+/**
+ * Abre a gaveta de opções do layout na barra lateral. Ela vem recolhida, e as
+ * opções só existem no DOM depois — procurar por elas antes disto acha nada.
+ */
+export async function abrirOpcoesDoLayout(page: Page): Promise<void> {
+  const cabecalho = page.getByRole('button', { name: /^layers/ });
+  await expect(cabecalho).toBeVisible({ timeout: 30_000 });
+  if ((await cabecalho.getAttribute('aria-expanded')) !== 'true') await cabecalho.click();
+
+  await expect(page.locator(OPCOES_DO_ZOOM)).toBeVisible({ timeout: 30_000 });
+}
+
+/**
+ * Expande uma seção do painel. O `v-detail` do Directus só põe o conteúdo no
+ * DOM quando está aberto, então a prova de que abriu é o `.content` existir —
+ * e não a classe do cabeçalho, que não muda.
+ *
+ * `> .content` de propósito, e não `.content`: dentro da seção do mapa o
+ * template de exibição deles tem um `span.content` próprio, o contenteditável,
+ * e um seletor descendente casa com os dois.
+ */
+export async function abrirSecaoDasOpcoes(page: Page, secao: string): Promise<void> {
+  const detalhe = page.locator(secao);
+  await expect(detalhe).toBeVisible({ timeout: 30_000 });
+
+  const conteudo = page.locator(`${secao} > .content`);
+  if ((await conteudo.count()) === 0) await detalhe.locator('.v-divider').first().click();
+
+  await expect(conteudo).toBeVisible({ timeout: 30_000 });
+}
+
+/**
+ * Escolhe um item num `v-select` de dentro de uma seção. A lista do menu deles
+ * é desenhada num portal, fora da seção, então o clique no item não pode ser
+ * procurado dentro dela.
+ */
+export async function escolherNoSeletor(page: Page, secao: string, item: RegExp): Promise<void> {
+  await page.locator(`${secao} .v-select`).first().click();
+
+  const opcao = page.getByRole('listitem').filter({ hasText: item }).first();
+  await expect(opcao).toBeVisible({ timeout: 20_000 });
+  await opcao.click();
 }

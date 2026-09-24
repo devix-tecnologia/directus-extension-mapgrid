@@ -1,6 +1,6 @@
 # Task 010 — O MapGrid compõe os layouts do Directus
 
-Status: pending
+Status: in-progress
 Type: refactor
 Assignee: sidartaveloso
 Priority: 10
@@ -67,35 +67,52 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
 
 ## Tasks
 
-### Fase 1: fundação
-- [ ] Extrair do spike o `embedLayout(id, options)`: chama o `setup()` do layout
+### Fase 1: fundação — fechada em 2026-09-24
+- [x] Extrair do spike o `embedLayout(id, options)`: chama o `setup()` do layout
       registrado, acrescenta os `onUpdate:<chave>`, devolve estado, componente e
-      `slots.options`. Sem `any` — o spike usa, a implementação não pode
-- [ ] Repassar `...toRefs(props)` junto do estado, como o `createLayoutWrapper`
+      `slots.options`. Sem `any` — o spike usa, a implementação não pode.
+      É o `embutirLayout` de `src/services/embedded-layout/`, e não há `any` nele
+- [x] Repassar `...toRefs(props)` junto do estado, como o `createLayoutWrapper`
       faz: o spike devolveu 68 chaves contra as 92 do wrapper, e a diferença são
       os props
-- [ ] Teste de contrato: falha alta se `tableHeaders`, `onSortChange`, `items`,
-      `geometryField` ou `slots.options` sumirem do que o Directus devolve
+- [x] Teste de contrato: falha alta se `tableHeaders`, `onSortChange`, `items`,
+      `geometryField` ou `slots.options` sumirem do que o Directus devolve.
+      Ver "O contrato deixa de ser um comentário", abaixo — o que existia no
+      lugar não tinha como falhar por causa do Directus
 
 ### Fase 2: a composição
-- [ ] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
-- [ ] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar
-- [ ] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
+- [x] `selection` e `layoutQuery` como estado único, os dois layouts escrevendo
+- [ ] `onRowClick` nosso, para o clique na linha enquadrar em vez de navegar —
+      **metade feito**: o clique deixou de navegar, mas o mapa não enquadra. Ver
+      "O enquadramento não acontece na tela", abaixo
+- [x] O caminho inverso: o `handleClick` do layout de mapa faz `router.push` para
       a tela do item quando não está em modo de seleção, então **clicar num ponto
       hoje sai do MapGrid**. Antes da composição, clicar no marcador selecionava a
       linha na grade, e o e2e que cobria isso ("should select the matching grid
       row when clicking a map marker") saiu na reescrita do `mapgrid-layout.spec.ts`.
       Trocar o `handleClick` como o `onRowClick` foi trocado, e devolver o e2e.
-      A task-006 parte daqui para "clicar no ponto define o registro atual"
-- [ ] Reverter as suposições de página inteira, que não estão na API e só o DOM
+      A task-006 parte daqui para "clicar no ponto define o registro atual".
+      Fechado em 2026-09-23 — ver "O clique no ponto" abaixo
+- [x] Reverter as suposições de página inteira, que não estão na API e só o DOM
       revela: `.layout-tabular` traz `margin: 32px 0 132px`; o cabeçalho é
       `sticky` com deslocamento da altura do cabeçalho do app; `.layout-map`
       nasce `flex: 0 1 auto` e não estica
-- [ ] Decidir o destino do `MapToolbar`, do zoom ao clicar e do popup
+- [ ] Decidir o destino do `MapToolbar`, do zoom ao clicar e do popup — **é
+      decisão reservada**, não do agente da rodada
 
 ### Fase 3: o que sai
-- [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem
-- [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador
+- [ ] `TableComponent`, `MapComponent`, `MapToolbar` e os stubs que os servem —
+      os dois primeiros já não têm arquivo, mas `src/components/index.ts` ainda
+      os **exportava** de `./organisms/...`, um caminho que não existe. Nenhum
+      gate pegou: o barril não tem importador, então nem o `vue-tsc` nem o build
+      chegam nele. As duas linhas saíram em 2026-09-24. O `MapToolbar` fica até
+      a decisão reservada
+- [ ] `table-sort.ts`, `fieldsToFetch` e o que mais deixar de ter chamador.
+      Inventário conferido em 2026-09-24, sem chamador de produção: `table-sort`
+      (só o próprio teste e o barril `src/contract/index.ts`), `fieldsToFetch`
+      (só o próprio teste) e o `ValueCell` inteiro — componente, story, mock e
+      teste — que era da célula do `TableComponent`. Apagar o `ValueCell` mexe
+      no padrão storytype da task-003, e por isso ficou fora desta rodada
 - [ ] A migração de preset da task-005 **fica**: `layoutQuery.fields` continua
       sendo o contrato
 - [ ] Decidir o destino da migração do formato numerado (`coluna1..5`). Ela saiu
@@ -117,14 +134,278 @@ regressão está em `tests/e2e/mapgrid-options-persistence.spec.ts`.
       specs partem dos dois painéis da composição e, dentro deles, das classes
       dos layouts do Directus. A captura do README vinha com o mesmo defeito e
       foi junto
-- [ ] Regressão de persistência herdada da task-009: gravar pelo painel uma
+- [x] Regressão de persistência herdada da task-009: gravar pelo painel uma
       opção de cada layout embutido (por exemplo `displayTemplate` do mapa e o
       espaçamento da grade) e conferir as duas no preset efetivo depois de um
       reload. Prova que `layoutOptions.map` e `layoutOptions.tabular` não se
-      sobrescrevem, o que a regressão do `zoomOnClick` não alcança
+      sobrescrevem, o que a regressão do `zoomOnClick` não alcança.
+      Fechada em 2026-09-24 — ver "A janela de escrita no mesmo tick", abaixo.
+      **Ela passa com e sem a correção**, e isso está medido e registrado lá
 - [ ] Regressão visual do espaço em branco, que é custo recorrente do desenho
-- [ ] `pnpm screenshot` e evidência antes/depois
+- [ ] `pnpm screenshot` e evidência antes/depois — **o comando voltou a
+      funcionar**, e a evidência do clique no marcador está acima. O `docs/tela.jpg`
+      foi refeito. Não fecha porque falta a evidência das partes que ainda estão
+      em aberto (o enquadramento, o destino do `MapToolbar`), e porque a imagem
+      nova já mostra dois defeitos conhecidos: os rótulos do painel se
+      sobrepõem, e sobra branco embaixo da grade
 - [ ] README: a seção de colunas descreve a grade atual
+
+## Evidência — o clique no marcador
+
+| Antes | Depois |
+| --- | --- |
+| ![Antes](assets/task-010-clique-no-ponto-antes.png) | ![Depois](assets/task-010-clique-no-ponto-depois.png) |
+
+O "antes" não é o MapGrid: é a tela de edição do item, onde o clique no marcador
+deixava a pessoa. O "depois" continua no layout, com o marcador clicado em
+destaque, a linha do Manaus marcada na grade e as ações em lote acesas no
+cabeçalho — que é a ressalva registrada acima, visível na imagem.
+
+As duas saem do mesmo roteiro (`tests/screenshot/evidencia-clique-no-ponto.spec.ts`),
+mesmo Directus, mesma semente e mesma câmera; a única diferença é o
+`dist/index.js`, construído de `b91e601` para o "antes". A captura parada do
+layout não entra aqui porque não é evidência: rodada nos dois estados, ela sai
+byte a byte idêntica — esta mudança não acrescenta elemento à tela, troca o que
+o clique faz.
+
+    EVIDENCE_TASK=010 EVIDENCE_MOMENT=antes|depois \
+      .sandcastle/no-espelho.sh pnpm screenshot
+
+## O enquadramento não acontece na tela — medido em 2026-09-24
+
+Achado ao escrever o e2e do clique no ponto, e ele derruba um item que o
+documento dava por fechado.
+
+O `enquadrarItem` escreve `cameraOptions` no estado do mapa embutido. Essa
+escrita **chega**: `layoutOptions.map.cameraOptions` sai no preset com o
+`center` e o `zoom` certos, e dá para conferir pela API. O mapa desenhado, no
+entanto, **não se mexe** — a captura de falha mostra o mundo inteiro depois de
+um clique na linha que pediu zoom 14 em Manaus.
+
+O layout de mapa do Directus lê `cameraOptions` **ao montar** e ignora a troca
+depois disso. Duas medições sustentam a frase:
+
+- uma câmera semeada no preset antes do carregamento é honrada — é justamente
+  por isso que o e2e consegue achar um marcador;
+- as duas formas de `center` foram tentadas, o par cru e o `{ lng, lat }` que
+  eles mesmos gravam a cada `moveend`. Nenhuma move o mapa vivo.
+
+Ou seja: o zoom ao clicar só tem efeito na **visita seguinte**, quando o preset
+vira a câmera inicial.
+
+Mover a câmera de verdade exige alcançar a instância do MapLibre deles, que é a
+mesma decisão reservada do `MapToolbar` e do zoom ao clicar — por isso esta
+rodada parou aqui e não escolheu um caminho. O e2e que prova o enquadramento
+está escrito, e parado em `test.fixme` no `mapgrid-layout.spec.ts` com o motivo:
+ele passa a valer no dia em que a decisão sair.
+
+## O clique no ponto — fechado em 2026-09-23
+
+O `handleClick` do layout de mapa é trocado no `propsDoMapa`, pelo mesmo caminho
+que o `onRowClick` já usava: quem monta os props do componente embutido é o
+nosso template, então basta sobrescrever a chave. No lugar do `router.push`
+entra a outra metade do que eles mesmos fazem — marcar o item na `selection`,
+que é estado compartilhado pelos dois embutidos. A linha acende na grade porque
+a grade lê a mesma `selection`, não porque o template toque no DOM dela.
+
+Marcador e caixa de marcação passam a ser a mesma linguagem: clicar num ponto já
+marcado o desmarca, e clicar noutro acrescenta.
+
+**Ressalva herdada, e é da task-006 decidir o que fazer com ela.** A `selection`
+também arma as ações em lote, então marcar pelo mapa habilita o apagar. A
+task-006 já registra que "registro atual" não deveria usar `selection`; enquanto
+essa decisão não sai, usar a `selection` é o único destaque que o `v-table`
+oferece sem alcançar o DOM dele por fora.
+
+Provas:
+
+- unitária, em `MapgridLayout.test.ts`: o `handleClick` que chega ao componente
+  do mapa é o nosso, o deles não é chamado, e acrescentar/remover/ignorar o
+  clique sem item estão fixados;
+- e2e, em `mapgrid-layout.spec.ts` ("clicar num ponto marca a linha dele na
+  grade, e não sai do MapGrid"). Achar um marcador num canvas de MapLibre exige
+  a câmera, e a instância do mapa é deles; o spec dispensa a projeção pondo o
+  marcador onde já se sabe — o clique na linha centraliza o item, e o alvo é
+  Manaus, a cidade mais isolada da semente, para o clique no centro não cair num
+  agrupamento.
+
+## Onde a primeira rodada de 2026-09-24 parou
+
+**Fechado:** o clique no ponto (Fase 2), com unitário, e2e e evidência.
+
+**Parou aqui, e de propósito:** o próximo item da Fase 2 é a decisão sobre o
+`MapToolbar`, o zoom ao clicar e o popup — reservada. Ela deixou de ser só
+desenho: o enquadramento pelo clique na linha depende dela, porque mover a
+câmera exige alcançar a instância do MapLibre deles (ver a seção acima). As
+Fases 3 e 4 têm itens que não dependem disso (o que sai por não ter chamador, os
+unitários de código morto, a regressão de persistência das duas seções do
+painel), mas vêm depois no documento.
+
+**Pronto para quem retomar:** o e2e do enquadramento já está escrito, parado em
+`test.fixme`; o roteiro de evidência do clique existe e tem par antes/depois; e
+`pnpm screenshot` e o `.sandcastle/no-espelho.sh` voltaram a funcionar — os dois
+estavam quebrados e falhavam por motivo próprio, não pelo código da extensão.
+
+## Onde a segunda rodada de 2026-09-24 parou
+
+**Fechado:** a **Fase 1 inteira**. Os dois primeiros itens já estavam no código
+desde a rodada da composição e só faltava conferir e marcar; o terceiro — o
+teste de contrato — existia de nome e foi refeito para poder falhar. Ver a seção
+acima.
+
+**Sem evidência de tela, e de propósito:** nada desta rodada desenha. O contrato
+grita no console do navegador, que é onde o e2e o lê; a tela é byte a byte a
+mesma de antes, e `pnpm screenshot` só produziria a captura já anexada.
+
+**Parou aqui:** a Fase 2 termina na decisão reservada (o `MapToolbar`, o zoom ao
+clicar e o popup), e o enquadramento pelo clique na linha depende dela. O que
+sobra sem depender da decisão está nas Fases 3 e 4 — o código sem chamador
+inventariado acima, os unitários que cobrem esse código, a regressão de
+persistência das duas seções do painel.
+
+## O contrato deixa de ser um comentário — 2026-09-24
+
+O item "teste de contrato" da Fase 1 tinha um bloco com esse nome em
+`embedded-layout.test.ts`, e ele **não podia falhar**: declarava duas listas
+literais e comparava cada uma com ela mesma (`expect(EXIGIDO_DA_GRADE).toEqual(
+expect.arrayContaining(['items', 'tableHeaders', 'onSortChange']))`). Nenhuma
+linha de produção lia essas listas, e nenhuma versão do Directus as alcançava.
+
+O que entrou no lugar tem os dois lados:
+
+- `CONTRATO_DOS_EMBUTIDOS`, em `src/services/embedded-layout/embedded-layout.ts`,
+  lista as chaves que a composição lê de cada layout embutido — 11 da grade, 7
+  do mapa, mais `slots.options` de cada um. Cada uma tem chamador nosso, e o
+  comentário diz qual;
+- `embutirLayout` confere a presença de cada chave a cada embutida e **grita no
+  console** o que faltou, com o id do layout e o nome das chaves. Gritar, e não
+  explodir: derrubar a tela por uma chave renomeada trocaria uma composição meio
+  quebrada por nenhuma composição.
+
+A conferência é de **presença**, não de valor: `cameraOptions` nasce sem valor
+enquanto ninguém mexeu na câmera e `error` fica nulo sem erro, então exigir
+valor daria alarme falso em toda primeira visita.
+
+Quem mede contra o Directus de verdade é `tests/e2e/mapgrid-contrato.spec.ts`:
+ele observa o console do navegador e reprova se a marca aparecer. Duas coisas
+que o spec faz de propósito, porque a asserção dele é uma **ausência**:
+
+- confere que mapa e grade estão na tela, senão "nenhuma reclamação" também
+  seria verdade numa tela onde nada montou;
+- tem um controle negativo que forja a mensagem na página e exige que o coletor
+  a veja — uma escuta de console quebrada daria o mesmo verde que um contrato
+  intacto.
+
+### O que a medição disse
+
+Contra o Directus 10.13.1, as **18 chaves existem**: a suíte passa com zero
+reclamações. E a falsificação foi feita, porque um teste que nasce verde não
+prova nada: com uma chave forjada acrescentada ao contrato, o e2e reprova com
+`o layout "tabular" do Directus não devolveu chaveForjadaQueNaoExiste`. A chave
+forjada saiu em seguida.
+
+### Achado de tabela: a composição embute duas vezes por visita
+
+A falsificação mostrou a mensagem **duas vezes** numa única visita à coleção —
+ou seja, o `setup()` do nosso layout roda duas vezes por carregamento, e cada
+par de layouts embutidos é criado duas vezes. Isso combina com o que o spec das
+buscas já media e ninguém tinha explicado: 4 requisições de itens para 2 URLs
+distintas. É um fio para a nota "sobra uma consulta sem atribuição", e não foi
+investigado aqui — quem embute duas vezes, nós ou o wrapper deles, segue sem
+medição.
+
+### Nota de ferramenta
+
+`node tests/run-docker-tests.js e2e -- <arquivo>` **ignora o filtro**: o runner
+avisa que argumentos extras só chegam ao runner de host (`--host`), que é
+justamente o caminho que não funciona daqui. De dentro do espelho, a suíte roda
+inteira ou não roda.
+
+## A janela de escrita no mesmo tick — medida em 2026-09-24
+
+A Fase 4 pedia a regressão como **conferência**: provar que `layoutOptions.map`
+e `layoutOptions.tabular` não se sobrescrevem. Escrevendo o teste apareceu que a
+separação por seção estava certa e não bastava, e que o problema é maior do que
+as duas seções.
+
+Os três estados que a composição divide — `layoutOptions`, `layoutQuery` e
+`selection` — são `useSync`: ler é ler o **prop**, escrever é `emit`. O Directus
+grava na hora, mas o prop do Vue só volta quando o pai re-renderiza, no tick
+seguinte. Quem escreve no meio desse intervalo lê o valor **anterior às duas
+escritas**, e publica um objeto onde a primeira não existe.
+
+E é a forma de quase toda escrita daqui, porque é a forma deles: o
+`syncRefProperty` que escreve `spacing`, `cameraOptions`, `clusterData`,
+`displayTemplate`, `page`, `limit` e `sort` nos dois layouts embutidos é
+literalmente `ref.value = { ...ref.value, [chave]: valor }` — lido no pacote do
+Directus 10.13.1, não suposto.
+
+`src/index.ts` não tinha teste unitário nenhum até aqui, e é onde a composição
+mora. Os 144 unitários passavam com a janela inteira aberta.
+
+### O que foi medido
+
+Seis pares, vermelhos antes e verdes depois, em `src/index.test.ts`: opção do
+mapa com opção da grade, duas opções do próprio mapa, `zoomOnClick` com opção de
+embutido, duas chaves da consulta, uma chave da consulta de cada embutido, e
+marcação vinda do marcador com a vinda da caixa da grade. O duplo de teste
+atrasa o prop de propósito — um que devolvesse o valor na hora esconderia
+exatamente a janela, e o teste nasceria verde sem provar nada.
+
+A correção é o `useEscritaOtimista`, em `src/services/optimistic-sync/`: espelha
+o último valor publicado e se apaga assim que o prop muda.
+
+### E o que a falsificação disse — o achado desta rodada
+
+**O e2e passa igual com e sem a correção.** Rodado nos dois estados de propósito,
+mesma semente, mesmo Directus: 12 passam nos dois, e o preset final é byte a
+byte o mesmo. Nenhum gesto de interface que eu tenha conseguido dirigir no
+10.13.1 põe duas escritas no mesmo tick — entre um clique e outro de uma pessoa
+o prop sempre voltou.
+
+Então, dito sem rodeio: a correção fecha uma janela real do **código**, e não um
+defeito observado na tela. Fica, porque é barata e o padrão de escrita que a
+abre está em toda parte no que embutimos; mas quem for cobrá-la de uma tela
+precisa primeiro achar o gesto. Se achar, o lugar de anotar é o docblock do
+módulo.
+
+Isso também corrige a leitura da task-009 pela metade: continua verdade que
+gravar **uma** opção sempre sobreviveu, que era o que ela media.
+
+### Uma inferência minha que o pacote derrubou
+
+Cheguei a registrar que ordenar pelo cabeçalho da grade deles troca `sort` e
+devolve `page` a 1 na mesma volta. O `onSortChange` do layout tabular do 10.13.1
+só escreve `sort`. A frase saiu do texto. O que **é** escrita de montagem: o
+componente de mapa deles faz `limit.value = ...` no próprio `setup()`, sem
+condição, então toda montagem publica em `layoutQuery`.
+
+### Nota para a task-007
+
+A caixa "Cluster Nearby Data" do painel do mapa nasce **desabilitada** na coleção
+de teste. Eles a desabilitam quando `geometryType !== 'Point'`, e o campo
+`location` da semente é `json` com `meta.options` vazio — o tipo não é conhecido.
+A task-007 é justamente sobre honrar a configuração de mapa deles, e esta é uma
+opção que hoje não se alcança.
+
+## Onde a terceira rodada de 2026-09-24 parou
+
+**Fechado:** a regressão de persistência das duas seções do painel (Fase 4), com
+unitário, e2e e a falsificação nos dois estados. Junto veio a correção da janela
+de escrita no mesmo tick, que o teste destapou.
+
+**Sem evidência de tela, e de propósito:** nada desta rodada desenha. As únicas
+mudanças de markup são três classes de âncora (`.mapgrid-option--map/grid/zoom`)
+em `MapgridOptions.vue`, que não têm estilo. A captura sairia idêntica à já
+anexada, e duas imagens iguais não são evidência.
+
+**Parou aqui:** a Fase 2 segue terminando na decisão reservada (o `MapToolbar`,
+o zoom ao clicar e o popup), e o enquadramento pelo clique na linha continua
+dependendo dela. Da Fase 3 continuam abertos o código sem chamador já
+inventariado (`table-sort`, `fieldsToFetch`, `ValueCell`) e o destino da migração
+do formato numerado — que também é decisão reservada. Da Fase 4 continuam
+abertos os unitários de código morto, as stories, a regressão visual do espaço
+em branco, e o README.
 
 ## Notes
 

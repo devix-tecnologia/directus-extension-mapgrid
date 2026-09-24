@@ -17,6 +17,7 @@ import {
   LAYOUTS_EMBUTIDOS,
   type LayoutEmbutido,
 } from './services/embedded-layout/index';
+import { useEscritaOtimista } from './services/optimistic-sync/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
 /**
@@ -56,9 +57,15 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     actions: DeleteAction,
   },
   setup(props, { emit }) {
-    const layoutOptions = useSync(props, 'layoutOptions', emit);
-    const layoutQuery = useSync(props, 'layoutQuery', emit);
-    const selection = useSync(props, 'selection', emit);
+    /*
+     * Os três estados compartilhados passam pelo espelho do
+     * `useEscritaOtimista`. Sem ele, duas escritas no mesmo tick liam as duas o
+     * prop anterior às duas — e aqui escrever no mesmo tick é rotina, porque os
+     * dois layouts embutidos escrevem nos mesmos três. O porquê está lá.
+     */
+    const layoutOptions = useEscritaOtimista(useSync(props, 'layoutOptions', emit));
+    const layoutQuery = useEscritaOtimista(useSync(props, 'layoutQuery', emit));
+    const selection = useEscritaOtimista(useSync(props, 'selection', emit));
     const api = useApi();
 
     const { collection, filter, search } = toRefs(props);
@@ -80,6 +87,11 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       },
     });
 
+    /*
+     * O campo de geometria detectado entra só na leitura. Gravá-lo fixaria no
+     * preset uma escolha que a composição apenas detectou, e trocar o campo da
+     * coleção deixaria de ter efeito.
+     */
     const opcoesDoMapa = computed<Record<string, unknown>>({
       get: () => ({
         geometryField: geometriaDetectada.value,

@@ -5,17 +5,31 @@
     `setup()` de `src/index.ts` — que o Directus entrega ao componente e ao
     painel. Criar wrapper próprio aqui daria estado separado e uma busca a mais.
   -->
-  <v-detail icon="map" :label="t('optionMapSection')">
+  <!--
+    As classes existem para o e2e ter por onde começar. Dentro de cada seção
+    quem desenha é o painel do Directus, cujos rótulos mudam de idioma e de
+    versão; procurar "Map" no texto da página acharia meia tela. Mesma escolha
+    dos painéis da área, `.mapgrid-pane--map` e `.mapgrid-pane--grid`.
+  -->
+  <v-detail class="mapgrid-option mapgrid-option--map" icon="map" :label="t('optionMapSection')">
     <component :is="mapa?.optionsComponent" v-if="mapa?.optionsComponent" v-bind="mapa.state" />
     <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
   </v-detail>
 
-  <v-detail icon="table_rows" :label="t('optionGridSection')">
+  <v-detail
+    class="mapgrid-option mapgrid-option--grid"
+    icon="table_rows"
+    :label="t('optionGridSection')"
+  >
     <component :is="grade?.optionsComponent" v-if="grade?.optionsComponent" v-bind="grade.state" />
     <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
   </v-detail>
 
-  <v-detail icon="zoom_in" :label="t('optionZoomOnClick')">
+  <v-detail
+    class="mapgrid-option mapgrid-option--zoom"
+    icon="zoom_in"
+    :label="t('optionZoomOnClick')"
+  >
     <div class="field">
       <v-checkbox v-model="zoomOnClick" :label="t('optionZoomOnClickLabel')" />
     </div>

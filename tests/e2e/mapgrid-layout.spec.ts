@@ -7,10 +7,16 @@
  */
 import { expect, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
-import { ensureMapGridPreset, readMapGridPresetQuery } from '../helpers/mapgrid-preset';
+import {
+  ensureMapGridPreset,
+  ensureMapGridPresetCentradoEm,
+  readMapGridPresetQuery,
+} from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
+  clicarNoPontoCentral,
   GRADE,
+  linhaDe,
   login,
   MAPA,
   openCollection,
@@ -18,6 +24,24 @@ import {
   PAINEL_GRADE,
   TABELA,
 } from './helpers/mapgrid-page';
+
+/**
+ * A cidade mais isolada da semente, e a câmera que a põe no centro do canvas.
+ *
+ * Achar um marcador numa tela de MapLibre exige saber onde a câmera está, e a
+ * instância do mapa é do layout do Directus. O preset resolve isso pelo outro
+ * lado: ele diz de onde a câmera parte, e aí o ponto semeado nasce no centro.
+ * Manaus porque é a mais isolada — no zoom 12 nenhum outro ponto da semente
+ * aparece, então o clique não tem como cair noutro marcador nem num
+ * agrupamento.
+ */
+const CIDADE_ISOLADA = 'Manaus';
+const MANAUS: [number, number] = [-60.0255, -3.119];
+const ZOOM_DE_CIDADE = 12;
+
+/** O contrário: uma câmera de onde nenhum ponto da semente está no centro. */
+const ATLANTICO: [number, number] = [0, 0];
+const ZOOM_DE_MUNDO = 1;
 
 test.beforeAll(async () => {
   await setupTestEnvironment();
@@ -66,6 +90,63 @@ test.describe('MapGrid — a composição', () => {
     await expect
       .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
       .toEqual(['-name']);
+  });
+
+  /*
+   * A regressão que a reescrita do spec perdeu, e que o desenho novo precisa
+   * devolver: o `handleClick` do layout de mapa do Directus faz `router.push`
+   * para a tela do item, então um marcador clicado levava a pessoa para fora do
+   * MapGrid — o oposto de sincronizar as duas metades.
+   */
+  test('clicar num ponto marca a linha dele na grade, e não sai do MapGrid', async ({ page }) => {
+    await ensureMapGridPresetCentradoEm(MANAUS, ZOOM_DE_CIDADE);
+    await login(page);
+    await openCollection(page);
+
+    const linha = linhaDe(page, CIDADE_ISOLADA);
+    await expect(linha).toBeVisible({ timeout: 60_000 });
+    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
+
+    await clicarNoPontoCentral(page);
+
+    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
+      timeout: 15_000,
+    });
+    await expect(page).toHaveURL(new RegExp(`/admin/content/${COLLECTION_NAME}(\\?|$)`));
+  });
+
+  /*
+   * PARADO, e o motivo é um defeito medido, não uma flutuação do ambiente.
+   *
+   * Esta é a única prova possível de que o enquadramento acontece na TELA: a
+   * escrita em `cameraOptions` chega ao preset mesmo quando o mapa não se mexe,
+   * então o preset não serve de testemunha. Se depois do clique na linha há um
+   * ponto clicável no centro do canvas, e clicar nele marca justamente aquela
+   * linha, o mapa enquadrou o item.
+   *
+   * Ele falha porque o mapa não enquadra: o layout de mapa do Directus lê
+   * `cameraOptions` ao montar — a câmera semeada no preset é honrada — e ignora
+   * a troca depois disso. Medido em 2026-09-24 com as duas formas de `center`,
+   * o par cru e o `{ lng, lat }` que eles mesmos gravam. A captura de falha
+   * mostra a câmera parada onde a semente a pôs, com o clique na linha já dado.
+   *
+   * Destravar exige alcançar a instância do MapLibre deles, que é a mesma
+   * decisão reservada do `MapToolbar` e do zoom ao clicar (task-010, Fase 2).
+   */
+  test.fixme('clicar na linha enquadra o item no mapa', async ({ page }) => {
+    await ensureMapGridPresetCentradoEm(ATLANTICO, ZOOM_DE_MUNDO);
+    await login(page);
+    await openCollection(page);
+
+    const linha = linhaDe(page, CIDADE_ISOLADA);
+    await expect(linha).toBeVisible({ timeout: 60_000 });
+    await linha.click();
+
+    await clicarNoPontoCentral(page);
+
+    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
+      timeout: 15_000,
+    });
   });
 
   test('o espaço em branco dos layouts de página inteira não aparece', async ({ page }) => {

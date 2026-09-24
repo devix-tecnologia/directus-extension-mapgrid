@@ -53,6 +53,18 @@ const reenquadrar = (): void => {
  * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
  * do Directus navega para a tela do item, que é o oposto de sincronizar com o
  * mapa — a razão de existir desta extensão.
+ *
+ * **Enquadrar, porém, ainda não acontece na tela.** Medido em 2026-09-24: esta
+ * escrita chega a `layoutOptions.map.cameraOptions` e ao preset, com `center` e
+ * `zoom` certos, e o mapa desenhado não se mexe. O layout de mapa deles lê
+ * `cameraOptions` ao montar — uma câmera semeada no preset é honrada, e é assim
+ * que o e2e acha um marcador — e ignora a troca depois disso. As duas formas de
+ * `center` foram medidas, o par cru e o `{ lng, lat }` que eles mesmos gravam:
+ * nenhuma move o mapa vivo. O efeito só aparece na visita seguinte.
+ *
+ * Mover a câmera de verdade exige alcançar a instância do MapLibre deles, e
+ * isso é a mesma decisão reservada do `MapToolbar` e do zoom ao clicar. O e2e
+ * que prova o enquadramento está escrito e parado em `test.fixme`.
  */
 const enquadrarItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;
@@ -67,6 +79,33 @@ const enquadrarItem = (payload: unknown): void => {
     center: coordenadas,
     zoom: props.zoomOnClick ? ZOOM_AO_CLICAR : (camera.zoom ?? ZOOM_AO_CLICAR),
   });
+};
+
+/**
+ * O clique no ponto é o caminho inverso, e também precisa ser nosso: o
+ * `handleClick` do layout de mapa faz `router.push` para a tela do item quando
+ * não está em modo de seleção, então clicar num marcador *saía do MapGrid*.
+ *
+ * O que entra no lugar é a outra metade deles: marcar o item na `selection`,
+ * que é estado compartilhado pelos dois embutidos, e é assim que a linha
+ * correspondente acende na grade sem o template tocar no DOM dela. Acrescenta e
+ * remove como a caixa de marcação da grade, para marcador e caixa serem a mesma
+ * linguagem.
+ *
+ * Herda uma ressalva: a `selection` também arma as ações em lote, então marcar
+ * pelo mapa habilita apagar. Quem decide se "registro atual" ganha destaque
+ * próprio é a task-006.
+ */
+const selecionarItem = (payload: unknown): void => {
+  const id = (payload as { id?: string | number } | null | undefined)?.id;
+  if (id === undefined || id === null) return;
+
+  const selecionados = doMapa<(string | number)[]>('selection') ?? [];
+  const proxima = selecionados.includes(id)
+    ? selecionados.filter((selecionado) => selecionado !== id)
+    : [...selecionados, id];
+
+  doMapa<(valor: unknown) => void>('onUpdate:selection')?.(proxima);
 };
 
 const coordenadasDe = (item?: GeoItem): [number, number] | null => {
@@ -84,7 +123,10 @@ const propsDaGrade = computed(() => ({
   onRowClick: enquadrarItem,
 }));
 
-const propsDoMapa = computed(() => ({ ...(props.mapa?.state ?? {}) }));
+const propsDoMapa = computed(() => ({
+  ...(props.mapa?.state ?? {}),
+  handleClick: selecionarItem,
+}));
 </script>
 
 <style scoped>
