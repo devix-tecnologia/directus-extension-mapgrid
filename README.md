@@ -52,14 +52,11 @@ descending and hides the field — in the Directus tabular layout sorting lives 
 than in the click itself. Every one of those choices is stored in the preset, so it is still there
 on the next visit.
 
-There is no limit on how many columns the grid can show, and the layout only asks the API for the
-fields it actually needs: the columns, the primary key, the geolocation field, and any field cited
-by the popup template.
+There is no limit on how many columns the grid can show.
 
-> **Upgrading from 1.5 or earlier.** Columns used to live in five numbered keys (`coluna1` …
-> `coluna5`). Presets written back then keep working: the layout reads the old keys and converts
-> them the first time it loads, preserving the order and closing any gaps. Nothing needs to be
-> reconfigured, and from then on only the new format is written.
+> **Upgrading from 1.x.** Columns used to live in five numbered keys (`coluna1` … `coluna5`). The
+> layout no longer reads them: after upgrading, the grid shows the Directus default columns until
+> they are chosen again in its header.
 
 ### Running Directus with Docker Compose
 
@@ -111,22 +108,21 @@ pnpm test:all         # Everything above that needs Docker
 
 ```
 src/
-├── contract/            # Shapes crossing the Directus boundary, and their parsers
+├── contract/            # Shapes crossing the Directus boundary
 ├── components/
-│   ├── atoms/           # DeleteAction, ValueCell
+│   ├── atoms/           # DeleteAction
 │   ├── molecules/       # MapToolbar
-│   ├── organisms/       # MapComponent, TableComponent
 │   └── templates/       # MapgridLayout, MapgridOptions
 ├── services/
-│   ├── geo/             # GeoJSON building, map camera, maplibre feature parsing
-│   ├── table/           # Table header types
-│   └── value-formatter/ # Field template resolution and value serialization
+│   ├── centralizador-de-mapa/ # Moves the embedded Directus map (works around its limitation)
+│   ├── embedded-layout/ # Runs a Directus layout's setup() inside the MapGrid
+│   └── optimistic-sync/ # Two writes to the preset in the same tick no longer erase each other
 ├── shared/              # Extension strings (en-US, pt-BR)
 ├── mocks/               # Directus environment and the mappable-collection catalogue
 └── index.ts             # Extension entry point
 ```
 
-The `contract/` layer is also published as a subpath (`@devix-tecnologia/directus-extension-mapgrid/contract`), so another extension in the same project can import the same types and normalizers instead of redrawing them.
+The `contract/` layer is also published as a subpath (`@devix-tecnologia/directus-extension-mapgrid/contract`), so another extension in the same project can import the same types instead of redrawing them.
 
 ### Testing
 
@@ -226,14 +222,11 @@ crescente ou decrescente e oculta o campo — no layout tabular do Directus a or
 menu, e não no clique em si. Cada uma dessas escolhas fica gravada no preset, então continua lá na
 próxima visita.
 
-Não há limite de quantas colunas a grade exibe, e o layout só pede à API os campos de que realmente
-precisa: as colunas, a chave primária, o campo de geolocalização e os campos citados no template do
-popup.
+Não há limite de quantas colunas a grade exibe.
 
-> **Vindo da 1.5 ou anterior.** As colunas ficavam em cinco chaves numeradas (`coluna1` …
-> `coluna5`). Presets gravados naquele formato continuam funcionando: o layout lê as chaves antigas
-> e as converte no primeiro carregamento, preservando a ordem e fechando os espaços vazios. Nada
-> precisa ser reconfigurado, e daí em diante só o formato novo é gravado.
+> **Vindo da 1.x.** As colunas ficavam em cinco chaves numeradas (`coluna1` … `coluna5`). O layout
+> não as lê mais: depois de atualizar, a grade mostra as colunas padrão do Directus até que sejam
+> escolhidas de novo no cabeçalho dela.
 
 ### Rodando o Directus com Docker Compose
 
@@ -285,22 +278,21 @@ pnpm test:all         # Tudo acima que precisa de Docker
 
 ```
 src/
-├── contract/            # Formas que cruzam a fronteira com o Directus, e seus parsers
+├── contract/            # Formas que cruzam a fronteira com o Directus
 ├── components/
-│   ├── atoms/           # DeleteAction, ValueCell
+│   ├── atoms/           # DeleteAction
 │   ├── molecules/       # MapToolbar
-│   ├── organisms/       # MapComponent, TableComponent
 │   └── templates/       # MapgridLayout, MapgridOptions
 ├── services/
-│   ├── geo/             # Montagem do GeoJSON, câmera do mapa, parse das features
-│   ├── table/           # Tipos dos cabeçalhos da grade
-│   └── value-formatter/ # Resolução de template e serialização de valores
+│   ├── centralizador-de-mapa/ # Move o mapa embutido do Directus (contorna a limitação dele)
+│   ├── embedded-layout/ # Roda o setup() de um layout do Directus dentro do MapGrid
+│   └── optimistic-sync/ # Duas escritas no preset no mesmo tick deixam de se apagar
 ├── shared/              # Textos da extensão (en-US, pt-BR)
 ├── mocks/               # Ambiente do Directus e catálogo de coleções mapeáveis
 └── index.ts             # Ponto de entrada da extensão
 ```
 
-A camada `contract/` também é publicada como subcaminho (`@devix-tecnologia/directus-extension-mapgrid/contract`), para outra extensão do mesmo projeto importar os mesmos tipos e normalizadores em vez de redesenhá-los.
+A camada `contract/` também é publicada como subcaminho (`@devix-tecnologia/directus-extension-mapgrid/contract`), para outra extensão do mesmo projeto importar os mesmos tipos em vez de redesenhá-los.
 
 ### Testes
 

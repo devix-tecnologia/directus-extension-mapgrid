@@ -1,15 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { type GeoItem, itemPointCoordinates } from '../src/contract/index';
-import {
-  buildPointFeatureCollection,
-  DEFAULT_MAP_CENTER,
-  DEFAULT_MAP_ZOOM,
-} from '../src/services/geo/index';
-import {
-  resolveFieldTemplate,
-  serializeItemRow,
-  serializeValue,
-} from '../src/services/value-formatter/index';
 import {
   COLLECTION_NAME,
   deleteTestCollection,
@@ -68,7 +57,7 @@ describe('MapGrid Extension - Integration Tests', () => {
     for (const item of items) {
       expect(item.location?.type).toBe('Point');
       expect(item.location?.coordinates).toHaveLength(2);
-      expect(itemPointCoordinates(item, 'location')).toHaveLength(2);
+      expect(item.location?.coordinates.every(Number.isFinite)).toBe(true);
     }
   });
 
@@ -77,87 +66,6 @@ describe('MapGrid Extension - Integration Tests', () => {
 
     expect(items.filter((item) => item.status === 'published').length).toBeGreaterThanOrEqual(4);
     expect(items.filter((item) => item.status === 'draft').length).toBeGreaterThanOrEqual(1);
-  });
-
-  test('buildPointFeatureCollection should produce a valid FeatureCollection from live items', async () => {
-    const items = await getTestItems();
-    const geojson = buildPointFeatureCollection({
-      items,
-      geolocationField: 'location',
-      titleTemplate: '{{name}}',
-    });
-
-    const locatedItems = items.filter((item) => item.location !== undefined);
-
-    expect(geojson.type).toBe('FeatureCollection');
-    expect(geojson.features).toHaveLength(locatedItems.length);
-
-    for (const locatedItem of locatedItems) {
-      const feature = geojson.features.find(
-        (candidate) => candidate.properties.id === locatedItem.id
-      );
-      expect(feature).toBeDefined();
-      expect(feature?.type).toBe('Feature');
-      expect(feature?.geometry.type).toBe('Point');
-      expect(feature?.geometry.coordinates).toEqual(locatedItem.location?.coordinates);
-      expect(feature?.properties.formattedTitle).toBe(locatedItem.name);
-    }
-  });
-
-  test('buildPointFeatureCollection should skip items without coordinates', () => {
-    const items: GeoItem[] = [
-      { id: 1, name: 'Brasilia', location: { type: 'Point', coordinates: [-47.9292, -15.7801] } },
-      { id: 2, name: 'Sem localizacao' },
-      {
-        id: 3,
-        name: 'Coordenadas incompletas',
-        location: { type: 'Point', coordinates: [-47.9292] },
-      },
-    ];
-
-    const geojson = buildPointFeatureCollection({
-      items,
-      geolocationField: 'location',
-      titleTemplate: '{{name}}',
-    });
-
-    expect(geojson.features.map((feature) => feature.properties.formattedTitle)).toEqual([
-      'Brasilia',
-    ]);
-  });
-
-  test('resolveFieldTemplate should resolve placeholders and raw field names', () => {
-    const item: GeoItem = { id: 7, name: 'Curitiba', status: 'published' };
-
-    expect(resolveFieldTemplate(item, '{{name}}')).toBe('Curitiba');
-    expect(resolveFieldTemplate(item, '{{status}} / {{name}}')).toBe('published / Curitiba');
-    expect(resolveFieldTemplate(item, 'name')).toBe('Curitiba');
-    expect(resolveFieldTemplate(item, '')).toBe('7');
-  });
-
-  test('serializeValue should handle all field types', () => {
-    expect(serializeValue(null)).toBe('');
-    expect(serializeValue(undefined)).toBe('');
-    expect(serializeValue('hello')).toBe('hello');
-    expect(serializeValue(42)).toBe('42');
-    expect(serializeValue([1, 2, 3])).toBe('1, 2, 3');
-    expect(serializeValue({ coordinates: [-47.9292, -15.7801] })).toBe('-15.7801, -47.9292');
-    expect(serializeValue({ key: 'value' })).toBe('{"key":"value"}');
-  });
-
-  test('serializeItemRow should handle missing fields', () => {
-    const item: GeoItem = { id: 1, name: 'Test' };
-
-    expect(serializeItemRow(item, 'name')).toBe('Test');
-    expect(serializeItemRow(item, 'nonexistent')).toBe('');
-    expect(serializeItemRow(item, '')).toBe('');
-    expect(serializeItemRow(null, 'name')).toBe('');
-    expect(serializeItemRow(undefined, 'name')).toBe('');
-  });
-
-  test('Default map options should stay pinned to the published contract', () => {
-    expect(DEFAULT_MAP_CENTER).toEqual([-47.9292, -15.7801]);
-    expect(DEFAULT_MAP_ZOOM).toBe(4);
   });
 
   test('Items should be sortable via API', async () => {
