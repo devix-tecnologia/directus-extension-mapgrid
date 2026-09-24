@@ -229,26 +229,19 @@ describe('antes de o mapa do Directus terminar de carregar', () => {
     expect(bboxLido()).not.toEqual(bboxDaColecao);
   });
 
-  it('a câmera mudar com o alvo na tela encerra a insistência e devolve o bbox', () => {
-    const { ativas, bboxDaColecao, bboxLido, centralizador, moverACamera } = montar({
-      pronto: false,
-    });
-    centralizador.centralizar(ponto(-40.0, -20.0));
-    expect(ativas()).toHaveLength(1);
-    moverACamera([-40.5, -20.5, -39.5, -19.5]);
-    expect(ativas()).toHaveLength(0);
-    expect(bboxLido()).toEqual(bboxDaColecao);
-  });
-
-  it('a câmera mudar sem o alvo na tela: o mapa agora escuta, então um bounds a mais e encerra', () => {
-    // o `fitBounds` inicial deles, dos dados, pode chegar antes do nosso
+  it('a primeira mudança de câmera encerra a insistência com um bounds a mais — o mapa agora escuta', () => {
+    // esse moveend pode ser o do fitBounds inicial deles, dos dados, e não o
+    // nosso: ver o alvo na tela não prova nada, uma visão de mundo contém tudo
     const { ativas, bboxDaColecao, bboxLido, centralizador, estado, moverACamera, pendentes } =
       montar({ pronto: false });
     centralizador.centralizar(ponto(-40.0, -20.0));
     const antes = estado.geojsonBounds;
-    moverACamera([10, 10, 11, 11]);
+    expect(ativas()).toHaveLength(1);
+    moverACamera([-180, -85, 180, 85]);
     expect(estado.geojsonBounds).not.toBe(antes);
+    expect(estado.geojsonBounds).toEqual(antes);
     expect(ativas()).toHaveLength(0);
+    expect(bboxLido()).toEqual(antes);
     for (const tarefa of pendentes) tarefa();
     expect(bboxLido()).toEqual(bboxDaColecao);
   });
@@ -266,7 +259,16 @@ describe('antes de o mapa do Directus terminar de carregar', () => {
   });
 
   it('um alvo novo durante a insistência a substitui, e o bbox devolvido continua o da coleção', () => {
-    const { ativas, bboxDaColecao, bboxLido, centralizador, estado, moverACamera, tique } = montar({
+    const {
+      ativas,
+      bboxDaColecao,
+      bboxLido,
+      centralizador,
+      estado,
+      moverACamera,
+      pendentes,
+      tique,
+    } = montar({
       pronto: false,
     });
     centralizador.centralizar(ponto(-40.0, -20.0));
@@ -276,6 +278,7 @@ describe('antes de o mapa do Directus terminar de carregar', () => {
     const [oeste, , leste] = estado.geojsonBounds as Retangulo;
     expect((oeste + leste) / 2).toBeCloseTo(-39.0, 6);
     moverACamera([-39.5, -20, -38.5, -19]);
+    for (const tarefa of pendentes) tarefa();
     expect(bboxLido()).toEqual(bboxDaColecao);
   });
 

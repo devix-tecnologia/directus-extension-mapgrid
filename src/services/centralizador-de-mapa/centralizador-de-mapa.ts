@@ -64,10 +64,11 @@ interface Insistencia {
  * é o `moveend`, que também só é ligado no `load` e grava `cameraOptions` no
  * estado. Então, enquanto a câmera nunca foi vista mudando, o centralizador
  * **insiste**: reentrega um `bounds` novo a cada 250 ms, com o `bbox` do alvo
- * mantido no `geojson`, até `aoMoverACamera` ser chamado (ou 10 s passarem). Se
- * a câmera mudou mas o alvo não está na tela — o `fitBounds` inicial deles, dos
- * dados, chegou antes —, o mapa agora escuta, e um `bounds` a mais basta. Visto
- * o mapa se mover uma vez, os pedidos seguintes vão direto, sem insistência.
+ * mantido no `geojson`, até `aoMoverACamera` ser chamado (ou 10 s passarem).
+ * Nessa hora entrega **mais um** `bounds` e encerra: o primeiro `moveend` só
+ * prova que o mapa passou a escutar — ele pode ser o do `fitBounds` inicial
+ * deles, dos dados, e não o nosso (medido no e2e). Visto o mapa se mover uma
+ * vez, os pedidos seguintes vão direto, sem insistência.
  *
  * Para um ponto, o retângulo é a área visível de agora, descontado o `padding`
  * que o `fitBounds` deles aplica, e centrado no ponto: o zoom fica o mesmo. O
@@ -163,19 +164,6 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     this.mapaPronto = true;
     const insistencia = this.insistencia;
     if (!insistencia) return;
-
-    const visivel = this.areaVisivel();
-    const [oeste, sul, leste, norte] = insistencia.destino;
-    const centro: Retangulo = [
-      (oeste + leste) / 2,
-      (sul + norte) / 2,
-      (oeste + leste) / 2,
-      (sul + norte) / 2,
-    ];
-    if (visivel && this.contem(visivel, centro)) {
-      this.encerrarInsistencia();
-      return;
-    }
 
     insistencia.cancelar();
     this.insistencia = null;
