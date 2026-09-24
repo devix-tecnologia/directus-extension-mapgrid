@@ -53,7 +53,8 @@ export const mapGridPresetFor = (collection: string): Omit<Preset, 'id'> => ({
 export const mapGridPresetCentradoEm = (
   collection: string,
   centro: [number, number],
-  zoom: number
+  zoom: number,
+  opcoes: Record<string, unknown> = {}
 ): Omit<Preset, 'id'> => {
   const preset = mapGridPresetFor(collection);
   return {
@@ -61,6 +62,7 @@ export const mapGridPresetCentradoEm = (
     layout_options: {
       mapgrid: {
         ...preset.layout_options?.mapgrid,
+        ...opcoes,
         map: { geometryField: 'location', cameraOptions: { center: centro, zoom } },
       },
     },
@@ -84,14 +86,18 @@ export async function ensureMapGridPreset(collection: string = COLLECTION_NAME):
   await apiRequest('POST', '/presets', mapGridPresetFor(collection));
 }
 
-/** O preset da semente, com a camera do mapa ja apontada para um ponto. */
+/**
+ * O preset da semente, com a camera do mapa ja apontada para um ponto. `opcoes`
+ * sobrepoe as opcoes do MapGrid — `{ zoomOnClick: false }`, por exemplo.
+ */
 export async function ensureMapGridPresetCentradoEm(
   centro: [number, number],
   zoom: number,
-  collection: string = COLLECTION_NAME
+  collection: string = COLLECTION_NAME,
+  opcoes: Record<string, unknown> = {}
 ): Promise<void> {
   await deleteAllPresetsFor(collection);
-  await apiRequest('POST', '/presets', mapGridPresetCentradoEm(collection, centro, zoom));
+  await apiRequest('POST', '/presets', mapGridPresetCentradoEm(collection, centro, zoom, opcoes));
 }
 
 /**
