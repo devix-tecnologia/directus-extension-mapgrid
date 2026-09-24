@@ -115,19 +115,6 @@ test.describe('MapGrid — a composição', () => {
     await expect(page).toHaveURL(new RegExp(`/admin/content/${COLLECTION_NAME}(\\?|$)`));
   });
 
-  /*
-   * A única prova possível de que o enquadramento acontece na TELA: a escrita
-   * em `cameraOptions` chegaria ao preset mesmo com o mapa parado, então o
-   * preset não serve de testemunha. Se depois do clique na linha há um ponto
-   * clicável no centro do canvas, e clicar nele marca justamente aquela linha,
-   * o mapa foi até o item.
-   *
-   * Esteve em `test.fixme` enquanto o clique escrevia em `cameraOptions`, que o
-   * componente de mapa do Directus só lê ao montar. Passa pelo
-   * `CentralizadorDoMapaDirectus`, o contorno documentado dessa limitação: se
-   * uma atualização do Directus mudar o que o contorno usa, é este teste que
-   * reprova.
-   */
   test('clicar na linha enquadra o item no mapa', async ({ page }) => {
     await ensureMapGridPresetCentradoEm(ATLANTICO, ZOOM_DE_MUNDO);
     await login(page);

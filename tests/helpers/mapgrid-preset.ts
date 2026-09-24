@@ -86,10 +86,7 @@ export async function ensureMapGridPreset(collection: string = COLLECTION_NAME):
   await apiRequest('POST', '/presets', mapGridPresetFor(collection));
 }
 
-/**
- * O preset da semente, com a camera do mapa ja apontada para um ponto. `opcoes`
- * sobrepoe as opcoes do MapGrid — `{ zoomOnClick: false }`, por exemplo.
- */
+/** O preset da semente, com a camera do mapa ja apontada para um ponto. */
 export async function ensureMapGridPresetCentradoEm(
   centro: [number, number],
   zoom: number,

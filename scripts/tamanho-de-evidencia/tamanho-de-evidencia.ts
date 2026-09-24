@@ -7,15 +7,6 @@ import type {
   IVerificadorDeTamanhoDeEvidencia,
 } from './tamanho-de-evidencia.types';
 
-/**
- * O teto de cada arquivo em `TASKS/assets` (Sidarta, 2026-09-23).
- *
- * A primeira evidência em vídeo da task-010 — quatro `.webm` e quatro GIFs —
- * somou 16 MB, oito vezes o pack inteiro do repositório; e o git guarda para
- * sempre o que entra no histórico. Evidência de movimento vai como tira de
- * quadros parados, que fica na casa das dezenas de KB; o vídeo se regera pela
- * spec de evidência quando alguém precisar dele.
- */
 export const TETO_DE_EVIDENCIA_EM_BYTES = 300 * 1024;
 
 const DIRETORIO_DE_EVIDENCIAS = 'TASKS/assets';
@@ -38,12 +29,6 @@ export class VerificadorDeTamanhoDeEvidencia implements IVerificadorDeTamanhoDeE
   }
 }
 
-/**
- * Os arquivos de `TASKS/assets` que o git versiona **ou versionaria**: os
- * rastreados mais os não rastreados que o `.gitignore` não exclui. Olhar só os
- * rastreados deixaria o arquivo pesado passar até depois do commit — tarde,
- * porque aí ele já está no histórico.
- */
 export class EvidenciasDoRepositorio implements IEvidenciasDoRepositorio {
   private readonly raiz: string;
 
@@ -64,7 +49,6 @@ export class EvidenciasDoRepositorio implements IEvidenciasDoRepositorio {
         try {
           return [{ bytes: statSync(join(this.raiz, caminho)).size, caminho }];
         } catch {
-          // rastreado mas apagado do disco: não pesa no próximo commit
           return [];
         }
       });

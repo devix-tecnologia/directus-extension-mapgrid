@@ -7,9 +7,7 @@ export interface TamanhoDaTela {
   altura: number;
 }
 
-/**
- * O tempo, visto pelo centralizador. Injetado para o teste controlar o relógio.
- */
+/** O relógio do centralizador — `nextTick` e `setInterval` em produção. */
 export interface AgendaDoCentralizador {
   /** Roda depois de o Vue propagar as props — em produção, o `nextTick`. */
   depoisDaAtualizacao(tarefa: () => void): void;
@@ -18,18 +16,9 @@ export interface AgendaDoCentralizador {
 }
 
 export interface OpcoesDeCentralizacao {
-  /**
-   * Aproxima em vez de manter o zoom: o ponto é enquadrado por si mesmo, e o
-   * mapa chega ao zoom máximo do enquadramento (o `maxZoom` 14 do Directus). É o
-   * "zoom ao clicar na linha". Não muda nada para linha e polígono, que já são
-   * enquadrados inteiros. Padrão: `false`.
-   */
+  /** Enquadra o ponto por si mesmo, até o `maxZoom` do Directus, em vez de manter o zoom. Padrão: `false`. */
   aproximar?: boolean;
-  /**
-   * Só move quando o alvo está fora da área visível. É o que a navegação entre
-   * registros quer: andar de um ponto a outro que já está na tela não pode fazer
-   * o mapa tremer. Padrão: `true`.
-   */
+  /** Não move quando o alvo já está na área visível. Padrão: `true`. */
   somenteSeFora?: boolean;
 }
 

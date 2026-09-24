@@ -6,18 +6,10 @@ import type {
   TamanhoDaTela,
 } from './centralizador-de-mapa.types';
 
-/**
- * O `padding` que o componente de mapa do Directus passa ao `fitBounds`, em
- * pixels, de cada lado. Está escrito na fonte deles; o retângulo que mantém o
- * zoom desconta exatamente isso.
- */
 const PADDING_DO_FIT_BOUNDS_DO_DIRECTUS = 100;
 const LATITUDE_MAXIMA_DE_MERCATOR = 85.05112878;
-/** A largura do mundo, em pixels, no zoom 0 do MapLibre. */
-const TAMANHO_DO_TILE_DO_MAPLIBRE = 512;
-/** De quanto em quanto tempo reentregar o `bounds` enquanto o mapa carrega. */
+const LARGURA_DO_MUNDO_NO_ZOOM_0_DO_MAPLIBRE = 512;
 const INTERVALO_DE_INSISTENCIA_MS = 250;
-/** Quanto esperar o mapa carregar antes de desistir de um alvo. */
 const PRAZO_PARA_O_MAPA_CARREGAR_MS = 10_000;
 
 interface Insistencia {
@@ -29,60 +21,20 @@ interface Insistencia {
 }
 
 /**
- * Centraliza o mapa do layout de mapa do Directus, composto dentro do MapGrid.
+ * Contorno provisório de uma limitação do componente de mapa do Directus
+ * (medida na 10.13.1): ele não move a câmera depois de montado — a instância do
+ * MapLibre é privada e a prop `camera` só é lida na construção. Remontar o
+ * componente a cada passo, como a navegação entre registros exige, é inviável.
  *
- * ## Isto é o contorno de uma limitação do componente do Directus
+ * O contorno usa o `watch` de `bounds` do componente, que chama
+ * `fitBounds(data.bbox)`: troca o `bbox` do `geojson` pelo alvo, entrega um
+ * `geojsonBounds` novo e devolve o `bbox` original depois. Esse `watch` só existe
+ * após o `load` do MapLibre, então, até o primeiro `moveend`, o pedido é
+ * reentregue periodicamente.
  *
- * Medido no Directus 10.13.1 (`app/src/layouts/map/components/map.vue`): o
- * componente de mapa **não oferece como mover a câmera depois de montado**.
- *
- * - A instância do MapLibre é um `let map` privado do `<script setup>`, sem
- *   `defineExpose`; nada fora do componente a alcança.
- * - A prop `camera` só é lida no `new Map({ ...props.camera })`. Trocá-la depois
- *   não move o mapa.
- * - Remontar o componente com uma câmera nova funciona, mas recria o mapa e
- *   recarrega os tiles a cada chamada — inviável para a navegação entre
- *   registros, que centraliza a cada passo.
- *
- * O que o componente faz, e este contorno usa: ele **observa a prop `bounds`** e,
- * quando ela muda, chama `map.fitBounds(props.data.bbox, { padding: 100,
- * speed: 1.3, maxZoom: 14 })` — com animação, na mesma instância. O layout
- * repassa ao componente o `geojson` do seu estado como `data` e o
- * `geojsonBounds` como `bounds`. Então, para centralizar:
- *
- * 1. troca-se o `bbox` do `geojson` pelo retângulo do alvo, **no mesmo objeto**
- *    — o `watch` de `data` deles é raso, e assim a coleção não é reenviada à
- *    fonte do mapa a cada passo;
- * 2. entrega-se um `geojsonBounds` novo, que dispara o `fitBounds`;
- * 3. depois da atualização, devolve-se o `bbox` original, para o "enquadrar
- *    tudo" deles não herdar o retângulo do alvo.
- *
- * ### Antes de o mapa carregar
- *
- * O `watch` de `bounds` deles só é registrado no `load` do MapLibre — estilo e
- * tiles baixados. Um pedido que chega antes disso (medido no e2e: a grade fica
- * clicável cerca de um segundo antes do mapa) troca `bounds` sem ninguém
- * escutando e se perde. Não há sinal de "carregou" fora do componente; o que há
- * é o `moveend`, que também só é ligado no `load` e grava `cameraOptions` no
- * estado. Então, enquanto a câmera nunca foi vista mudando, o centralizador
- * **insiste**: reentrega um `bounds` novo a cada 250 ms, com o `bbox` do alvo
- * mantido no `geojson`, até `aoMoverACamera` ser chamado (ou 10 s passarem).
- * Nessa hora entrega **mais um** `bounds` e encerra: o primeiro `moveend` só
- * prova que o mapa passou a escutar — ele pode ser o do `fitBounds` inicial
- * deles, dos dados, e não o nosso (medido no e2e). Visto o mapa se mover uma
- * vez, os pedidos seguintes vão direto, sem insistência.
- *
- * Para um ponto, o retângulo é a área visível de agora, descontado o `padding`
- * que o `fitBounds` deles aplica, e centrado no ponto: o zoom fica o mesmo. O
- * `maxZoom: 14` deles continua valendo — acima dele o mapa afasta até o 14.
- *
- * **Isto é provisório.** Três detalhes internos do Directus sustentam o
- * contorno: os nomes `geojson`/`geojsonBounds` no estado do layout, o `watch` de
- * `bounds` e o `fitBounds` ler `data.bbox`. O teste de contrato e o e2e do
- * enquadramento reprovam se uma atualização mudar algum deles. Quando o
- * componente de mapa do Directus ganhar suporte nativo a centralizar (uma
- * câmera observada, ou a instância exposta), esta classe deve ser trocada por
- * uma chamada a esse suporte — e é o único lugar que precisa mudar.
+ * Depende de `geojson`, `geojsonBounds` e do `watch` de `bounds` internos do
+ * Directus. Quando o componente tiver suporte nativo a centralizar, esta classe
+ * é o único lugar a trocar.
  */
 export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
   private readonly estado: Record<string, unknown>;
@@ -124,15 +76,14 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
         ? this.retanguloQueMantemOZoom(unico, visivel)
         : alvo;
 
-    // o bbox a devolver é o de antes do primeiro pedido, não o de um alvo anterior
-    const original = this.insistencia?.original ?? geojson.bbox;
+    const bboxAntesDosPedidos = this.insistencia?.original ?? geojson.bbox;
     this.insistencia?.cancelar();
     this.insistencia = null;
 
     this.entregar(geojson, destino);
     if (this.mapaPronto) {
       this.agenda.depoisDaAtualizacao(() => {
-        geojson.bbox = original;
+        geojson.bbox = bboxAntesDosPedidos;
       });
       return true;
     }
@@ -141,7 +92,7 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
       cancelar: () => {},
       destino,
       geojson,
-      original,
+      original: bboxAntesDosPedidos,
       tentativas: 0,
     };
     const limite = Math.ceil(PRAZO_PARA_O_MAPA_CARREGAR_MS / INTERVALO_DE_INSISTENCIA_MS);
@@ -157,11 +108,7 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     return true;
   }
 
-  /**
-   * Avisa que o mapa gravou uma câmera nova — o `moveend` do Directus chegou ao
-   * `cameraOptions` do estado. É a única prova, de fora, de que o mapa terminou
-   * de carregar e o `watch` de `bounds` deles existe.
-   */
+  /** Chamar a cada mudança de `cameraOptions` no estado — o `moveend` do Directus. */
   aoMoverACamera(): void {
     this.mapaPronto = true;
     const insistencia = this.insistencia;
@@ -183,7 +130,6 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     this.insistencia = null;
   }
 
-  /** Põe o alvo onde o `fitBounds` deles lê, e troca o `bounds` que eles observam. */
   private entregar(geojson: { bbox?: unknown }, destino: Retangulo): void {
     geojson.bbox = destino;
     this.estado.geojsonBounds = [...destino];
@@ -223,7 +169,6 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     return Math.log(Math.tan(Math.PI / 4 + (limitada * Math.PI) / 360));
   }
 
-  /** Todo par `[lng, lat]` válido da geometria, em qualquer profundidade. */
   private pontosDe(geometria: unknown): [number, number][] {
     const coordenadas = (geometria as { coordinates?: unknown } | null | undefined)?.coordinates;
     const pontos: [number, number][] = [];
@@ -253,14 +198,7 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
     return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
   }
 
-  /**
-   * A área visível de agora, menos o padding do `fitBounds` do Directus,
-   * centrada no ponto. Em Mercator, porque é nessa projeção que o zoom do mapa
-   * é linear: dividir graus de latitude distorceria a proporção longe do
-   * equador. Sem área visível — antes do primeiro `moveend` —, ela sai do zoom
-   * da câmera e do tamanho da tela. Sem nenhum dos dois, ou numa tela menor que
-   * o padding, não há zoom a manter e o ponto é enquadrado por si mesmo.
-   */
+  // em Mercator, a projeção em que o zoom do mapa é linear
   private retanguloQueMantemOZoom(ponto: [number, number], visivel: Retangulo | null): Retangulo {
     const tela = this.tamanhoDaTela();
     const folga = 2 * PADDING_DO_FIT_BOUNDS_DO_DIRECTUS;
@@ -278,8 +216,7 @@ export class CentralizadorDoMapaDirectus implements ICentralizadorDeMapa {
         ((this.mercator(visivel[3]) - this.mercator(visivel[1])) * (tela.altura - folga)) /
         tela.altura;
     } else {
-      // antes do primeiro moveend não há bbox, mas há o zoom com que o mapa nasceu
-      const mundo = TAMANHO_DO_TILE_DO_MAPLIBRE * 2 ** (zoom as number);
+      const mundo = LARGURA_DO_MUNDO_NO_ZOOM_0_DO_MAPLIBRE * 2 ** (zoom as number);
       largura = (360 * (tela.largura - folga)) / mundo;
       altura = (2 * Math.PI * (tela.altura - folga)) / mundo;
     }

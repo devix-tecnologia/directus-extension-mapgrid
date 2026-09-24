@@ -49,12 +49,6 @@ const reenquadrar = (): void => {
 
 const painelDoMapa = ref<HTMLElement | null>(null);
 
-/**
- * Quem move a câmera do mapa embutido. O componente de mapa do Directus não
- * oferece isso depois de montado; o contorno, e a razão de ele ser provisório,
- * estão em `CentralizadorDoMapaDirectus`, que é o único lugar a trocar quando o
- * Directus tiver suporte nativo.
- */
 const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
   const estado = props.mapa?.state;
   if (!estado) return null;
@@ -76,10 +70,6 @@ const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
   );
 });
 
-/*
- * O `moveend` do mapa do Directus grava a câmera no estado; é o sinal de que o
- * mapa terminou de carregar e já escuta o `bounds` que o centralizador entrega.
- */
 watch(
   () => props.mapa?.state?.cameraOptions,
   () => centralizador.value?.aoMoverACamera()
@@ -89,10 +79,6 @@ watch(
  * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
  * do Directus navega para a tela do item, que é o oposto de sincronizar com o
  * mapa — a razão de existir desta extensão.
- *
- * Clicar é pedir para ver aquele item, então a câmera vai até ele mesmo que ele
- * já esteja na tela (`somenteSeFora: false`). Com `zoomOnClick`, aproxima; sem,
- * mantém o zoom de agora.
  */
 const enquadrarItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;

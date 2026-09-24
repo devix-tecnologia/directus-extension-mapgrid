@@ -5,11 +5,6 @@ import {
   VerificadorDeTamanhoDeEvidencia,
 } from './index';
 
-/*
- * O teto de 300 KB por arquivo em `TASKS/assets` (Sidarta, 2026-09-23): a
- * primeira evidência em vídeo da task-010 somou 16 MB, oito vezes o pack
- * inteiro do repositório, e o git guarda para sempre o que entra no histórico.
- */
 const KB = 1024;
 
 describe('o verificador acusa o que passa do teto', () => {
@@ -46,14 +41,12 @@ describe('o verificador acusa o que passa do teto', () => {
 
 describe('o repositório', () => {
   it('nenhum arquivo em TASKS/assets passa de 300 KB — versionado ou prestes a ser', () => {
-    // inclui o que não está versionado mas não é ignorado: barra antes do commit
     const verificador = new VerificadorDeTamanhoDeEvidencia();
     const acima = verificador.acimaDoTeto(new EvidenciasDoRepositorio().listar());
     expect(acima, verificador.relatar(acima)).toEqual([]);
   });
 
   it('a listagem do repositório enxerga os arquivos de TASKS/assets', () => {
-    // sem isto, uma listagem vazia faria o teste acima passar vacuamente
     expect(new EvidenciasDoRepositorio().listar().length).toBeGreaterThan(0);
   });
 });

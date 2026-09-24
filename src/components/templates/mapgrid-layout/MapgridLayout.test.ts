@@ -106,9 +106,6 @@ describe('MapgridLayout — o clique no ponto', () => {
   });
 
   it('o clique na linha leva o mapa até o item pelo fitBounds do Directus, e não pelo cameraOptions', () => {
-    // o componente de mapa do Directus ignora cameraOptions depois de montado;
-    // quem move a câmera é o CentralizadorDoMapaDirectus, trocando o bbox do
-    // geojson e entregando um geojsonBounds novo, que o componente observa
     const composicao = montarComposicao();
     const atualizarCamera = vi.fn();
     const geojson = { bbox: [-74, -34, -34, 5], features: [], type: 'FeatureCollection' };
@@ -142,8 +139,6 @@ describe('MapgridLayout — o clique no ponto', () => {
   });
 
   it('enquanto o mapa carrega, insiste no bounds até o moveend do Directus gravar a câmera', async () => {
-    // o watch de bounds do Directus só existe depois do load do MapLibre; o
-    // moveend gravando cameraOptions é o que prova, de fora, que ele existe
     vi.useFakeTimers();
     try {
       montarComposicao();

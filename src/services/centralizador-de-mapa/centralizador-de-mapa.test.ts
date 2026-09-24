@@ -2,20 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { CentralizadorDoMapaDirectus } from './centralizador-de-mapa';
 import type { Retangulo } from './centralizador-de-mapa.types';
 
-/*
- * O estado aqui imita o que o `setup()` do layout de mapa do Directus devolve,
- * só nas três chaves que o contorno toca: `geojson` (com o `bbox` que o
- * componente do mapa lê no `fitBounds`), `geojsonBounds` (o que o componente
- * observa) e `cameraOptions` (onde ele grava a área visível a cada `moveend`).
- */
 const VISIVEL: Retangulo = [-40.4, -20.4, -40.2, -20.2];
 const TELA = { largura: 1000, altura: 600 };
 
 interface OpcoesDeMontagem {
-  /** O mapa já foi visto se movendo — o `watch` de `bounds` do Directus existe. */
   pronto?: boolean;
   visivel?: Retangulo | null;
-  /** A câmera sem `bbox`, como a do preset antes do primeiro `moveend`. */
   camera?: Record<string, unknown>;
 }
 
@@ -40,12 +32,10 @@ function montar({ camera, pronto = true, visivel = VISIVEL }: OpcoesDeMontagem =
   });
   if (pronto) centralizador.aoMoverACamera();
   const bboxLido = () => (estado.geojson as { bbox: Retangulo }).bbox;
-  /** Um tique de cada repetição ainda ativa — o intervalo passando. */
   const tique = () => {
     for (const repeticao of repeticoes) if (!repeticao.cancelada) repeticao.tarefa();
   };
   const ativas = () => repeticoes.filter((repeticao) => !repeticao.cancelada);
-  /** O `moveend` do Directus gravando a câmera nova no estado. */
   const moverACamera = (bbox: Retangulo) => {
     estado.cameraOptions = { bbox: [...bbox], zoom: 5 };
     centralizador.aoMoverACamera();
@@ -78,7 +68,6 @@ describe('centralizar um ponto', () => {
     expect(bboxLido()).not.toEqual(bboxDaColecao);
     const [oeste, sul, leste, norte] = bboxLido();
     expect((oeste + leste) / 2).toBeCloseTo(-40.0, 6);
-    // o centro em latitude é o da projeção de Mercator, não a média em graus
     expect(sul).toBeLessThan(-20.0);
     expect(norte).toBeGreaterThan(-20.0);
   });
@@ -195,9 +184,6 @@ describe('o que não se lê não mexe na câmera', () => {
   });
 
   it('sem área visível, mas com o zoom da câmera, mantém esse zoom', () => {
-    // o preset traz center e zoom; o bbox só chega no primeiro moveend. O mapa
-    // nasceu com esse zoom (`new Map({ ...camera })`), e é ele que se mantém. No
-    // MapLibre o mundo tem 512·2^zoom pixels de largura.
     const { bboxLido, centralizador } = montar({
       camera: { center: [-47.9, -15.8], zoom: 9 },
       visivel: null,
@@ -214,8 +200,6 @@ describe('o que não se lê não mexe na câmera', () => {
   });
 
   it('sem área visível conhecida, o ponto é enquadrado pelo próprio retângulo', () => {
-    // antes do primeiro moveend não há cameraOptions.bbox para manter o zoom;
-    // o fitBounds deles aplica o maxZoom 14
     const { bboxLido, centralizador } = montar({ visivel: null });
     expect(centralizador.centralizar(ponto(-40.0, -20.0))).toBe(true);
     expect(bboxLido()).toEqual([-40.0, -20.0, -40.0, -20.0]);
@@ -223,13 +207,6 @@ describe('o que não se lê não mexe na câmera', () => {
 });
 
 describe('antes de o mapa do Directus terminar de carregar', () => {
-  /*
-   * O `watch` de `bounds` do Directus só é registrado no `load` do MapLibre —
-   * estilo e tiles baixados. Um clique que chega antes disso troca `bounds` sem
-   * ninguém escutando, e a mudança se perde. Não há sinal de "carregou" fora do
-   * componente; o que há é o `moveend`, que também só é ligado no `load`. Então,
-   * enquanto a câmera nunca foi vista mudando, insiste.
-   */
   it('insiste: entrega um bounds novo a cada intervalo, com o mesmo retângulo', () => {
     const { bboxLido, centralizador, estado, tique } = montar({ pronto: false });
     centralizador.centralizar(ponto(-40.0, -20.0));
@@ -251,8 +228,6 @@ describe('antes de o mapa do Directus terminar de carregar', () => {
   });
 
   it('a primeira mudança de câmera encerra a insistência com um bounds a mais — o mapa agora escuta', () => {
-    // esse moveend pode ser o do fitBounds inicial deles, dos dados, e não o
-    // nosso: ver o alvo na tela não prova nada, uma visão de mundo contém tudo
     const { ativas, bboxDaColecao, bboxLido, centralizador, estado, moverACamera, pendentes } =
       montar({ pronto: false });
     centralizador.centralizar(ponto(-40.0, -20.0));
