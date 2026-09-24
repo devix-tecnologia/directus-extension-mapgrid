@@ -63,7 +63,11 @@ export async function garantirColecaoDeTrajetos(): Promise<void> {
   }
 }
 
-/** O MapGrid sobre os trajetos, com a câmera no Brasil inteiro e sem aproximar ao clicar. */
+/**
+ * O MapGrid sobre os trajetos, sem aproximar ao clicar. Sem câmera semeada: com
+ * geometria nativa o Directus lê `cameraOptions.bbox` para filtrar pela área
+ * visível, e uma câmera sem `bbox` derruba o layout.
+ */
 export async function garantirMapGridDosTrajetos(): Promise<void> {
   await deleteAllPresetsFor(COLECAO_DE_TRAJETOS);
   await apiRequest('POST', '/presets', {
@@ -71,7 +75,7 @@ export async function garantirMapGridDosTrajetos(): Promise<void> {
     layout: 'mapgrid',
     layout_options: {
       mapgrid: {
-        map: { cameraOptions: { center: [-50, -15], zoom: 3 }, geometryField: 'trajeto' },
+        map: { geometryField: 'trajeto' },
         zoomOnClick: false,
       },
     },
