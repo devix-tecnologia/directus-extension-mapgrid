@@ -66,9 +66,9 @@ direta não serve.
       atribuição, e não pela contagem de tiles: o segundo mapa os tira do cache
 - [x] Conferir se a atribuição do basemap aparece no canto do mapa, que é
       exigência de licença da maioria dos provedores. Aparece
-- [ ] Reenquadrar e clique numa linha fora da tela com geometria nativa — adiado: a entrega depois da busca não chega ao mapa do Directus, ver "Geometria nativa", abaixo
-      Medido: não enquadra. A busca da geometria pela chave já existe e está
-      testada; os dois e2e estão em `test.fixme` em `mapgrid-trajetos.spec.ts`
+- [x] Reenquadrar e clique numa linha fora da tela com geometria nativa —
+      fechado pela [task-012](task-012-a-entrega-ao-mapa-depois-da-busca-funciona-com-o-vue-do-directus.md).
+      Os dois e2e saíram do `test.fixme` e passam
 
 ### Fase 2: o clique na linha para qualquer geometria
 - [x] Extrair o cálculo de "para onde a câmera vai" do `enquadrarItem` para um
@@ -112,20 +112,26 @@ sondas), duas instâncias do layout, estado diferente do desenhado, insistência
 presa, momento da entrega (esperar 5 s não muda). Num caso o mesmo caminho
 **funcionou**: afastando o mapa pelo botão "−" do Directus antes do clique.
 
-**Reproduzido com TDD (2026-09-24).** A causa não é o Directus nem o
-centralizador: é o **Vue do app**. A extensão roda com o Vue do Directus, que no
-10.13.1 é o **3.4.27**, e os testes rodavam com o 3.5.22 do projeto. O mesmo
-teste de componente passa no 3.5 e falha no 3.4:
-`src/components/templates/mapgrid-layout/MapgridLayout.vue-do-directus.test.ts`,
-em `it.fails`, rodado por `vitest.vue-do-directus.config.ts` (que aponta o `vue`
-para o pacote `vue-do-directus`, 3.4.27) dentro do `pnpm test`.
+~~**Reproduzido com TDD (2026-09-24).** A causa não é o Directus nem o
+centralizador: é o **Vue do app**.~~ **Errado, e a
+[task-012](task-012-a-entrega-ao-mapa-depois-da-busca-funciona-com-o-vue-do-directus.md)
+mostra por quê.** Não era o Vue do app: o `it.fails` reprovava porque o
+`@vue/test-utils` montava com o Vue 3.5.22 do projeto enquanto o teste criava o
+estado com o 3.4.27, e duas reatividades não se falam. Com o arranjo consertado,
+o defeito reproduz igual nas duas versões.
+
+A causa de verdade é o segundo item da lista abaixo — o `SyntaxError` do
+vue-i18n, que aqui foi dado por não relacionado. Ele vem do `showingCount` dos
+layouts embutidos, que chama `useI18n()` de dentro de um `computed`; avaliado
+fora do render, pelo agendador do Vue, ele explode e congela a composição. O
+diagnóstico completo está na task-012.
 
 Achados do caminho, que valem para quem retomar:
 
 - o Directus lê `cameraOptions.bbox` sem conferir; um preset com câmera sem
   `bbox` derruba o layout quando a geometria é nativa;
 - há um `SyntaxError` do `vue-i18n` a cada busca filtrada; não vem das nossas
-  mensagens.
+  mensagens. **Era a causa do defeito** — ver task-012.
 
 ## Notes
 
