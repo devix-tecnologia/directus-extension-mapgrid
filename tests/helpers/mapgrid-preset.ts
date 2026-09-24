@@ -69,7 +69,7 @@ export const mapGridPresetCentradoEm = (
   };
 };
 
-async function deleteAllPresetsFor(collection: string): Promise<void> {
+export async function deleteAllPresetsFor(collection: string): Promise<void> {
   const query = `filter[collection][_eq]=${collection}&fields=id&limit=-1`;
   const response = await apiRequest<DirectusCollectionResponse<Pick<Preset, 'id'>>>(
     'GET',
