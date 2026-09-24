@@ -96,6 +96,13 @@ try {
   const { preservedWorktreePath } = await sandbox.close();
   if (preservedWorktreePath) {
     console.error(`⚠️  worktree preservada (mudanças não commitadas): ${preservedWorktreePath}`);
+  } else {
+    // A worktree da rodada sobra em disco depois do `close()`, e não é lixo
+    // inofensivo: ela é uma CÓPIA deste repositório, `biome.json` inclusive, e
+    // o scanner do Biome para com "found a nested root configuration" — o
+    // `pnpm lint` do repositório deixa de rodar por causa dela. O script só
+    // remove o que o git já não registra; worktree preservada nunca chega aqui.
+    execFileSync('node', ['.sandcastle/limpa-worktrees.mjs'], { stdio: 'inherit' });
   }
 }
 

@@ -96,6 +96,39 @@ precisa estar dentro da árvore, porque o espelho que o Docker enxerga é a mesm
 árvore — mover os arquivos para fora do bind mount os tiraria do alcance do
 host.
 
+## A worktree que sobra quebra o `pnpm lint` do repositório
+
+Medido na primeira rodada, em 2026-09-23. O que fica em
+`.sandcastle/worktrees/<rodada>/` é uma **cópia deste repositório**,
+`biome.json` inclusive — e o scanner do Biome acha a cópia antes de olhar
+qualquer configuração:
+
+```
+× Found a nested root configuration, but there's already a root configuration.
+```
+
+O lint da raiz então não roda. Não há configuração que desarme isso: negação em
+`files.includes`, `files.experimentalScannerIgnores` e `vcs.useIgnoreFile` foram
+os três tentados, e o erro vem antes dos três. A saída é o diretório não
+existir:
+
+```sh
+pnpm sandcastle:limpar   # remove só o que o git já não registra
+```
+
+O `rodada.ts` chama isso sozinho ao terminar, **exceto** quando o Sandcastle
+preservou a worktree por ter trabalho não commitado — aí ela fica, e o lint
+quebrado é o preço de não perder o trabalho.
+
+**Enquanto a rodada está de pé, o `pnpm lint` do host falha assim e está
+certo**: a worktree é o workspace do agente. O lint que importa nessa hora é o
+de dentro do container, que não enxerga esta pasta.
+
+Uma nota de herança: o runner do e2e sobe como root e escreve no workspace
+montado, então `playwright-report/` e `test-results/` saem com dono root — no
+repositório também, quando a suíte roda no host. É por isso que a limpeza tem
+um caminho pelo `docker run --rm alpine rm -rf` em vez de pedir `sudo`.
+
 ## O que cobre esta pasta
 
 ```sh
