@@ -77,8 +77,10 @@ test.describe('MapGrid — o basemap configurado no projeto', () => {
 
     // navegação dentro do app, sem recarregar: vale esteja a escolha em memória ou no navegador
     await page.locator(`a[href$="/content/${EMPTY_COLLECTION_NAME}"]`).first().click();
-    await expect(page.locator('.layout-map .maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
-    const antes = tilesPedidos();
-    await expect.poll(tilesPedidos, { timeout: 20_000 }).toBeGreaterThan(antes);
+    // os tiles podem vir do cache; a atribuição só existe no basemap de teste
+    await expect(page.locator('.layout-map .maplibregl-ctrl-attrib')).toContainText(
+      ATRIBUICAO_DE_TESTE,
+      { timeout: 30_000 }
+    );
   });
 });
