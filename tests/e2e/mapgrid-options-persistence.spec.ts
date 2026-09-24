@@ -103,10 +103,17 @@ test('uma opção mudada no painel sobrevive ao reload', async ({ page }) => {
  *   Sobra o template de exibição, preenchido pelo menu de campos deles.
  */
 async function escolherCampoNoTemplate(page: Page, campo: RegExp): Promise<void> {
-  await page.locator(`${OPCOES_DO_MAPA} .system-display-template`).getByText('add_box').click();
+  /*
+   * Pelo papel, e não pela classe: o `add_box` é o botão que abre o menu de
+   * campos do controle de template deles, e a classe `.system-display-template`
+   * que o pacote declara não chega ao DOM que o Playwright vê.
+   */
+  const abrirCampos = page.locator(OPCOES_DO_MAPA).getByRole('button', { name: 'add_box' });
+  await expect(abrirCampos).toBeVisible({ timeout: 30_000 });
+  await abrirCampos.click();
 
   const item = page.getByRole('listitem').filter({ hasText: campo }).first();
-  await expect(item).toBeVisible({ timeout: 20_000 });
+  await expect(item).toBeVisible({ timeout: 30_000 });
   await item.click();
 }
 
@@ -121,7 +128,7 @@ test('as opções dos dois layouts embutidos sobrevivem juntas ao reload', async
   await escolherNoSeletor(page, OPCOES_DA_GRADE, /comfortable|confortável/i);
 
   await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
-  await escolherCampoNoTemplate(page, /^name$/i);
+  await escolherCampoNoTemplate(page, /^\s*name\s*$/i);
 
   /* A gravação do Directus é debounced: ler logo depois do clique chega antes. */
   await expect

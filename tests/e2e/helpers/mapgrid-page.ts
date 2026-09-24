@@ -191,12 +191,16 @@ export async function abrirOpcoesDoLayout(page: Page): Promise<void> {
  * Expande uma seção do painel. O `v-detail` do Directus só põe o conteúdo no
  * DOM quando está aberto, então a prova de que abriu é o `.content` existir —
  * e não a classe do cabeçalho, que não muda.
+ *
+ * `> .content` de propósito, e não `.content`: dentro da seção do mapa o
+ * template de exibição deles tem um `span.content` próprio, o contenteditável,
+ * e um seletor descendente casa com os dois.
  */
 export async function abrirSecaoDasOpcoes(page: Page, secao: string): Promise<void> {
   const detalhe = page.locator(secao);
   await expect(detalhe).toBeVisible({ timeout: 30_000 });
 
-  const conteudo = detalhe.locator('.content');
+  const conteudo = page.locator(`${secao} > .content`);
   if ((await conteudo.count()) === 0) await detalhe.locator('.v-divider').first().click();
 
   await expect(conteudo).toBeVisible({ timeout: 30_000 });
