@@ -45,6 +45,10 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 The geospatial field is detected from the collection, so the layout works before anything is set.
 
+The basemaps offered are the ones in **Project Settings → Map**, as in every map of the app. The
+chosen basemap is the app's choice, not the MapGrid's: it is shared with the other map layouts and
+is not stored in the MapGrid preset — which is why a screen may look different from the one above.
+
 #### Columns
 
 Columns are chosen in the grid's own header, the way the Directus tabular layout does it — not in
@@ -217,6 +221,10 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 O campo geoespacial é detectado a partir da coleção, então o layout funciona antes de qualquer
 opção ser preenchida.
+
+Os mapas base oferecidos são os de **Project Settings → Map**, como em todo mapa do app. O mapa base
+escolhido é uma escolha do app, e não do MapGrid: vale também para os outros layouts de mapa e não
+fica gravado no preset do MapGrid — por isso uma tela pode parecer diferente da que está acima.
 
 #### Colunas
 

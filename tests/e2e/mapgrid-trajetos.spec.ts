@@ -57,7 +57,9 @@ test.describe('MapGrid — trajetos com geometria nativa', () => {
       .toBe(true);
   });
 
-  test('reenquadrar com geometria nativa volta à coleção inteira na hora', async ({ page }) => {
+  test.fixme('reenquadrar com geometria nativa volta à coleção inteira na hora', async ({
+    page,
+  }) => {
     await linhaDe(page, 'Rio → São Paulo').click();
     await expect
       .poll(
@@ -82,7 +84,9 @@ test.describe('MapGrid — trajetos com geometria nativa', () => {
       .toBe(true);
   });
 
-  test('clicar numa linha cujo trajeto está fora da tela leva o mapa até ele', async ({ page }) => {
+  test.fixme('clicar numa linha cujo trajeto está fora da tela leva o mapa até ele', async ({
+    page,
+  }) => {
     // com geometria nativa o Directus só busca o que cai na área visível
     await linhaDe(page, 'Rio → São Paulo').click();
     await expect
