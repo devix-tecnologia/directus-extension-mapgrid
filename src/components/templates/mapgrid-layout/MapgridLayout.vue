@@ -22,6 +22,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
 import { CentralizadorDoMapaDirectus } from '../../../services/centralizador-de-mapa/index';
+import { leitorDeEstadoEmbutido } from '../../../services/embedded-layout/index';
 import { MESSAGES } from '../../../shared/messages';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import type { MapgridLayoutProps } from './MapgridLayout.types';
@@ -112,13 +113,21 @@ const selecionarItem = (payload: unknown): void => {
   doMapa<(valor: unknown) => void>('onUpdate:selection')?.(proxima);
 };
 
+/*
+ * O estado embutido não se espalha direto: um getter dele que explode fora do
+ * render congelava a composição inteira. O porquê está no
+ * `leitorDeEstadoEmbutido`.
+ */
+const lerEstadoDaGrade = leitorDeEstadoEmbutido();
+const lerEstadoDoMapa = leitorDeEstadoEmbutido();
+
 const propsDaGrade = computed(() => ({
-  ...(props.grade?.state ?? {}),
+  ...lerEstadoDaGrade(props.grade?.state),
   onRowClick: enquadrarItem,
 }));
 
 const propsDoMapa = computed(() => ({
-  ...(props.mapa?.state ?? {}),
+  ...lerEstadoDoMapa(props.mapa?.state),
   handleClick: selecionarItem,
 }));
 </script>
