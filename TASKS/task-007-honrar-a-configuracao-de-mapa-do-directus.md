@@ -112,6 +112,14 @@ sondas), duas instâncias do layout, estado diferente do desenhado, insistência
 presa, momento da entrega (esperar 5 s não muda). Num caso o mesmo caminho
 **funcionou**: afastando o mapa pelo botão "−" do Directus antes do clique.
 
+**Reproduzido com TDD (2026-09-24).** A causa não é o Directus nem o
+centralizador: é o **Vue do app**. A extensão roda com o Vue do Directus, que no
+10.13.1 é o **3.4.27**, e os testes rodavam com o 3.5.22 do projeto. O mesmo
+teste de componente passa no 3.5 e falha no 3.4:
+`src/components/templates/mapgrid-layout/MapgridLayout.vue-do-directus.test.ts`,
+em `it.fails`, rodado por `vitest.vue-do-directus.config.ts` (que aponta o `vue`
+para o pacote `vue-do-directus`, 3.4.27) dentro do `pnpm test`.
+
 Achados do caminho, que valem para quem retomar:
 
 - o Directus lê `cameraOptions.bbox` sem conferir; um preset com câmera sem
