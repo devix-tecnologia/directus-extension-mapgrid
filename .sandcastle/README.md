@@ -31,6 +31,25 @@ cp .sandcastle/.env.example .sandcastle/.env
 claude setup-token   # gere uma vez; exporte no seu shell ou guarde no keychain
 ```
 
+## O fim da rodada: rebaseia, roda os gates e publica
+
+O projeto é `autopilot`, então a rodada entrega no `origin/develop` sem esperar
+revisão; a revisão vem depois, e a task se reabre se for preciso. O
+`RoundPublisher` (`round-publisher/`) faz, no host, onde está a chave do GitHub:
+
+1. `fetch` e fast-forward do `develop` local — também **antes** de o agente
+   começar, para ele partir do que está publicado;
+2. rebase da branch da rodada sobre esse `develop`;
+3. os gates de novo, sobre o resultado: `install --frozen-lockfile`,
+   `typecheck`, `typecheck:sandcastle`, `lint`, `test`;
+4. `merge --no-ff` (`chore: integra <branch> no develop`) e `push`;
+5. se o `origin` andou durante os gates, volta ao passo 1.
+
+Árvore suja, `develop` divergente, conflito, gate vermelho ou push recusado
+param tudo: nada é publicado e a branch fica, com o motivo no log. Rodar a
+rodada numa sessão que sobreviva ao terminal (`tmux`, `nohup`) importa: se o
+processo do host morre, o trabalho fica commitado na branch, mas não publicado.
+
 ## A fila: **menor `Priority` vence**
 
 É a diferença que mais importa em relação à mesma pasta no `geohub`, e copiar de

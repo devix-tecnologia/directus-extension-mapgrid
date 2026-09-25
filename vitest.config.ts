@@ -21,6 +21,7 @@ export default defineConfig({
       // tests and no warning that it happened.
       '.sandcastle/task-queue/*.test.ts',
       '.sandcastle/credential/*.test.ts',
+      '.sandcastle/round-publisher/*.test.ts',
     ],
     coverage: {
       provider: 'v8',
