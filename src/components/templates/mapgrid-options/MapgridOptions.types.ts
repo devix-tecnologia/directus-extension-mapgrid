@@ -17,10 +17,13 @@ export interface MapgridOptionsProps {
   collection: string;
   grid?: EmbeddedLayout | null;
   map?: EmbeddedLayout | null;
-  /** Zoom the map in when a row is clicked. Does not exist in their layouts. */
+  /** Zoom the map in when a record is focused. Does not exist in their layouts. */
   zoomOnClick?: boolean;
+  /** Seconds between records during playback. Does not exist in their layouts. */
+  playbackInterval?: number;
 }
 
 export interface MapgridOptionsEmits {
   'update:zoomOnClick': [value: boolean];
+  'update:playbackInterval': [value: number];
 }

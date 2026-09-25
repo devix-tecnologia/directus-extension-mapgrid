@@ -28,6 +28,24 @@ export const TABLE = `${GRID_PANE} table`;
 export const HEADERS = `${GRID_PANE} thead th`;
 export const ROWS = `${GRID_PANE} tbody tr`;
 
+/**
+ * The current record's row. It is ours: the `v-table` has no notion of a
+ * current row, and the mark deliberately does not go through `selection`,
+ * which would also arm the bulk actions.
+ */
+export const CURRENT_ROW = `${GRID_PANE} tbody tr.mapgrid-current-row`;
+
+/** A control of the MapGrid toolbar, over their map. */
+export const control = (page: Page, name: string) =>
+  page.locator(`${MAP_PANE} [data-control="${name}"] button`);
+
+/** The text of the row carrying the current-record mark; empty when there is none. */
+export async function currentRecord(page: Page): Promise<string> {
+  const row = page.locator(CURRENT_ROW);
+  if ((await row.count()) === 0) return '';
+  return (await row.first().innerText()).trim();
+}
+
 /** The `+` that opens the field picker, in their tabular layout's header. */
 export const ADD_FIELD = `${GRID_PANE} thead .add-field`;
 

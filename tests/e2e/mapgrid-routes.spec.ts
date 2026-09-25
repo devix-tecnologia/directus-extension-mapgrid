@@ -6,7 +6,7 @@ import {
   ROUTE_COLLECTION,
 } from '../helpers/route-collection';
 import { setupTestEnvironment } from '../setup';
-import { login, rowOf, waitForMapGrid } from './helpers/mapgrid-page';
+import { control, login, rowOf, waitForMapGrid } from './helpers/mapgrid-page';
 
 type BoundingBox = [number, number, number, number];
 
@@ -70,7 +70,7 @@ test.describe('MapGrid — routes with native geometry', () => {
       )
       .toBe(true);
 
-    await page.locator('.reset-map-btn').click();
+    await control(page, 'reset').click();
 
     await expect
       .poll(

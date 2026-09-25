@@ -39,6 +39,22 @@
       <v-checkbox v-model="zoomOnClick" :label="t('optionZoomOnClickLabel')" />
     </div>
   </v-detail>
+
+  <v-detail
+    class="mapgrid-option mapgrid-option--playback full"
+    icon="play_circle"
+    :label="t('optionPlayback')"
+  >
+    <div class="field">
+      <v-input
+        v-model="playbackInterval"
+        type="number"
+        min="1"
+        step="1"
+        :label="t('optionPlaybackInterval')"
+      />
+    </div>
+  </v-detail>
 </template>
 
 <script setup lang="ts">
@@ -59,6 +75,14 @@ const map = computed(() => props.map);
 const zoomOnClick = computed<boolean | undefined, unknown>({
   get: () => props.zoomOnClick,
   set: (value) => emit('update:zoomOnClick', Boolean(value)),
+});
+
+/** A second is the floor: below it a step outruns the map's camera animation. */
+const DEFAULT_PLAYBACK_SECONDS = 2;
+
+const playbackInterval = computed<number, unknown>({
+  get: () => props.playbackInterval ?? DEFAULT_PLAYBACK_SECONDS,
+  set: (value) => emit('update:playbackInterval', Math.max(1, Math.round(Number(value) || 0))),
 });
 </script>
 

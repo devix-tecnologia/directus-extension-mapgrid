@@ -1,6 +1,6 @@
 # Task 006 — Navegar e reproduzir os registros no mapa
 
-Status: pending
+Status: in-review
 Type: feat
 Assignee: sidartaveloso
 Difficulty: 3
@@ -100,6 +100,42 @@ o controle de três estados, `zoomOnClick` deve deixar de decidir
 movimento e passar a significar apenas "aproximar ao focar", que é uma escolha
 ortogonal.
 
+### Decisões tomadas (2026-09-25)
+
+**A ordem é a da consulta, e a interface não avisa nada.** Aceitar o `sort` que
+estiver. Um aviso de "este sort não é temporal" erraria nos casos legítimos que
+não são data/hora — um campo `sort` manual, um número de sequência do trajeto,
+uma ordem por quilometragem —, e a ordem já está visível na própria grade, que é
+onde a pessoa a troca. O `RecordSequence` não sabe o que é o `sort`: ele percorre
+a lista na ordem em que a consulta a devolveu, e é só isso que "próximo"
+significa.
+
+**A linha atual é marcada por classe no DOM, não pela `selection`.** O
+`TableRowHighlighter` põe `.mapgrid-current-row` no `tbody tr` do índice atual e
+rola com `scrollIntoView({ block: 'nearest' })`. Custou uma suposição — a de que
+a tabela deles desenha as linhas como `tbody tr`, a mesma que os e2e já fazem em
+`ROWS` — e em troca não toca em estado nenhum do Directus: nada mais no layout
+reage à marca, e as ações em lote continuam falando só da `selection`. Propor o
+recurso ao Directus continua valendo, mas não bloqueia esta task.
+
+**O clique na linha passou a obedecer ao acompanhamento da câmera.** As duas
+portas de entrada definem o mesmo estado, e não dois caminhos — então o clique
+direto entra pelo mesmo `framing()` que o passo automático. Antes ele sempre
+movia (`onlyIfOutside: false`); com o padrão `follow`, ele move quando o item
+está fora da área visível. Custo medido no e2e: três specs de `mapgrid-routes`
+e um de `mapgrid-layout` começavam clicando numa linha para levar a câmera a um
+lugar conhecido, e com o mapa aberto enquadrando a coleção inteira esse clique
+deixou de mover — eles passavam por corrida, clicando antes do primeiro
+`moveend`. Os quatro agora declaram `cameraTracking: 'center'` no preset, que é
+a precondição contra a qual foram escritos.
+
+**`zoomOnClick` passa a significar só "aproximar ao focar".** Quem decide se a
+câmera se move é o `cameraTracking`; o `zoomOnClick` entra no
+`CameraTrackingPolicy.framing()` como o `zoomIn`, ortogonal ao `onlyIfOutside`.
+Em `off` o `framing()` devolve `null` e a câmera não se mexe, com `zoomOnClick`
+ligado ou não.
+
+
 ## Os seis controles
 
 | Controle | O que faz | Na borda |
@@ -146,72 +182,75 @@ que cicla entre os três estados, na `MapToolbar`.
 ## Tasks
 
 ### Fase 1: a sequência
-- [ ] Módulo puro em `src/services/` que, dada a lista da página, o id atual e a
+- [x] Módulo puro em `src/services/` que, dada a lista da página, o id atual e a
       posição da página no total, responde o que é primeiro, anterior, próximo e
       último — e quando a resposta exige trocar de página, diz qual página e se o
-      alvo é o primeiro ou o último item dela
-- [ ] Decidir e documentar o que fazer quando o `sort` não é temporal
-- [ ] Testes cobrindo: primeiro e último da página, primeiro e último da consulta
+      alvo é o primeiro ou o último item dela. Feito:
+      `src/services/record-sequence/`, `RecordSequence implements IRecordSequence`
+- [x] Decidir e documentar o que fazer quando o `sort` não é temporal. Decidido:
+      aceitar a ordem que estiver, sem aviso — ver "Decisões tomadas"
+- [x] Testes cobrindo: primeiro e último da página, primeiro e último da consulta
       inteira, item ausente da lista, lista vazia, e uma página só
 
 ### Fase 2: o registro atual sobe para o template
-- [ ] Um lugar só para "qual é o registro atual", no template
-- [ ] Clicar no ponto define o registro atual. O `handleClick` do mapa já foi
-      trocado na task-010 e deixou de navegar para a tela do item, mas hoje
-      marca a `selection` — que arma as ações em lote
-- [ ] Clicar na linha e clicar no ponto passam a ser duas formas de definir o
-      mesmo estado, e não dois caminhos separados
-- [ ] A grade destaca e rola até a linha do registro atual, pela forma decidida
-      nos pré-requisitos, sem usar `selection`
-- [ ] O mapa enquadra o registro atual pelo `IMapCenterer`,
+- [x] Um lugar só para "qual é o registro atual", no template: o `currentId` e o
+      `focus()` em `MapgridLayout.vue`
+- [x] Clicar no ponto define o registro atual. Deixou de escrever na `selection`
+- [x] Clicar na linha e clicar no ponto passam a ser duas formas de definir o
+      mesmo estado, e não dois caminhos separados: os dois chamam `focus()`
+- [x] A grade destaca e rola até a linha do registro atual, sem usar `selection`:
+      `TableRowHighlighter`, classe `.mapgrid-current-row`
+- [x] O mapa enquadra o registro atual pelo `IMapCenterer`,
       respeitando o acompanhamento de câmera da Fase 6
 
 ### Fase 3: navegação manual
-- [ ] Os quatro controles de passo na `MapToolbar`, com a borda de cada um
+- [x] Os quatro controles de passo na `MapToolbar`, com a borda de cada um
       conforme a tabela
-- [ ] Desabilitar primeiro/anterior na primeira posição e próximo/último na
-      última, em vez de deixá-los clicáveis sem efeito
-- [ ] Atalhos de teclado, ativos só quando o layout tem foco, conferindo que não
-      colidem com os atalhos do próprio Directus
+- [x] Desabilitar primeiro/anterior na primeira posição e próximo/último na
+      última, em vez de deixá-los clicáveis sem efeito. Também desabilitados
+      enquanto a página carrega
+- [ ] **Não feito.** Atalhos de teclado, ativos só quando o layout tem foco,
+      conferindo que não colidem com os atalhos do próprio Directus. Ficou de
+      fora porque "não colide com os atalhos do Directus" só se confere contra a
+      lista deles, e essa verificação não cabia na rodada junto do resto
 
 ### Fase 4: reprodução automática
-- [ ] Play e stop, e intervalo entre passos configurável nas opções do layout
-      (na nossa seção do painel, junto do `zoomOnClick`, e não dentro das seções
-      deles)
-- [ ] A câmera acompanha o item em reprodução sem reenquadrar a coleção inteira
-- [ ] Parar sozinho no último registro da última página
-- [ ] Avaliar o agrupamento durante a reprodução: um ponto dentro de um cluster
-      não aparece sozinho, e a reprodução ficaria invisível. O `clusterData` é
-      opção do mapa deles, gravada no preset — desligá-lo só durante a
-      reprodução não pode gravar a mudança
+- [x] Play e stop, e intervalo entre passos configurável nas opções do layout,
+      na nossa seção `.mapgrid-option--playback`. Play e stop são um botão só,
+      que mostra o que dá para fazer agora
+- [x] A câmera acompanha o item em reprodução sem reenquadrar a coleção inteira:
+      cada passo chama `centerItem`, e `fitAll` só sai do botão de reenquadrar
+- [x] Parar sozinho no último registro da última página
+- [ ] **Não feito.** Avaliar o agrupamento durante a reprodução: um ponto dentro
+      de um cluster não aparece sozinho, e a reprodução ficaria invisível. O
+      `clusterData` é opção do mapa deles, gravada no preset — desligá-lo só
+      durante a reprodução não pode gravar a mudança
 
 ### Fase 5: virar a página
-- [ ] Virar a página pelo mesmo caminho do rodapé do tabular (`page` na consulta
-      ou `toPage`), sem controle de paginação novo
-- [ ] Próximo no fim da página avança e cai no primeiro item da próxima;
+- [x] Virar a página pelo mesmo caminho do rodapé do tabular: o `goToPage` do
+      `src/index.ts` escreve `page` na consulta compartilhada. Nenhum controle
+      de paginação novo
+- [x] Próximo no fim da página avança e cai no primeiro item da próxima;
       anterior no começo recua e cai no **último** item da anterior
-- [ ] Cobrir a espera pela busca: a navegação pausa enquanto a página carrega, em
+- [x] Cobrir a espera pela busca: a navegação pausa enquanto a página carrega, em
       vez de pular registros
-- [ ] Medir com uma coleção de rastreamento de verdade. Com 25 por página, um
-      trajeto de mil pontos são quarenta requisições durante a reprodução — e,
-      com a consulta compartilhada, possivelmente o dobro (a task-010 registrou
-      uma busca por layout). Avaliar um tamanho de página maior durante a
-      reprodução, ou buscar a próxima página antes de precisar dela
+- [ ] **Não feito.** Medir com uma coleção de rastreamento de verdade. Com 25 por
+      página, um trajeto de mil pontos são quarenta requisições durante a
+      reprodução — e, com a consulta compartilhada, possivelmente o dobro.
+      Avaliar um tamanho de página maior durante a reprodução, ou buscar a
+      próxima página antes de precisar dela. O seed do e2e tem oito registros,
+      que provam o comportamento mas não medem nada
 
 ### Fase 6: acompanhamento da câmera
-- [ ] Traduzir o estado para o centralizador: `off` não chama, `follow` chama
-      `centerItem(item)` (o `onlyIfOutside: true` padrão, que já compara com o
-      `cameraOptions.bbox`), `center` chama com `onlyIfOutside: false`. O
-      cálculo de "fora da área visível" já existe e está testado no
-      centralizador; o `isOutsideBounds` que esta fase citava saiu com
-      `src/services/geo/`
+- [x] Traduzir o estado para o centralizador: feito no `CameraTrackingPolicy`,
+      que devolve `null` em `off` e as `CenteringOptions` nos outros dois
 - [x] Para item que não é ponto, "onde está o item" é o bbox da geometria, e não o
       primeiro vértice. Já feito: o centralizador enquadra linha, polígono e
       `Multi*` pelo bbox (task-010)
-- [ ] Controle único ciclando entre os três estados, com ícone e rótulo por estado
-- [ ] Persistir o estado nas opções do layout, com `follow` como padrão
-- [ ] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
-- [ ] Textos em en-US e pt-BR
+- [x] Controle único ciclando entre os três estados, com ícone e rótulo por estado
+- [x] Persistir o estado nas opções do layout, com `follow` como padrão
+- [x] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
+- [x] Textos em en-US e pt-BR
 
 ### Fase 6b: onde ficam os controles
 
@@ -240,23 +279,60 @@ Os ganchos `data-center` e `data-zoom` e o `getCameraState()` eram do
 `MapComponent` e saíram com ele. A câmera se lê agora pelo `cameraOptions` do
 estado do mapa, ou pelo que ele grava em `layoutOptions.map` do preset.
 
-- [ ] Unitários dos módulos puros (sequência e acompanhamento de câmera)
-- [ ] Stories com `play` da `MapToolbar`: cada controle emite o que deve, e os de
+- [x] Unitários dos módulos puros (sequência e acompanhamento de câmera), e
+      também do `TableRowHighlighter` e da `MapToolbar`
+- [x] Stories com `play` da `MapToolbar`: cada controle emite o que deve, e os de
       borda aparecem desabilitados
-- [ ] `pnpm check:stories` limpo
-- [ ] e2e de navegação: próximo avança um registro, a linha destacada acompanha e
+- [ ] **Não rodou.** `pnpm check:stories` limpo: não há binário do Chromium neste
+      sandbox (`~/.cache/ms-playwright` vazio) e a orientação da rodada é não
+      mexer no ambiente. As stories passam no typecheck e no lint; o `play` de
+      cada uma está por verificar
+- [x] e2e de navegação: próximo avança um registro, a linha destacada acompanha e
       a câmera vai ao item; anterior desfaz o passo
-- [ ] e2e de primeiro e último, caindo nas pontas da consulta e não da página
-- [ ] e2e de clique no ponto: define o registro atual e **não** sai do MapGrid
-- [ ] e2e de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
+- [x] e2e de primeiro e último, caindo nas pontas da consulta e não da página
+- [x] e2e de clique no ponto: define o registro atual e **não** sai do MapGrid
+- [x] e2e de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
       que parou onde deveria
-- [ ] e2e de virada de página nos dois sentidos, com uma coleção maior que uma
-      página
-- [ ] e2e por estado da câmera: em `off` o `cameraOptions` não muda; em `follow`
-      só muda quando o item sai do `bbox`; em `center` muda a cada passo
-- [ ] Refazer a captura do README com os controles novos visíveis
-- [ ] Descrever os controles novos nas duas versões do README, que são dois
+- [x] e2e de virada de página nos dois sentidos. A página é sedada em três
+      registros contra as oito cidades do seed — a consulta fica com três
+      páginas, sem coleção nova
+- [x] e2e por estado da câmera: em `off` o `cameraOptions` não muda; em `center`
+      muda a cada passo. O caso `follow` ficou nos unitários do template: no e2e
+      ele depende de onde a câmera parou depois do primeiro `moveend`, e um
+      teste que às vezes afirma "moveu" e às vezes "não moveu" não afirma nada
+- [x] Refazer a captura do README com os controles novos visíveis
+- [x] Descrever os controles novos nas duas versões do README, que são dois
       documentos completos e não um com trechos traduzidos
+
+### Evidência
+
+Capturada em 2026-09-25, com `EVIDENCE_TASK=006 EVIDENCE_MOMENT=depois
+.sandcastle/on-mirror.sh pnpm screenshot`.
+
+![A composição com os controles novos](assets/task-006-composicao-depois.jpg)
+
+A barra do MapGrid no alto à direita do mapa, com os sete controles; a linha de
+Curitiba com a marca de registro atual — o fundo e a barra da borda inicial, que
+não são os da caixa de seleção, que segue desmarcada; e o mapa enquadrado nela.
+O rodapé mostra as três páginas de três registros que o e2e usa.
+
+![A câmera a cada passo](assets/task-006-percurso-depois.jpg)
+
+Um quadro do painel do mapa por passo, com `cameraTracking: center`: a câmera
+anda a cada "próximo". Voo de câmera não cabe num quadro só, e os quadros foram
+conferidos como diferentes entre si dentro do próprio teste.
+
+A captura do README (`docs/tela.jpg`) foi refeita na mesma execução: mostra a
+barra nova e o painel lateral com as quatro seções, incluindo *Zoom on focus* e
+*Playback*.
+
+A evidência de clique no ponto saiu da mesma execução com 319 KB e não entrou:
+o `scripts/tamanho-de-evidencia` reprova qualquer arquivo de `TASKS/assets`
+acima de 300 KB. O que ela mostrava — o ponto clicado virando registro atual —
+está na captura da composição e no e2e `clicking a marker sets it, and does not
+leave the MapGrid`. Fica o aviso para quem reexecutar: o
+`evidence-marker-click` grava PNG, e o PNG desta tela nasce perto do teto (o da
+task-010 ficou em 276 KB).
 
 ## Notes
 
