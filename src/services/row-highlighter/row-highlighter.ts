@@ -3,12 +3,7 @@ import type { IRowHighlighter } from './row-highlighter.types';
 /** The class the composition's stylesheet paints. */
 export const CURRENT_ROW_CLASS = 'mapgrid-current-row';
 
-/**
- * The `v-table` has no notion of a current row, so the mark is a class put on
- * the row element. It depends on the Directus table rendering its rows as
- * `tbody tr` — the one assumption, and the cheapest of the candidates: it
- * touches no state of theirs, so nothing else in the layout reacts to it.
- */
+/** Assumes the Directus table renders its rows as `tbody tr`. */
 export class TableRowHighlighter implements IRowHighlighter {
   constructor(private readonly root: () => HTMLElement | null) {}
 

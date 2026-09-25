@@ -173,20 +173,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       layoutOptions.value = { ...layoutOptions.value, cameraTracking: value };
     };
 
-    /*
-     * Turning the page is the layout's, because the query is: the template
-     * decides which record comes next, and asks here. It is the same path the
-     * tabular's own footer takes.
-     */
+    // the same path the tabular's footer takes
     const goToPage = (page: number): void => {
       writableQuery.page.value = page;
     };
 
-    /*
-     * Changes when the sequence became another one. The page is deliberately
-     * out: turning the page is walking the same sequence, and putting it here
-     * would drop the current record at every step across a page boundary.
-     */
+    // `page` stays out: turning the page walks the same sequence
     const queryKey = computed(() =>
       JSON.stringify([
         props.filter,

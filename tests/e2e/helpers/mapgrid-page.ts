@@ -28,11 +28,7 @@ export const TABLE = `${GRID_PANE} table`;
 export const HEADERS = `${GRID_PANE} thead th`;
 export const ROWS = `${GRID_PANE} tbody tr`;
 
-/**
- * The current record's row. It is ours: the `v-table` has no notion of a
- * current row, and the mark deliberately does not go through `selection`,
- * which would also arm the bulk actions.
- */
+/** The row carrying the current-record mark. */
 export const CURRENT_ROW = `${GRID_PANE} tbody tr.mapgrid-current-row`;
 
 /** A control of the MapGrid toolbar, over their map. */

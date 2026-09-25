@@ -1,16 +1,4 @@
-/**
- * Walking and playing back the records.
- *
- * Only the e2e can prove this. Storybook does not reach the Directus layouts —
- * there the SDK is a mock of ours and the layout registry does not exist — so
- * what the unit tests cover is the sequence and the toolbar, and what is left
- * for here is the composition against the real grid, the real map and the real
- * preset.
- *
- * The page size is seeded at three, against eight seeded cities, so the query
- * has three pages: turning the page is a step like any other, not a scenario
- * that needs a collection of its own.
- */
+/** Three per page against eight seeded cities: the query has three pages. */
 import { expect, type Page, test } from '@playwright/test';
 import { ensureMapGridPreset, readMapGridPresetOptions } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
@@ -136,13 +124,6 @@ test.describe('MapGrid — the current record', () => {
 });
 
 test.describe('MapGrid — playback', () => {
-  /*
-   * Neither test names the record playback should be standing on at a given
-   * moment. The first version did, and it was flaky for a good reason: with a
-   * one second step, `expect.poll`'s own backoff can look before and after the
-   * record it is waiting for and never see it. What is stable is where the walk
-   * ENDS, and that it does not move again after stop.
-   */
   test('walks to the end of the query on its own, turning the pages, and stops there', async ({
     page,
   }) => {

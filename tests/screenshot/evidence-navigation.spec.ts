@@ -1,12 +1,4 @@
-/**
- * The evidence for task-006: the controls exist on screen, and walking the
- * records moves both halves.
- *
- * Two captures, because one image cannot say both things. The first is the
- * whole composition, where the toolbar and the marked row are readable. The
- * second is a strip of the map pane at each step — a camera flight does not fit
- * in a single frame.
- */
+/** Evidence: the whole composition, and a strip of the map pane at each step. */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { expect, test } from '@playwright/test';

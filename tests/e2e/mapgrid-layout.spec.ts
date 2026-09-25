@@ -115,24 +115,13 @@ test.describe('MapGrid — the composition', () => {
 
     await clickCenterMarker(page);
 
-    /*
-     * The mark used to be the `selection` — the same checkbox the grid ticks.
-     * Task-006 took it out of there: `selection` also arms the bulk actions, so
-     * "I am looking at this" read as "I marked this to be deleted".
-     */
     await expect(row).toHaveClass(/mapgrid-current-row/, { timeout: 15_000 });
     await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
     await expect(page).toHaveURL(new RegExp(`/admin/content/${COLLECTION_NAME}(\\?|$)`));
   });
 
   test('clicking the row frames the item on the map', async ({ page }) => {
-    /*
-     * The tracking is stated for the same reason as in `mapgrid-routes`: since
-     * task-006 the row click obeys it, and from the world camera every seeded
-     * city is already inside the visible area — under the `follow` default the
-     * click would correctly do nothing, and there would be no marker at the
-     * centre to click next.
-     */
+    // `center`: under `follow` every seeded city is already visible, and the click would not move
     await ensureMapGridPresetCenteredOn(ATLANTIC, WORLD_ZOOM, COLLECTION_NAME, {
       cameraTracking: 'center',
     });

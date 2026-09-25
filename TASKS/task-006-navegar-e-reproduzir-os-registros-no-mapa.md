@@ -283,10 +283,9 @@ estado do mapa, ou pelo que ele grava em `layoutOptions.map` do preset.
       também do `TableRowHighlighter` e da `MapToolbar`
 - [x] Stories com `play` da `MapToolbar`: cada controle emite o que deve, e os de
       borda aparecem desabilitados
-- [ ] **Não rodou.** `pnpm check:stories` limpo: não há binário do Chromium neste
-      sandbox (`~/.cache/ms-playwright` vazio) e a orientação da rodada é não
-      mexer no ambiente. As stories passam no typecheck e no lint; o `play` de
-      cada uma está por verificar
+- [x] `pnpm check:stories` limpo, rodado na revisão fora do sandbox. O gate foi
+      provado: com uma asserção do `play` da `MapToolbar` quebrada de propósito,
+      ele sai 1 e mostra o `AssertionError`
 - [x] e2e de navegação: próximo avança um registro, a linha destacada acompanha e
       a câmera vai ao item; anterior desfaz o passo
 - [x] e2e de primeiro e último, caindo nas pontas da consulta e não da página

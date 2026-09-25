@@ -387,15 +387,7 @@ describe('an embedded state getter that throws outside the render', () => {
   });
 });
 
-/**
- * Walking the records. What the composition owns is the current record, and
- * these tests read it where a person would: the mark on the grid row, and the
- * bounds delivered to the Directus map.
- *
- * The camera starts ready on purpose — the centerer only stops re-delivering
- * after the first `moveend`, and a test measuring one step should not also be
- * measuring the retry.
- */
+// the camera starts ready: the centerer stops re-delivering only after the first `moveend`
 function mountWalk(
   options: {
     ids?: (string | number)[];

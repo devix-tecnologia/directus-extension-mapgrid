@@ -34,12 +34,7 @@ const control = (canvasElement: HTMLElement, name: string): HTMLButtonElement =>
   return button as HTMLButtonElement;
 };
 
-/**
- * The spies live here, and not in `args`, because Storybook derives the story's
- * arg types from the component's props alone: `defineEmits<MapToolbarEmits>()`
- * does not reach them, so `args.onNext` has no type. They are cleared at the
- * start of each `play` — Storybook replays it on every re-render.
- */
+/** Outside `args`: Storybook types args from props only, and `defineEmits` never reaches them. */
 const spies = {
   onFirst: fn(),
   onPrevious: fn(),

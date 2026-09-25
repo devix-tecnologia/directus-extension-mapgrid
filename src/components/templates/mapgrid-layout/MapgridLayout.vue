@@ -120,15 +120,7 @@ const position = computed<SequencePosition>(() => ({
 const atStart = computed(() => sequence.atStart(position.value));
 const atEnd = computed(() => sequence.atEnd(position.value));
 
-/**
- * The one place that says which record is current. The grid gets the mark, the
- * map gets the camera — and the camera only if the tracking state asks for it,
- * which is why `zoomOnClick` no longer decides movement, only zoom.
- *
- * `item` comes from the caller when it already has it (the row click hands the
- * whole record over); the marker click brings only the key, and there the map's
- * own feature is what the centerer reads.
- */
+/** The only writer of the current record: marks the row and, if tracking asks, moves the camera. */
 const focus = (id: RecordId | null, item?: GeoItem): void => {
   currentId.value = id;
   const index = id === null ? -1 : ids.value.indexOf(id);
@@ -140,11 +132,7 @@ const focus = (id: RecordId | null, item?: GeoItem): void => {
   if (framing) centerer.value?.centerItem(record, framing);
 };
 
-/**
- * The row click is ours, and it has to be: without overriding `onRowClick`, the
- * Directus grid navigates to the item screen, which is the opposite of syncing
- * with the map — this extension's reason to exist.
- */
+/** Overridden, or the Directus grid navigates to the item screen. */
 const frameItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;
   if (!item) return;
@@ -152,10 +140,7 @@ const frameItem = (payload: unknown): void => {
   focus(item.id, item);
 };
 
-/**
- * A step never runs over a list that is still the old one: while the page is
- * being fetched the navigation waits, rather than skipping records.
- */
+/** Waits while a page is being fetched, instead of stepping over the old list. */
 const step = (resolve: (position: SequencePosition) => SequenceStep | null): void => {
   if (loading.value) return;
 
@@ -192,10 +177,7 @@ const playing = ref(false);
 let ticker: ReturnType<typeof setInterval> | null = null;
 
 const DEFAULT_PLAYBACK_SECONDS = 2;
-/**
- * Each step asks the map for a camera animation, so an interval shorter than
- * the animation would stack requests. A second is the floor.
- */
+/** One second at least: each step starts a camera animation. */
 const MINIMUM_PLAYBACK_MS = 1_000;
 
 const stopPlayback = (): void => {
@@ -234,16 +216,7 @@ watch(
   }
 );
 
-/**
- * The marker click is the inverse path, and it also has to be ours: the map
- * layout's `handleClick` does a `router.push` to the item screen when it is not
- * in selection mode, so clicking a marker *left the MapGrid*.
- *
- * It used to mark the item in `selection`, which lit the row up for free — but
- * `selection` also arms the bulk actions, and "I am looking at this" read as "I
- * marked this to be deleted". Now it sets the current record, the same state
- * the row click sets: one state, two doors into it.
- */
+/** Overridden, or the map layout's `handleClick` navigates to the item screen; sets the current record, never `selection`. */
 const selectItem = (payload: unknown): void => {
   const id = (payload as { id?: string | number } | null | undefined)?.id;
   if (id === undefined || id === null) return;
@@ -332,11 +305,7 @@ const mapProps = computed(() => ({
   top: 0;
 }
 
-/*
- * The current record, which the `v-table` has no notion of. It is not the
- * `selection`: that one paints the row too, and also arms the bulk actions.
- * The bar on the inline start is what tells the two apart at a glance.
- */
+/* the current record; the inline-start bar tells it apart from `selection` */
 .mapgrid-pane--grid :deep(tbody tr.mapgrid-current-row) {
   background-color: var(--theme--primary-background);
   box-shadow: inset 4px 0 0 0 var(--theme--primary);

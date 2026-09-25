@@ -52,12 +52,7 @@ test('an option changed in the panel survives the reload', async ({ page }) => {
 
   await openZoomOptions(page);
 
-  /*
-   * Found inside our own section, and not by the label's text: the label is a
-   * translated string that changes with the feature — task-006 renamed it from
-   * "zoom when clicking table items" to "zoom when focusing a record", and this
-   * test went on waiting for a phrase that no longer exists.
-   */
+  // by our section, not by the label: the label is translated text
   const checkbox = page.locator(`${ZOOM_OPTIONS} .v-checkbox`).first();
   await expect(checkbox).toBeVisible({ timeout: 30_000 });
   const target = !(before.zoomOnClick ?? false);
