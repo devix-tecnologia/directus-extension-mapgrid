@@ -126,7 +126,16 @@ test.describe('MapGrid — the composition', () => {
   });
 
   test('clicking the row frames the item on the map', async ({ page }) => {
-    await ensureMapGridPresetCenteredOn(ATLANTIC, WORLD_ZOOM);
+    /*
+     * The tracking is stated for the same reason as in `mapgrid-routes`: since
+     * task-006 the row click obeys it, and from the world camera every seeded
+     * city is already inside the visible area — under the `follow` default the
+     * click would correctly do nothing, and there would be no marker at the
+     * centre to click next.
+     */
+    await ensureMapGridPresetCenteredOn(ATLANTIC, WORLD_ZOOM, COLLECTION_NAME, {
+      cameraTracking: 'center',
+    });
     await login(page);
     await openCollection(page);
 

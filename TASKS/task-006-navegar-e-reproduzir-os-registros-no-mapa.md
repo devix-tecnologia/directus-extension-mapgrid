@@ -118,6 +118,17 @@ a tabela deles desenha as linhas como `tbody tr`, a mesma que os e2e já fazem e
 reage à marca, e as ações em lote continuam falando só da `selection`. Propor o
 recurso ao Directus continua valendo, mas não bloqueia esta task.
 
+**O clique na linha passou a obedecer ao acompanhamento da câmera.** As duas
+portas de entrada definem o mesmo estado, e não dois caminhos — então o clique
+direto entra pelo mesmo `framing()` que o passo automático. Antes ele sempre
+movia (`onlyIfOutside: false`); com o padrão `follow`, ele move quando o item
+está fora da área visível. Custo medido no e2e: três specs de `mapgrid-routes`
+e um de `mapgrid-layout` começavam clicando numa linha para levar a câmera a um
+lugar conhecido, e com o mapa aberto enquadrando a coleção inteira esse clique
+deixou de mover — eles passavam por corrida, clicando antes do primeiro
+`moveend`. Os quatro agora declaram `cameraTracking: 'center'` no preset, que é
+a precondição contra a qual foram escritos.
+
 **`zoomOnClick` passa a significar só "aproximar ao focar".** Quem decide se a
 câmera se move é o `cameraTracking`; o `zoomOnClick` entra no
 `CameraTrackingPolicy.framing()` como o `zoomIn`, ortogonal ao `onlyIfOutside`.

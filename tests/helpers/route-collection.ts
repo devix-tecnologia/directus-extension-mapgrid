@@ -66,6 +66,15 @@ export async function ensureRouteCollection(): Promise<void> {
  * The MapGrid over the routes, without zooming in on click. No seeded camera:
  * with native geometry Directus reads `cameraOptions.bbox` to filter by the
  * visible area, and a camera with no `bbox` takes the layout down.
+ *
+ * The camera tracking is stated, and it has to be. Every spec in
+ * `mapgrid-routes` starts by clicking a row to put the camera somewhere known,
+ * and since task-006 a row click obeys the tracking: under the `follow`
+ * default it moves only when the route is outside the visible area — and the
+ * map opens fitted to the whole collection, where it never is. The click then
+ * did nothing and the spec measured the opening camera. With `center` the
+ * framing always happens, which is the precondition these specs were written
+ * against.
  */
 export async function ensureRouteMapGrid(): Promise<void> {
   await deleteAllPresetsFor(ROUTE_COLLECTION);
@@ -74,6 +83,7 @@ export async function ensureRouteMapGrid(): Promise<void> {
     layout: 'mapgrid',
     layout_options: {
       mapgrid: {
+        cameraTracking: 'center',
         map: { geometryField: 'route' },
         zoomOnClick: false,
       },
