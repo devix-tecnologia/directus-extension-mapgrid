@@ -176,6 +176,11 @@ da rede.
 
 E o passo seguinte à virada deixou de ser comido: 994 e 997 ms, em vez dos ~360.
 
+Repetido na suíte inteira (34 specs, todas passando), para conferir que o número
+não é de uma execução sozinha: `into 6: 1380 ms (+380), into 11: 1009 ms (+9)`.
+A medição da task-015 rodou junto e não mudou — a virada continua custando duas
+buscas, 82, 88 e 82 ms com o banco ao lado.
+
 ## Notes
 
 A task-015 mediu o custo da virada de página durante a reprodução; a medição
