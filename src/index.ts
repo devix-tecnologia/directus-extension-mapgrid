@@ -10,8 +10,9 @@ import { computed, reactive, ref, toRefs } from 'vue';
 import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
 import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
-import type { GeoItem } from './contract/index';
+import type { CameraTracking, GeoItem } from './contract/index';
 import { useWritableLayoutQuery } from './contract/index';
+import { CameraTrackingPolicy } from './services/camera-tracking/index';
 import {
   EMBEDDED_LAYOUTS,
   type EmbeddedLayout,
@@ -151,13 +152,49 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const grid = embed(EMBEDDED_LAYOUTS.grid, gridOptions);
     const map = embed(EMBEDDED_LAYOUTS.map, mapOptions);
 
-    /** The only option that comes from neither of them: it is the composition's. */
+    /** The only options that come from neither of them: they are the composition's. */
     const zoomOnClick = computed<boolean | undefined>({
       get: () => layoutOptions.value?.zoomOnClick,
       set: (value) => {
         layoutOptions.value = { ...layoutOptions.value, zoomOnClick: value };
       },
     });
+
+    const playbackInterval = computed<number | undefined>({
+      get: () => layoutOptions.value?.playbackInterval,
+      set: (value) => {
+        layoutOptions.value = { ...layoutOptions.value, playbackInterval: value };
+      },
+    });
+
+    const trackingPolicy = new CameraTrackingPolicy();
+    const cameraTracking = computed(() => trackingPolicy.from(layoutOptions.value?.cameraTracking));
+    const setCameraTracking = (value: CameraTracking): void => {
+      layoutOptions.value = { ...layoutOptions.value, cameraTracking: value };
+    };
+
+    /*
+     * Turning the page is the layout's, because the query is: the template
+     * decides which record comes next, and asks here. It is the same path the
+     * tabular's own footer takes.
+     */
+    const goToPage = (page: number): void => {
+      writableQuery.page.value = page;
+    };
+
+    /*
+     * Changes when the sequence became another one. The page is deliberately
+     * out: turning the page is walking the same sequence, and putting it here
+     * would drop the current record at every step across a page boundary.
+     */
+    const queryKey = computed(() =>
+      JSON.stringify([
+        props.filter,
+        props.search,
+        writableQuery.sort.value,
+        writableQuery.limit.value,
+      ])
+    );
 
     const fetchItems = async (
       keys: readonly unknown[],
@@ -209,6 +246,11 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       selectedItems,
       deleteSelectedItems,
       zoomOnClick,
+      playbackInterval,
+      cameraTracking,
+      setCameraTracking,
+      goToPage,
+      queryKey,
       /*
        * Directus hands the return of this `setup()` to the component AND to the
        * options panel, which are siblings in the tree. That is why both

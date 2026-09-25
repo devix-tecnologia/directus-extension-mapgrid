@@ -1,12 +1,7 @@
+import type { CameraTracking } from '../../contract/index';
 import type { CenteringOptions } from '../map-centerer/index';
 
-/**
- * How much the camera chases the current record.
- *
- * Navigation apps call this *follow mode*; the name "autofocus" was dropped on
- * purpose, because in photography it is lens sharpness, not framing.
- */
-export type CameraTracking = 'off' | 'follow' | 'center';
+export type { CameraTracking };
 
 /** Whether focusing a record also zooms in — orthogonal to whether the camera moves. */
 export interface FramingChoice {

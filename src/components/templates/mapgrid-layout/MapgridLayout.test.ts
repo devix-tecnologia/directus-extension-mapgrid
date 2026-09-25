@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import {
   computed,
@@ -13,6 +13,7 @@ import {
 } from 'vue';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
 import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
+import { CURRENT_ROW_CLASS } from '../../../services/row-highlighter/index';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import MapgridLayout from './MapgridLayout.vue';
 
@@ -22,7 +23,12 @@ import MapgridLayout from './MapgridLayout.vue';
  * Directus layouts — `onRowClick` and `handleClick` arrive that way — so they
  * are what a template test needs to see.
  */
-function fakeEmbedded(id: string, state: Record<string, unknown>) {
+function fakeEmbedded(
+  id: string,
+  state: Record<string, unknown>,
+  /** When given, the fake draws `tbody tr` rows — where the current-record mark lands. */
+  rows?: { id: string | number }[] | (() => { id: string | number }[])
+) {
   const received: { attrs: Record<string, unknown> } = { attrs: {} };
 
   const component = defineComponent({
@@ -30,7 +36,17 @@ function fakeEmbedded(id: string, state: Record<string, unknown>) {
     inheritAttrs: false,
     setup() {
       received.attrs = useAttrs();
-      return () => h('div', { class: `embedded-${id}` });
+      return () =>
+        h('div', { class: `embedded-${id}` }, [
+          h('table', [
+            h(
+              'tbody',
+              (typeof rows === 'function' ? rows() : (rows ?? [])).map((row) =>
+                h('tr', { 'data-id': String(row.id), key: row.id }, [h('td', String(row.id))])
+              )
+            ),
+          ]),
+        ]);
     },
   });
 
@@ -40,29 +56,37 @@ function fakeEmbedded(id: string, state: Record<string, unknown>) {
 
 const BRASILIA: [number, number] = [-47.9292, -15.7801];
 
+const markedRowIds = (wrapper: VueWrapper): string[] =>
+  wrapper
+    .findAll(`.${CURRENT_ROW_CLASS}`)
+    .map((row) => row.attributes('data-id') ?? '')
+    .filter((id) => id !== '');
+
 interface Composition {
   mapAttrs: Record<string, unknown>;
   gridAttrs: Record<string, unknown>;
   updateSelection: ReturnType<typeof vi.fn>;
   theirHandleClick: ReturnType<typeof vi.fn>;
+  /** The `data-id` of the rows carrying the current-record mark. */
+  currentRowIds: () => string[];
 }
 
-function mountComposition(initialSelection: (string | number)[] = []): Composition {
+function mountComposition(items: { id: string | number }[] = [{ id: 1 }, { id: 3 }]): Composition {
   const updateSelection = vi.fn();
   const theirHandleClick = vi.fn();
 
   const map = fakeEmbedded('map', {
     geometryField: 'location',
-    selection: initialSelection,
+    selection: [],
     'onUpdate:selection': updateSelection,
     handleClick: theirHandleClick,
     cameraOptions: { center: [0, 0], zoom: 3 },
     'onUpdate:cameraOptions': vi.fn(),
   });
 
-  const grid = fakeEmbedded('tabular', { items: [], onRowClick: vi.fn() });
+  const grid = fakeEmbedded('tabular', { items, onRowClick: vi.fn() }, items);
 
-  mount(MapgridLayout, {
+  const wrapper = mount(MapgridLayout, {
     props: { grid: grid.embedded, map: map.embedded },
     global: { components: directusComponentStubs },
   });
@@ -72,6 +96,7 @@ function mountComposition(initialSelection: (string | number)[] = []): Compositi
     gridAttrs: grid.received.attrs,
     updateSelection,
     theirHandleClick,
+    currentRowIds: () => markedRowIds(wrapper),
   };
 }
 
@@ -81,38 +106,44 @@ const clickMarker = (composition: Composition, payload: unknown): void => {
 };
 
 describe('MapgridLayout — the marker click', () => {
-  it('selects the grid row instead of navigating to the item screen', () => {
+  it('makes the item the current record instead of navigating to the item screen', async () => {
     const composition = mountComposition();
 
     clickMarker(composition, { id: 3, replace: false });
+    await nextTick();
 
-    expect(composition.updateSelection).toHaveBeenCalledWith([3]);
+    expect(composition.currentRowIds()).toEqual(['3']);
     expect(composition.theirHandleClick).not.toHaveBeenCalled();
   });
 
-  it('adds to the selection that already exists, like the grid checkbox', () => {
-    const composition = mountComposition([1]);
+  it('does not arm the bulk actions, which is what the selection would do', () => {
+    const composition = mountComposition();
 
     clickMarker(composition, { id: 3 });
-
-    expect(composition.updateSelection).toHaveBeenCalledWith([1, 3]);
-  });
-
-  it('unmarks the marker that was already selected', () => {
-    const composition = mountComposition([1, 3]);
-
-    clickMarker(composition, { id: 3 });
-
-    expect(composition.updateSelection).toHaveBeenCalledWith([1]);
-  });
-
-  it('ignores a click that brings no item, like one on the open sea', () => {
-    const composition = mountComposition([1]);
-
-    clickMarker(composition, { id: undefined });
-    clickMarker(composition, null);
 
     expect(composition.updateSelection).not.toHaveBeenCalled();
+  });
+
+  it('moves the mark instead of accumulating records, unlike the checkbox', async () => {
+    const composition = mountComposition();
+
+    clickMarker(composition, { id: 1 });
+    clickMarker(composition, { id: 3 });
+    await nextTick();
+
+    expect(composition.currentRowIds()).toEqual(['3']);
+  });
+
+  it('ignores a click that brings no item, like one on the open sea', async () => {
+    const composition = mountComposition();
+
+    clickMarker(composition, { id: 1 });
+    await nextTick();
+    clickMarker(composition, { id: undefined });
+    clickMarker(composition, null);
+    await nextTick();
+
+    expect(composition.currentRowIds()).toEqual(['1']);
   });
 
   it('the row click takes the map to the item through the Directus fitBounds, not cameraOptions', () => {
@@ -353,5 +384,312 @@ describe('an embedded state getter that throws outside the render', () => {
     expect(receivedBounds[receivedBounds.length - 1]).toEqual([
       -60.0255, -3.119, -48.5044, -1.4558,
     ]);
+  });
+});
+
+/**
+ * Walking the records. What the composition owns is the current record, and
+ * these tests read it where a person would: the mark on the grid row, and the
+ * bounds delivered to the Directus map.
+ *
+ * The camera starts ready on purpose — the centerer only stops re-delivering
+ * after the first `moveend`, and a test measuring one step should not also be
+ * measuring the retry.
+ */
+function mountWalk(
+  options: {
+    ids?: (string | number)[];
+    page?: number;
+    totalPages?: number;
+    cameraTracking?: 'off' | 'follow' | 'center';
+    playbackInterval?: number;
+  } = {}
+) {
+  const ids = options.ids ?? [1, 2, 3];
+  const goToPage = vi.fn();
+  const setCameraTracking = vi.fn();
+
+  const gridState = reactive<Record<string, unknown>>({
+    items: ids.map((id) => ({
+      id,
+      location: { coordinates: [Number(id) * 10, 0], type: 'Point' },
+    })),
+    loading: false,
+    totalPages: options.totalPages ?? 1,
+  });
+
+  const mapState = reactive<Record<string, unknown>>({
+    cameraOptions: { bbox: [-10, -10, 10, 10], center: [0, 0], zoom: 3 },
+    featureId: 'id',
+    geojson: { bbox: [-10, -10, 10, 10], features: [], type: 'FeatureCollection' },
+    geojsonBounds: undefined,
+    geometryField: 'location',
+    isGeometryFieldNative: true,
+    selection: [],
+  });
+
+  const grid = fakeEmbedded(
+    'tabular',
+    gridState,
+    () => gridState.items as { id: string | number }[]
+  );
+  const map = fakeEmbedded('map', mapState);
+
+  const wrapper = mount(MapgridLayout, {
+    props: {
+      grid: grid.embedded,
+      map: map.embedded,
+      page: options.page ?? 1,
+      goToPage,
+      cameraTracking: options.cameraTracking,
+      setCameraTracking,
+      playbackInterval: options.playbackInterval,
+      queryKey: 'first-query',
+    },
+    global: { components: directusComponentStubs },
+  });
+
+  const toolbar = wrapper.findComponent(MapToolbar);
+
+  return {
+    wrapper,
+    gridState,
+    mapState,
+    goToPage,
+    setCameraTracking,
+    toolbar,
+    current: () => markedRowIds(wrapper),
+    click: async (id: string | number): Promise<void> => {
+      const onRowClick = grid.received.attrs.onRowClick as (payload: unknown) => void;
+      onRowClick({ item: (gridState.items as { id: string | number }[]).find((i) => i.id === id) });
+      await nextTick();
+    },
+    press: async (control: string): Promise<void> => {
+      toolbar.vm.$emit(control);
+      await nextTick();
+      await nextTick();
+    },
+    ready: async (): Promise<void> => {
+      mapState.cameraOptions = { bbox: [-10, -10, 10, 10], center: [0, 0], zoom: 3 };
+      await nextTick();
+      mapState.geojsonBounds = undefined;
+    },
+  };
+}
+
+describe('MapgridLayout — walking the records', () => {
+  it('starts at the first record when nothing is current yet', async () => {
+    const walk = mountWalk();
+
+    await walk.press('next');
+
+    expect(walk.current()).toEqual(['1']);
+  });
+
+  it('advances and goes back one record', async () => {
+    const walk = mountWalk();
+
+    await walk.press('next');
+    await walk.press('next');
+    expect(walk.current()).toEqual(['2']);
+
+    await walk.press('previous');
+    expect(walk.current()).toEqual(['1']);
+  });
+
+  it('goes to the ends of the query', async () => {
+    const walk = mountWalk();
+
+    await walk.press('last');
+    expect(walk.current()).toEqual(['3']);
+
+    await walk.press('first');
+    expect(walk.current()).toEqual(['1']);
+  });
+
+  it('stands still at the ends, and says so to the toolbar', async () => {
+    const walk = mountWalk();
+
+    await walk.press('first');
+    expect(walk.toolbar.props('atStart')).toBe(true);
+    await walk.press('previous');
+    expect(walk.current()).toEqual(['1']);
+
+    await walk.press('last');
+    expect(walk.toolbar.props('atEnd')).toBe(true);
+    await walk.press('next');
+    expect(walk.current()).toEqual(['3']);
+  });
+
+  it('takes the map to the record it walked to', async () => {
+    const walk = mountWalk();
+    await walk.ready();
+
+    await walk.press('last');
+
+    expect(walk.mapState.geojsonBounds).toBeDefined();
+  });
+});
+
+describe('MapgridLayout — turning the page', () => {
+  it('asks the layout for the next page and lands on its first record', async () => {
+    const walk = mountWalk({ page: 1, totalPages: 2 });
+
+    await walk.click(3);
+    await walk.press('next');
+
+    expect(walk.goToPage).toHaveBeenCalledWith(2);
+    // the mark stays where it is until the page arrives, instead of blinking off
+    expect(walk.current()).toEqual(['3']);
+
+    walk.gridState.items = [{ id: 4 }, { id: 5 }];
+    await walk.wrapper.setProps({ page: 2 });
+    await nextTick();
+
+    expect(walk.current()).toEqual(['4']);
+  });
+
+  it('recoils to the last record of the previous page, not to its first', async () => {
+    const walk = mountWalk({ ids: [4, 5], page: 2, totalPages: 2 });
+
+    await walk.click(4);
+    await walk.press('previous');
+
+    expect(walk.goToPage).toHaveBeenCalledWith(1);
+
+    walk.gridState.items = [{ id: 1 }, { id: 2 }, { id: 3 }];
+    await walk.wrapper.setProps({ page: 1 });
+    await nextTick();
+
+    expect(walk.current()).toEqual(['3']);
+  });
+
+  it('takes first and last to the ends of the query, not of the page', async () => {
+    const walk = mountWalk({ ids: [4, 5], page: 2, totalPages: 3 });
+
+    await walk.press('first');
+    expect(walk.goToPage).toHaveBeenCalledWith(1);
+
+    await walk.press('last');
+    expect(walk.goToPage).toHaveBeenCalledWith(3);
+  });
+
+  it('waits for the page instead of stepping over the list that is still the old one', async () => {
+    const walk = mountWalk();
+
+    await walk.press('next');
+    walk.gridState.loading = true;
+    await nextTick();
+
+    await walk.press('next');
+
+    expect(walk.current()).toEqual(['1']);
+    expect(walk.toolbar.props('loading')).toBe(true);
+  });
+});
+
+describe('MapgridLayout — playback', () => {
+  it('walks on its own and stops where it was told to', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = mountWalk({ ids: [1, 2, 3, 4], playbackInterval: 1 });
+
+      await walk.press('play');
+      expect(walk.toolbar.props('playing')).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await nextTick();
+      expect(walk.current()).toEqual(['1']);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await nextTick();
+      expect(walk.current()).toEqual(['2']);
+
+      await walk.press('stop');
+      await vi.advanceTimersByTimeAsync(5_000);
+      await nextTick();
+
+      expect(walk.current()).toEqual(['2']);
+      expect(walk.toolbar.props('playing')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stops by itself at the last record of the last page', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = mountWalk({ ids: [1, 2], playbackInterval: 1 });
+
+      await walk.press('play');
+      await vi.advanceTimersByTimeAsync(10_000);
+      await nextTick();
+
+      expect(walk.current()).toEqual(['2']);
+      expect(walk.toolbar.props('playing')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('MapgridLayout — the camera tracking', () => {
+  it('leaves the camera alone when tracking is off', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    await walk.ready();
+
+    await walk.press('next');
+
+    expect(walk.current()).toEqual(['1']);
+    expect(walk.mapState.geojsonBounds).toBeUndefined();
+  });
+
+  it('moves on every step when the record is to be kept centred', async () => {
+    const walk = mountWalk({ cameraTracking: 'center' });
+    await walk.ready();
+
+    await walk.press('next');
+
+    expect(walk.mapState.geojsonBounds).toBeDefined();
+  });
+
+  it('stays put while the record is inside the visible area when following', async () => {
+    const walk = mountWalk({ cameraTracking: 'follow' });
+    await walk.ready();
+
+    await walk.press('next');
+
+    expect(walk.mapState.geojsonBounds).toBeUndefined();
+  });
+
+  it('hands the cycled state up, for the layout to persist', async () => {
+    const walk = mountWalk({ cameraTracking: 'follow' });
+
+    walk.toolbar.vm.$emit('update:tracking', 'center');
+    await nextTick();
+
+    expect(walk.setCameraTracking).toHaveBeenCalledWith('center');
+  });
+});
+
+describe('MapgridLayout — a query that became another one', () => {
+  it('drops the current record and stops the playback', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = mountWalk({ playbackInterval: 1 });
+
+      await walk.press('play');
+      await vi.advanceTimersByTimeAsync(1_000);
+      await nextTick();
+      expect(walk.current()).toEqual(['1']);
+
+      await walk.wrapper.setProps({ queryKey: 'filtered-by-city' });
+      await nextTick();
+
+      expect(walk.current()).toEqual([]);
+      expect(walk.toolbar.props('playing')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
