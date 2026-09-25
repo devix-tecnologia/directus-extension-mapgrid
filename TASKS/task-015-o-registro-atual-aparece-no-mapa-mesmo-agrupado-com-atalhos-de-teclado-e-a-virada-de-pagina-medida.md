@@ -1,6 +1,6 @@
 # 🧩 Task 015 — O registro atual aparece no mapa mesmo agrupado, com atalhos de teclado e a virada de pagina medida
 
-- Status: in-progress
+- Status: in-review
 - Type: feat
 - Assignee: sidartaveloso
 - Priority: 750
@@ -48,7 +48,41 @@ tem oito registros, que provam o comportamento mas não medem nada.
       `tests/e2e/mapgrid-page-turn-cost.spec.ts` — ver "A medição"
 - [x] Registrar a medição como linha de base da task-016, que explora antecipar
       a busca da próxima página
-- [ ] Evidência de tela: a reprodução visível no mapa com o agrupamento ligado
+- [x] Evidência de tela: a reprodução visível no mapa com o agrupamento ligado.
+      `tests/screenshot/evidence-clustering.spec.ts` — ver "A evidência"
+
+## A evidência
+
+![A composição com o agrupamento ligado](assets/task-015-agrupamento-depois.jpg)
+
+O agrupamento está ligado — os dois grupos de "2" sobre Rio e São Paulo são a
+prova. O registro atual é Curitiba: o ponto vazado com anel, desenhado à parte
+sobre o agrupamento, e a linha marcada na grade com a caixa de seleção
+desmarcada — o registro atual não passa pelo `selection`.
+
+![A reprodução, um quadro por passo](assets/task-015-agrupamento-percurso-depois.jpg)
+
+Quatro quadros do painel do mapa durante a reprodução. O primeiro não tem
+registro atual: só os agrupamentos, que é o estado em que o ponto sumia. Nos
+três seguintes o anel anda — Belo Horizonte, Brasília, Curitiba — enquanto os
+agrupamentos ficam onde estão, porque `cameraTracking` está em `off` de
+propósito: o que se move no quadro é a marca, e não o mapa.
+
+A câmera é semeada larga (zoom 3 sobre o sudeste). Enquadrando a coleção, as
+oito cidades se espalham pelo painel e nenhum agrupamento se forma — o próprio
+assunto da evidência ficaria fora da tela.
+
+Gerada por `tests/screenshot/evidence-clustering.spec.ts`, que também reprova se
+dois quadros seguidos saírem idênticos. Não há "antes": o primeiro quadro da
+tira é o estado anterior — o agrupamento sozinho, sem o registro atual.
+
+Para capturar só esta evidência, e não a de todas as tasks de uma vez:
+
+```
+EVIDENCE_TASK=015 EVIDENCE_MOMENT=depois \
+  RUNNER_ARGS=tests/screenshot/evidence-clustering.spec.ts \
+  .sandcastle/on-mirror.sh pnpm screenshot
+```
 
 ## A medição
 
