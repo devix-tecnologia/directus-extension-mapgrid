@@ -136,16 +136,36 @@ test.describe('MapGrid — the current record', () => {
 });
 
 test.describe('MapGrid — playback', () => {
-  test('walks on its own and stops where it was told to', async ({ page }) => {
+  /*
+   * Neither test names the record playback should be standing on at a given
+   * moment. The first version did, and it was flaky for a good reason: with a
+   * one second step, `expect.poll`'s own backoff can look before and after the
+   * record it is waiting for and never see it. What is stable is where the walk
+   * ENDS, and that it does not move again after stop.
+   */
+  test('walks to the end of the query on its own, turning the pages, and stops there', async ({
+    page,
+  }) => {
     await openWith(page, { playbackInterval: 1 });
 
     await control(page, 'playback').click();
-    await expectCurrent(page, PAGE_ONE[1] as string);
+
+    await expectCurrent(page, LAST_RECORD);
+    // at the last record there is nowhere to go: it stopped, and says so
+    await expect(control(page, 'playback')).toBeDisabled({ timeout: 15_000 });
+  });
+
+  test('stop leaves it where it was', async ({ page }) => {
+    // a step long enough for a poll to see it standing still, instead of in transit
+    await openWith(page, { playbackInterval: 3 });
+
+    await control(page, 'playback').click();
+    await expectCurrent(page, PAGE_ONE[0] as string);
 
     await control(page, 'playback').click();
     const stoppedAt = await currentRecord(page);
 
-    await page.waitForTimeout(4_000);
+    await page.waitForTimeout(9_000);
     expect(await currentRecord(page)).toBe(stoppedAt);
   });
 });
