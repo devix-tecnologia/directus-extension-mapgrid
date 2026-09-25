@@ -1,6 +1,6 @@
 # 🧩 Task 015 — O registro atual aparece no mapa mesmo agrupado, com atalhos de teclado e a virada de pagina medida
 
-- Status: in-review
+- Status: done
 - Type: feat
 - Assignee: sidartaveloso
 - Priority: 750
