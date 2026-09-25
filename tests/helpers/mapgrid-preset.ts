@@ -83,9 +83,19 @@ export async function deleteAllPresetsFor(collection: string): Promise<void> {
   }
 }
 
-export async function ensureMapGridPreset(collection: string = COLLECTION_NAME): Promise<void> {
+export async function ensureMapGridPreset(
+  collection: string = COLLECTION_NAME,
+  /** Merged over the seeded query and options — a page size, a camera tracking state. */
+  overrides: { query?: Record<string, unknown>; options?: Record<string, unknown> } = {}
+): Promise<void> {
   await deleteAllPresetsFor(collection);
-  await apiRequest('POST', '/presets', mapGridPresetFor(collection));
+
+  const preset = mapGridPresetFor(collection);
+  await apiRequest('POST', '/presets', {
+    ...preset,
+    layout_query: { mapgrid: { ...preset.layout_query?.mapgrid, ...overrides.query } },
+    layout_options: { mapgrid: { ...preset.layout_options?.mapgrid, ...overrides.options } },
+  });
 }
 
 /** The plain Directus map layout, without the MapGrid, to compare against it. */

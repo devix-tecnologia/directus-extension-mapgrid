@@ -111,13 +111,17 @@ test.describe('MapGrid — the composition', () => {
 
     const row = rowOf(page, ISOLATED_CITY);
     await expect(row).toBeVisible({ timeout: 60_000 });
-    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
+    await expect(row).not.toHaveClass(/mapgrid-current-row/);
 
     await clickCenterMarker(page);
 
-    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
-      timeout: 15_000,
-    });
+    /*
+     * The mark used to be the `selection` — the same checkbox the grid ticks.
+     * Task-006 took it out of there: `selection` also arms the bulk actions, so
+     * "I am looking at this" read as "I marked this to be deleted".
+     */
+    await expect(row).toHaveClass(/mapgrid-current-row/, { timeout: 15_000 });
+    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
     await expect(page).toHaveURL(new RegExp(`/admin/content/${COLLECTION_NAME}(\\?|$)`));
   });
 
@@ -129,12 +133,12 @@ test.describe('MapGrid — the composition', () => {
     const row = rowOf(page, ISOLATED_CITY);
     await expect(row).toBeVisible({ timeout: 60_000 });
     await row.click();
+    await expect(row).toHaveClass(/mapgrid-current-row/, { timeout: 15_000 });
 
+    // the camera went there: the marker is now at the centre of the canvas
     await clickCenterMarker(page);
 
-    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
-      timeout: 15_000,
-    });
+    await expect(row).toHaveClass(/mapgrid-current-row/, { timeout: 15_000 });
   });
 
   test('the full-page layouts white space does not show up', async ({ page }) => {
