@@ -1,108 +1,99 @@
 import { reactive, toRefs } from 'vue';
-import type { LayoutEmbutido, OpcoesDeEmbutir, RegistroDeLayouts } from './embedded-layout.types';
+import type { EmbeddedLayout, EmbedOptions, LayoutRegistry } from './embedded-layout.types';
 
 /**
- * Roda o `setup()` de um layout do Directus fora do `createLayoutWrapper`.
+ * Runs a Directus layout's `setup()` outside `createLayoutWrapper`.
  *
- * O helper oficial devolve um componente que não desenha nada: ele chama
- * `layout.setup(props, { emit })` e entrega o resultado por um slot. Aqui é a
- * mesma chamada, sem o componente no meio — e a diferença importa. O Directus
- * entrega o retorno do `setup()` do NOSSO layout tanto ao componente quanto ao
- * painel de opções, que são irmãos na árvore. Nascendo aqui, o estado alcança
- * os dois; nascendo dentro do componente, o painel ficaria de fora e precisaria
- * de um segundo wrapper — com estado separado e uma busca a mais.
+ * The official helper returns a component that draws nothing: it calls
+ * `layout.setup(props, { emit })` and hands the result over through a slot.
+ * Here it is the same call without the component in between — and the
+ * difference matters. Directus hands the return of OUR layout's `setup()` to
+ * both the component and the options panel, which are siblings in the tree.
+ * Born here, the state reaches both; born inside the component, the panel would
+ * be left out and would need a second wrapper — with separate state and one
+ * extra fetch.
  */
-export function embutirLayout({
-  id,
-  registro,
-  props,
-  emit,
-}: OpcoesDeEmbutir): LayoutEmbutido | null {
-  const layout = registro.find((candidato) => candidato.id === id);
+export function embedLayout({ id, registry, props, emit }: EmbedOptions): EmbeddedLayout | null {
+  const layout = registry.find((candidate) => candidate.id === id);
   if (!layout || typeof layout.setup !== 'function') return null;
 
-  /*
-   * `...toRefs(props)` junto do retorno, como o `createLayoutWrapper` faz: o
-   * componente do layout espera receber os próprios props de volta, e sem eles
-   * caminhos menos comuns quebram.
-   */
+  // `...toRefs(props)` alongside the return, as `createLayoutWrapper` does: their
+  // layout component expects its own props back, and less common paths break without them
   const state = reactive({
     ...layout.setup(props, { emit }),
     ...toRefs(props),
   }) as Record<string, unknown>;
 
-  /*
-   * Os `onUpdate:<chave>`, também como o helper: chave que é prop sobe como
-   * emit, chave que não é fica no estado local.
-   */
-  for (const chave of Object.keys(state)) {
-    state[`onUpdate:${chave}`] = (valor: unknown) => {
-      if (chave in props) emit(`update:${chave}`, valor);
-      else state[chave] = valor;
+  // the `onUpdate:<key>` handlers, also as the helper does: a key that is a prop
+  // goes up as an emit, a key that is not stays in the local state
+  for (const key of Object.keys(state)) {
+    state[`onUpdate:${key}`] = (value: unknown) => {
+      if (key in props) emit(`update:${key}`, value);
+      else state[key] = value;
     };
   }
 
-  const embutido: LayoutEmbutido = {
+  const embedded: EmbeddedLayout = {
     id,
     state,
     component: layout.component ?? null,
     optionsComponent: layout.slots?.options ?? null,
   };
 
-  relatarContrato(embutido);
+  reportContract(embedded);
 
-  return embutido;
+  return embedded;
 }
 
 /**
- * Grita o que faltou, e é de propósito que grite em vez de explodir.
+ * Shouts what is missing, and shouting instead of throwing is deliberate.
  *
- * Derrubar a tela por uma chave renomeada trocaria uma composição meio quebrada
- * por nenhuma composição, e quem usa a extensão não ganha nada com isso. O que
- * não pode é a falta passar em silêncio: a mensagem no console é o que o
- * `tests/e2e/mapgrid-contrato.spec.ts` observa contra o Directus de verdade,
- * onde o defeito apareceria primeiro.
+ * Taking the screen down over a renamed key would trade a half-broken
+ * composition for no composition at all, and whoever uses the extension gains
+ * nothing from that. What must not happen is the gap passing in silence: the
+ * console message is what `tests/e2e/mapgrid-contract.spec.ts` watches against
+ * a real Directus, where the defect would show up first.
  */
-function relatarContrato(embutido: LayoutEmbutido): void {
-  const faltando = conferirContrato(embutido);
-  if (faltando.length === 0) return;
+function reportContract(embedded: EmbeddedLayout): void {
+  const missing = checkContract(embedded);
+  if (missing.length === 0) return;
 
   console.error(
-    `${MARCA_DO_CONTRATO}: o layout "${embutido.id}" do Directus não devolveu ${faltando.join(', ')}. ` +
-      'A composição do MapGrid lê essas chaves; sem elas ela degrada em silêncio.'
+    `${CONTRACT_MARKER}: the Directus layout "${embedded.id}" did not return ${missing.join(', ')}. ` +
+      'The MapGrid composition reads those keys; without them it degrades in silence.'
   );
 }
 
 /**
- * O que a composição LÊ de cada layout embutido.
+ * What the composition READS from each embedded layout.
  *
- * Nenhuma dessas chaves é API pública do Directus: elas são o retorno do
- * `setup()` de layouts que não foram feitos para rodar embutidos. Uma
- * atualização que renomeie qualquer uma delas não levanta exceção — a grade
- * fica vazia, a paginação trava em uma página, o clique na linha volta a
- * navegar para fora, o mapa não acha a geometria. Falha silenciosa, e longe da
- * causa.
+ * None of these keys is public Directus API: they are the return of the
+ * `setup()` of layouts that were not made to run embedded. An update that
+ * renames any of them raises no exception — the grid goes empty, pagination
+ * sticks on one page, clicking a row navigates away again, the map cannot find
+ * the geometry. A silent failure, and far from its cause.
  *
- * Por isso a lista mora aqui e é conferida a cada embutida. Cada chave tem
- * chamador nosso:
+ * That is why the list lives here and is checked on every embed. Every key has
+ * a caller of ours:
  *
- * - `items`, `loading`, `error`, `totalPages`, `itemCount`, `totalCount` e
- *   `refresh` são o que `src/index.ts` devolve ao app para desenhar contagem,
- *   paginação e as ações em lote;
- * - `tableHeaders`, `tableSort` e `onSortChange` são o menu de cabeçalho da
- *   grade deles, que é metade do que esta task foi buscar;
- * - `onRowClick` e `handleClick` são as duas chaves que o
- *   `MapgridLayout.vue` **sobrescreve**: some a chave, some a sobrescrita, e o
- *   clique volta a levar a pessoa para fora do MapGrid;
+ * - `items`, `loading`, `error`, `totalPages`, `itemCount`, `totalCount` and
+ *   `refresh` are what `src/index.ts` returns to the app to draw the count,
+ *   the pagination and the bulk actions;
+ * - `tableHeaders`, `tableSort` and `onSortChange` are their grid's header
+ *   menu;
+ * - `onRowClick` and `handleClick` are the two keys `MapgridLayout.vue`
+ *   **overrides**: lose the key, lose the override, and the click takes the
+ *   person out of the MapGrid again;
  * - `geojson`, `geojsonBounds`, `geometryField`, `featureId`,
- *   `isGeometryFieldNative`, `cameraOptions` e `fitDataBounds` são o que o
- *   `CentralizadorDoMapaDirectus` lê e escreve no mapa.
+ *   `isGeometryFieldNative`, `cameraOptions` and `fitDataBounds` are what
+ *   `DirectusMapCenterer` reads from and writes to the map.
  *
- * Os valores vêm da medição de 2026-09-24 contra o Directus 10.13.1, conferida
- * pelo `tests/e2e/mapgrid-contrato.spec.ts` — é lá que o Directus de verdade
- * entra, e é ele que reprova quando uma versão nova muda o retorno.
+ * The values come from the 2026-09-24 measurement against Directus 10.13.1,
+ * checked by `tests/e2e/mapgrid-contract.spec.ts` — that is where the real
+ * Directus comes in, and it is what fails when a new version changes the
+ * return.
  */
-export const CONTRATO_DOS_EMBUTIDOS = {
+export const EMBEDDED_CONTRACT = {
   tabular: [
     'items',
     'loading',
@@ -131,39 +122,37 @@ export const CONTRATO_DOS_EMBUTIDOS = {
 } as const satisfies Record<string, readonly string[]>;
 
 /**
- * O painel de opções entra no contrato pelo mesmo motivo que as chaves: sem
- * `slots.options` a barra lateral perde a configuração nativa dos dois layouts,
- * e o MapGrid vira uma composição que não se configura.
+ * The options panel is part of the contract for the same reason the keys are:
+ * without `slots.options` the sidebar loses both layouts' native configuration,
+ * and the MapGrid becomes a composition that cannot be configured.
  */
-export const SLOT_DE_OPCOES = 'slots.options';
+export const OPTIONS_SLOT = 'slots.options';
 
-/** O prefixo pelo qual o e2e reconhece a falha no console do navegador. */
-export const MARCA_DO_CONTRATO = '[mapgrid] contrato quebrado';
+/** The prefix by which the e2e recognises the failure in the browser console. */
+export const CONTRACT_MARKER = '[mapgrid] broken contract';
 
-type IdComContrato = keyof typeof CONTRATO_DOS_EMBUTIDOS;
+type IdWithContract = keyof typeof EMBEDDED_CONTRACT;
 
-const temContrato = (id: string): id is IdComContrato => id in CONTRATO_DOS_EMBUTIDOS;
+const hasContract = (id: string): id is IdWithContract => id in EMBEDDED_CONTRACT;
 
 /**
- * O que falta de um layout embutido para a composição funcionar.
+ * What an embedded layout is missing for the composition to work.
  *
- * Confere a **presença** da chave, não o valor: `cameraOptions` nasce sem valor
- * enquanto ninguém mexeu na câmera e `error` fica nulo sem erro, então exigir
- * valor daria alarme falso em toda primeira visita. O que se mede é se o
- * Directus ainda devolve a chave com aquele nome.
+ * It checks the **presence** of the key, not the value: `cameraOptions` starts
+ * with no value until someone moves the camera and `error` stays null with no
+ * error, so demanding a value would raise a false alarm on every first visit.
+ * What is measured is whether Directus still returns the key under that name.
  */
-export function conferirContrato(embutido: LayoutEmbutido | null): string[] {
-  if (!embutido || !temContrato(embutido.id)) return [];
+export function checkContract(embedded: EmbeddedLayout | null): string[] {
+  if (!embedded || !hasContract(embedded.id)) return [];
 
-  const faltando = CONTRATO_DOS_EMBUTIDOS[embutido.id].filter(
-    (chave) => !(chave in embutido.state)
-  );
+  const missing = EMBEDDED_CONTRACT[embedded.id].filter((key) => !(key in embedded.state));
 
-  return embutido.optionsComponent ? faltando : [...faltando, SLOT_DE_OPCOES];
+  return embedded.optionsComponent ? missing : [...missing, OPTIONS_SLOT];
 }
 
-/** Os ids que a composição precisa encontrar no registro do app. */
-export const LAYOUTS_EMBUTIDOS = { grade: 'tabular', mapa: 'map' } as const;
+/** The ids the composition has to find in the app's registry. */
+export const EMBEDDED_LAYOUTS = { grid: 'tabular', map: 'map' } as const;
 
-export const layoutEstaRegistrado = (registro: RegistroDeLayouts, id: string): boolean =>
-  registro.some((layout) => layout.id === id);
+export const isLayoutRegistered = (registry: LayoutRegistry, id: string): boolean =>
+  registry.some((layout) => layout.id === id);

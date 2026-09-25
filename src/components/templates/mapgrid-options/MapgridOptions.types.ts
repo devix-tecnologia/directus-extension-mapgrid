@@ -1,4 +1,4 @@
-import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
+import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
 
 export interface MapgridOptionsType {
   models: MapgridOptionsModels;
@@ -9,15 +9,15 @@ export interface MapgridOptionsType {
 export type MapgridOptionsModels = Record<string, never>;
 
 /**
- * O painel hospeda a configuração dos dois layouts do Directus e acrescenta o
- * que é só nosso. Os embutidos chegam prontos do `setup()`, que é o mesmo
- * lugar de onde o componente do layout os recebe.
+ * The panel hosts the configuration of both Directus layouts and adds what is
+ * only ours. The embedded layouts arrive ready from `setup()`, the same place
+ * the layout component receives them from.
  */
 export interface MapgridOptionsProps {
   collection: string;
-  grade?: LayoutEmbutido | null;
-  mapa?: LayoutEmbutido | null;
-  /** Aproximar o mapa ao clicar numa linha. Não existe nos layouts deles. */
+  grid?: EmbeddedLayout | null;
+  map?: EmbeddedLayout | null;
+  /** Zoom the map in when a row is clicked. Does not exist in their layouts. */
   zoomOnClick?: boolean;
 }
 

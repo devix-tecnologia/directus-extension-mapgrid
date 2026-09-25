@@ -1,7 +1,7 @@
 import type { Ref, WritableComputedRef } from 'vue';
 
 /**
- * O que `useEscritaOtimista` recebe e devolve: a mesma forma de ref, para que
- * quem já escrevia no original não precise saber que há um espelho no meio.
+ * What `useOptimisticWrite` takes and returns: the same ref shape, so whoever
+ * already wrote to the original need not know there is a mirror in between.
  */
-export type EscritaOtimista = <Valor>(alvo: Ref<Valor>) => WritableComputedRef<Valor>;
+export type OptimisticWrite = <Value>(target: Ref<Value>) => WritableComputedRef<Value>;

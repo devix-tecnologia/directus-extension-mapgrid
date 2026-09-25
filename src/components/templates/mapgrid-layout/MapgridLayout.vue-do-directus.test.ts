@@ -13,40 +13,41 @@ import {
   version,
 } from 'vue';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
-import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
+import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
 import MapgridLayout from './MapgridLayout.vue';
 
-it('roda com o Vue do Directus que o e2e usa, e não com o do projeto', () => {
+it('runs with the Directus Vue the e2e uses, and not with the project one', () => {
   expect(version).toBe('3.4.27');
 });
 
 /**
- * Sem esta guarda o arquivo inteiro mente: se o `mount` montar com outro Vue, o
- * estado que o teste cria é de uma reatividade e o efeito de render é de outra,
- * nada propaga, e todo teste de componente aqui reprova sem defeito nenhum.
+ * Without this guard the whole file lies: if `mount` mounts with another Vue,
+ * the state the test creates belongs to one reactivity and the render effect to
+ * another, nothing propagates, and every component test here fails with no
+ * defect at all.
  */
-it('monta com esse mesmo Vue: uma reatividade só, não duas', () => {
-  const componente = defineComponent({ setup: () => () => h('div') });
-  const app = (mount(componente).vm.$ as { appContext: { app: { version: string } } }).appContext
+it('mounts with that same Vue: one reactivity, not two', () => {
+  const component = defineComponent({ setup: () => () => h('div') });
+  const app = (mount(component).vm.$ as { appContext: { app: { version: string } } }).appContext
     .app;
   expect(app.version).toBe(version);
 });
 
-function embutidoFalso(id: string, state: Record<string, unknown>) {
-  const recebidos: { atributos: Record<string, unknown> } = { atributos: {} };
+function fakeEmbedded(id: string, state: Record<string, unknown>) {
+  const received: { attrs: Record<string, unknown> } = { attrs: {} };
   const component = defineComponent({
     inheritAttrs: false,
-    name: `embutido-${id}`,
+    name: `embedded-${id}`,
     setup() {
-      recebidos.atributos = useAttrs();
-      return () => h('div', { class: `embutido-${id}` });
+      received.attrs = useAttrs();
+      return () => h('div', { class: `embedded-${id}` });
     },
   });
-  const embutido: LayoutEmbutido = { component, id, optionsComponent: null, state };
-  return { embutido, recebidos };
+  const embedded: EmbeddedLayout = { component, id, optionsComponent: null, state };
+  return { embedded, received };
 }
 
-describe('geometria nativa: entregar ao mapa depois de buscar a geometria que a grade não trouxe', () => {
+describe('native geometry: delivering to the map after fetching what the grid did not bring', () => {
   const RIO_SP = {
     coordinates: [
       [-43.1729, -22.9068],
@@ -61,149 +62,146 @@ describe('geometria nativa: entregar ao mapa depois de buscar a geometria que a 
     ],
     type: 'LineString',
   };
-  const esperarBusca = () => new Promise((resolver) => setTimeout(resolver, 0));
+  const awaitFetch = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-  it('depois de um primeiro voo, o layout de mapa recebe o bounds do item buscado', async () => {
-    const boundsRecebidos: unknown[] = [];
-    const layoutDeMapa = defineComponent({
+  it('after a first flight, the map layout receives the bounds of the fetched item', async () => {
+    const receivedBounds: unknown[] = [];
+    const mapLayout = defineComponent({
       inheritAttrs: false,
       props: { geojsonBounds: { default: undefined, type: null } },
       setup(props) {
         return () => {
-          boundsRecebidos.push(props.geojsonBounds);
+          receivedBounds.push(props.geojsonBounds);
           return h('div');
         };
       },
     });
-    const featureDe = (id: number, geometry: unknown) => ({
+    const featureOf = (id: number, geometry: unknown) => ({
       geometry,
       properties: { id },
       type: 'Feature',
     });
-    // como o embutirLayout: o retorno do setup() deles, com refs, dentro de um reactive
-    const estado = reactive<Record<string, unknown>>({
+    // as embedLayout does: the return of their setup(), with refs, inside a reactive
+    const state = reactive<Record<string, unknown>>({
       cameraOptions: ref<unknown>(undefined),
       featureId: ref('id'),
       fitDataBounds: vi.fn(),
       geojson: ref({
         bbox: [-60.0255, -23.5505, -43.1729, -1.4558],
-        features: [featureDe(1, RIO_SP), featureDe(2, MANAUS_BELEM)],
+        features: [featureOf(1, RIO_SP), featureOf(2, MANAUS_BELEM)],
         type: 'FeatureCollection',
       }),
       geojsonBounds: ref<unknown>(undefined),
-      geometryField: ref('trajeto'),
+      geometryField: ref('route'),
       isGeometryFieldNative: ref(true),
       selection: ref([]),
     });
-    const mapa: LayoutEmbutido = {
-      component: layoutDeMapa,
+    const map: EmbeddedLayout = {
+      component: mapLayout,
       id: 'map',
       optionsComponent: null,
-      state: estado,
+      state,
     };
-    const grade = embutidoFalso('tabular', {
+    const grid = fakeEmbedded('tabular', {
       items: [
         { id: 1, name: 'Rio → São Paulo' },
         { id: 2, name: 'Manaus → Belém' },
       ],
     });
-    const buscarItens = vi.fn(async () => [{ id: 2, trajeto: MANAUS_BELEM }]);
+    const fetchItems = vi.fn(async () => [{ id: 2, route: MANAUS_BELEM }]);
     mount(MapgridLayout, {
-      props: { buscarItens, grade: grade.embutido, mapa },
+      props: { fetchItems, grid: grid.embedded, map },
       global: { components: directusComponentStubs },
     });
-    const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+    const onRowClick = grid.received.attrs.onRowClick as (payload: unknown) => void;
 
-    // o clique chega antes do moveend do carregamento, como no e2e
+    // the click arrives before the loading moveend, as in the e2e
     onRowClick({ item: { id: 1, name: 'Rio → São Paulo' } });
     await nextTick();
-    estado.cameraOptions = { bbox: [-180, -85, 180, 85], zoom: 1 };
+    state.cameraOptions = { bbox: [-180, -85, 180, 85], zoom: 1 };
     await nextTick();
 
-    // o voo terminou em Rio–SP, e o Directus rebuscou só o que está na tela
-    estado.cameraOptions = { bbox: [-47.7, -24.1, -42.1, -22.3], zoom: 8 };
-    estado.geojson = {
+    // the flight ended at Rio–SP, and Directus refetched only what is on screen
+    state.cameraOptions = { bbox: [-47.7, -24.1, -42.1, -22.3], zoom: 8 };
+    state.geojson = {
       bbox: [-46.6333, -23.5505, -43.1729, -22.9068],
-      features: [featureDe(1, RIO_SP)],
+      features: [featureOf(1, RIO_SP)],
       type: 'FeatureCollection',
     };
     await nextTick();
 
     onRowClick({ item: { id: 2, name: 'Manaus → Belém' } });
-    await esperarBusca();
+    await awaitFetch();
     await nextTick();
 
-    expect(buscarItens).toHaveBeenCalledWith([2], ['id', 'trajeto']);
-    expect(boundsRecebidos[boundsRecebidos.length - 1]).toEqual([
+    expect(fetchItems).toHaveBeenCalledWith([2], ['id', 'route']);
+    expect(receivedBounds[receivedBounds.length - 1]).toEqual([
       -60.0255, -3.119, -48.5044, -1.4558,
     ]);
   });
 });
 
 /**
- * O `showingCount` do layout de mapa do Directus chama `useI18n()` de dentro do
- * getter de um `computed`. Fora de um render não há instância corrente, e o
- * vue-i18n levanta um `SyntaxError` — é o erro que o e2e registra no console a
- * cada busca filtrada pela área visível.
- *
- * E o getter é avaliado fora do render: o agendador do Vue, antes de repintar,
- * pergunta ao efeito se ele está sujo, e essa pergunta reavalia os `computed`
- * dos quais ele depende sem instância corrente nenhuma. Se a explosão atravessa
- * a nossa leitura do estado, ela derruba a pergunta inteira — a composição não
- * repinta mais, e o `geojsonBounds` novo nunca chega ao mapa.
+ * The Directus map layout's `showingCount` calls `useI18n()` from inside a
+ * `computed` getter, and outside a render vue-i18n throws. The Vue scheduler
+ * re-evaluates that getter with no current instance while checking whether our
+ * render effect is dirty: if the throw crosses our state read it takes the
+ * whole check down, the composition stops repainting, and fresh
+ * `geojsonBounds` never reaches the map.
  */
-describe('um getter do estado embutido que explode fora do render', () => {
-  it('não impede a entrega seguinte ao mapa', async () => {
-    const boundsRecebidos: unknown[] = [];
-    const layoutDeMapa = defineComponent({
+describe('an embedded state getter that throws outside the render', () => {
+  it('does not block the next delivery to the map', async () => {
+    const receivedBounds: unknown[] = [];
+    const mapLayout = defineComponent({
       inheritAttrs: false,
       props: { geojsonBounds: { default: undefined, type: null } },
       setup(props) {
         return () => {
-          boundsRecebidos.push(props.geojsonBounds);
+          receivedBounds.push(props.geojsonBounds);
           return h('div');
         };
       },
     });
-    const naTela = ref(2);
+    const onScreen = ref(2);
     /*
-     * Armado só depois da montagem porque o `mount` do @vue/test-utils
-     * vasculha os props em busca de refs e leria o getter fora do render ele
-     * mesmo — a explosão seria do arranjo, e não do que se quer medir.
+     * Armed only after mounting because @vue/test-utils' `mount` scans the
+     * props looking for refs and would read the getter outside the render
+     * itself — the throw would come from the harness, not from what is being
+     * measured.
      */
-    let armado = false;
-    const estado = reactive<Record<string, unknown>>({
+    let armed = false;
+    const state = reactive<Record<string, unknown>>({
       geojsonBounds: ref<unknown>(undefined),
       showingCount: computed(() => {
-        if (armado && getCurrentInstance() === null) {
+        if (armed && getCurrentInstance() === null) {
           throw new SyntaxError('Must be called at the top of a `setup` function');
         }
-        return `1-${naTela.value} of ${naTela.value}`;
+        return `1-${onScreen.value} of ${onScreen.value}`;
       }),
     });
-    const mapa: LayoutEmbutido = {
-      component: layoutDeMapa,
+    const map: EmbeddedLayout = {
+      component: mapLayout,
       id: 'map',
       optionsComponent: null,
-      state: estado,
+      state,
     };
-    const grade = embutidoFalso('tabular', { items: [] });
+    const grid = fakeEmbedded('tabular', { items: [] });
     mount(MapgridLayout, {
-      props: { grade: grade.embutido, mapa },
+      props: { grid: grid.embedded, map },
       global: { components: directusComponentStubs },
     });
 
-    armado = true;
+    armed = true;
 
-    // a busca filtrada pela área visível muda a contagem, e só ela
-    naTela.value = 1;
+    // the fetch filtered by the visible area changes the count, and only it
+    onScreen.value = 1;
     await nextTick();
 
-    // a geometria buscada chega depois, como no clique numa linha fora da tela
-    estado.geojsonBounds = [-60.0255, -3.119, -48.5044, -1.4558];
+    // the fetched geometry arrives later, as in a click on an off-screen row
+    state.geojsonBounds = [-60.0255, -3.119, -48.5044, -1.4558];
     await nextTick();
 
-    expect(boundsRecebidos[boundsRecebidos.length - 1]).toEqual([
+    expect(receivedBounds[receivedBounds.length - 1]).toEqual([
       -60.0255, -3.119, -48.5044, -1.4558,
     ]);
   });

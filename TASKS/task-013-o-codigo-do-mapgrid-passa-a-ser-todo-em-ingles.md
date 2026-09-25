@@ -1,6 +1,6 @@
 # 🧩 Task 013 — O código do MapGrid passa a ser todo em inglês
 
-- Status: pending
+- Status: in-progress
 - Type: refactor
 - Assignee: sidartaveloso
 - Priority: 660

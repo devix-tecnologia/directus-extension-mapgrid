@@ -3,20 +3,17 @@
  *
  * A composição lê chaves do `setup()` dos layouts `tabular` e `map` — `items`,
  * `tableHeaders`, `onSortChange`, `geometryField`, `slots.options` e as outras
- * que `CONTRATO_DOS_EMBUTIDOS` lista. Nenhuma é API pública, e renomear
+ * que `EMBEDDED_CONTRACT` lista. Nenhuma é API pública, e renomear
  * qualquer uma **não levanta exceção**: a grade fica vazia, o clique na linha
  * volta a navegar para fora, o mapa não acha a geometria. Os unitários fixam a
  * regra com layouts de mentira; só aqui o Directus real responde.
  *
  * É por isso que este spec não pode ser um teste de DOM: ele observa o console
- * do navegador, onde `embutirLayout` grita o que faltou. Falha alta, com o nome
+ * do navegador, onde `embedLayout` grita o que faltou. Falha alta, com o nome
  * da chave que sumiu, em vez de um spec de tela que reprova três telas depois.
  */
 import { expect, test } from '@playwright/test';
-import {
-  CONTRATO_DOS_EMBUTIDOS,
-  MARCA_DO_CONTRATO,
-} from '../../src/services/embedded-layout/index';
+import { CONTRACT_MARKER, EMBEDDED_CONTRACT } from '../../src/services/embedded-layout/index';
 import { ensureMapGridPreset } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import { GRADE, login, MAPA, openCollection, TABELA } from './helpers/mapgrid-page';
@@ -30,7 +27,7 @@ test.describe('MapGrid — o contrato com os layouts embutidos', () => {
     const reclamacoes: string[] = [];
     page.on('console', (mensagem) => {
       const texto = mensagem.text();
-      if (texto.includes(MARCA_DO_CONTRATO)) reclamacoes.push(texto);
+      if (texto.includes(CONTRACT_MARKER)) reclamacoes.push(texto);
     });
 
     await ensureMapGridPreset();
@@ -38,7 +35,7 @@ test.describe('MapGrid — o contrato com os layouts embutidos', () => {
     await openCollection(page);
 
     /*
-     * A composição na tela é o que prova que `embutirLayout` chegou a rodar
+     * A composição na tela é o que prova que `embedLayout` chegou a rodar
      * para os dois ids. Sem esta parte, "nenhuma reclamação no console" também
      * seria verdade numa tela onde nada montou.
      */
@@ -48,8 +45,8 @@ test.describe('MapGrid — o contrato com os layouts embutidos', () => {
 
     for (const reclamacao of reclamacoes) console.log(`\n[contrato] ${reclamacao}`);
     console.log(
-      `\n[contrato] conferidas ${CONTRATO_DOS_EMBUTIDOS.tabular.length} chaves da grade e ` +
-        `${CONTRATO_DOS_EMBUTIDOS.map.length} do mapa, mais o painel de opções de cada um`
+      `\n[contrato] conferidas ${EMBEDDED_CONTRACT.tabular.length} chaves da grade e ` +
+        `${EMBEDDED_CONTRACT.map.length} do mapa, mais o painel de opções de cada um`
     );
 
     expect(reclamacoes).toEqual([]);
@@ -67,13 +64,13 @@ test.describe('MapGrid — o contrato com os layouts embutidos', () => {
     const reclamacoes: string[] = [];
     page.on('console', (mensagem) => {
       const texto = mensagem.text();
-      if (texto.includes(MARCA_DO_CONTRATO)) reclamacoes.push(texto);
+      if (texto.includes(CONTRACT_MARKER)) reclamacoes.push(texto);
     });
 
     await login(page);
     await page.evaluate(
       (marca) => console.error(`${marca}: forjado pelo controle negativo`),
-      MARCA_DO_CONTRATO
+      CONTRACT_MARKER
     );
 
     await expect.poll(() => reclamacoes.length, { timeout: 10_000 }).toBe(1);

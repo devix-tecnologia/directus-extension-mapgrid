@@ -21,8 +21,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     selectedItems: [
-      { id: 1, nome: 'Item 1' },
-      { id: 2, nome: 'Item 2' },
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
     ],
     deleteSelectedItems: async () => {},
   },

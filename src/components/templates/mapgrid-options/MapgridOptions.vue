@@ -1,20 +1,21 @@
 <template>
   <!--
-    A configuração é a dos próprios layouts do Directus. O painel deles monta
-    aqui ligado ao MESMO estado que desenha a área, porque os dois nascem no
-    `setup()` de `src/index.ts` — que o Directus entrega ao componente e ao
-    painel. Criar wrapper próprio aqui daria estado separado e uma busca a mais.
+    The configuration is the Directus layouts' own. Their panel mounts here
+    bound to the SAME state that draws the area, because both are born in the
+    `setup()` of `src/index.ts` — which Directus hands to the component and to
+    the panel. Creating our own wrapper here would give separate state and one
+    extra fetch.
   -->
   <!--
-    As classes existem para o e2e ter por onde começar. Dentro de cada seção
-    quem desenha é o painel do Directus, cujos rótulos mudam de idioma e de
-    versão; procurar "Map" no texto da página acharia meia tela. Mesma escolha
-    dos painéis da área, `.mapgrid-pane--map` e `.mapgrid-pane--grid`.
+    The classes exist so the e2e has somewhere to start. Inside each section
+    what draws is the Directus panel, whose labels change with locale and
+    version; searching for "Map" in the page text would match half the screen.
+    Same choice as the area panes, `.mapgrid-pane--map` and `.mapgrid-pane--grid`.
   -->
   <v-detail class="mapgrid-option mapgrid-option--map full" icon="map" :label="t('optionMapSection')">
-    <div class="mapgrid-option__campos">
-      <component :is="mapa?.optionsComponent" v-if="mapa?.optionsComponent" v-bind="mapa.state" />
-      <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
+    <div class="mapgrid-option__fields">
+      <component :is="map?.optionsComponent" v-if="map?.optionsComponent" v-bind="map.state" />
+      <p v-else class="no-panel">{{ t('optionPanelMissing') }}</p>
     </div>
   </v-detail>
 
@@ -23,9 +24,9 @@
     icon="table_rows"
     :label="t('optionGridSection')"
   >
-    <div class="mapgrid-option__campos">
-      <component :is="grade?.optionsComponent" v-if="grade?.optionsComponent" v-bind="grade.state" />
-      <p v-else class="sem-painel">{{ t('optionPanelMissing') }}</p>
+    <div class="mapgrid-option__fields">
+      <component :is="grid?.optionsComponent" v-if="grid?.optionsComponent" v-bind="grid.state" />
+      <p v-else class="no-panel">{{ t('optionPanelMissing') }}</p>
     </div>
   </v-detail>
 
@@ -52,8 +53,8 @@ const emit = defineEmits<MapgridOptionsEmits>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
-const grade = computed(() => props.grade);
-const mapa = computed(() => props.mapa);
+const grid = computed(() => props.grid);
+const map = computed(() => props.map);
 
 const zoomOnClick = computed<boolean | undefined, unknown>({
   get: () => props.zoomOnClick,
@@ -66,15 +67,15 @@ const zoomOnClick = computed<boolean | undefined, unknown>({
   margin-top: var(--form-vertical-gap);
 }
 
-/* o mesmo grid do painel do Directus, para os `.field` dele caberem na seção */
-.mapgrid-option__campos {
+/* the same grid as the Directus panel, so their `.field`s fit in the section */
+.mapgrid-option__fields {
   display: grid;
   grid-template-columns: [start] minmax(0, 1fr) [half] minmax(0, 1fr) [full];
   gap: var(--theme--form--row-gap) var(--theme--form--column-gap);
   margin-top: var(--theme--form--row-gap);
 }
 
-.sem-painel {
+.no-panel {
   color: var(--theme--foreground-subdued);
   font-style: italic;
 }

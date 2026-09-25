@@ -1,5 +1,5 @@
-import type { FonteDaColecao } from '../../../services/centralizador-de-mapa/index';
-import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
+import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
+import type { CollectionSource } from '../../../services/map-centerer/index';
 
 export interface MapgridLayoutType {
   models: MapgridLayoutModels;
@@ -8,17 +8,17 @@ export interface MapgridLayoutType {
 }
 
 /**
- * O layout desenha os dois layouts do Directus lado a lado. Ele não busca
- * itens nem guarda estado: recebe os dois embutidos prontos do `setup()`, que é
- * onde eles nascem para alcançarem também o painel de opções.
+ * The layout draws the two Directus layouts side by side. It neither fetches
+ * items nor holds state: it receives both embedded layouts ready from
+ * `setup()`, which is where they are born so they also reach the options panel.
  */
 export interface MapgridLayoutProps {
-  grade?: LayoutEmbutido | null;
-  mapa?: LayoutEmbutido | null;
-  /** Aproximar o mapa ao clicar numa linha. */
+  grid?: EmbeddedLayout | null;
+  map?: EmbeddedLayout | null;
+  /** Zoom the map in when a row is clicked. */
   zoomOnClick?: boolean;
-  /** Busca itens da coleção pela chave primária, só com os campos pedidos. */
-  buscarItens?: FonteDaColecao['buscarItens'];
+  /** Fetches collection items by primary key, with only the requested fields. */
+  fetchItems?: CollectionSource['fetchItems'];
 }
 
 export type MapgridLayoutEmits = Record<string, never>;

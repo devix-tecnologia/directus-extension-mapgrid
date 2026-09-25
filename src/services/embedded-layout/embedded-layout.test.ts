@@ -1,18 +1,18 @@
 import type { LayoutConfig, LayoutProps } from '@directus/types';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  CONTRATO_DOS_EMBUTIDOS,
-  conferirContrato,
-  embutirLayout,
-  LAYOUTS_EMBUTIDOS,
-  layoutEstaRegistrado,
-  MARCA_DO_CONTRATO,
-  SLOT_DE_OPCOES,
+  CONTRACT_MARKER,
+  checkContract,
+  EMBEDDED_CONTRACT,
+  EMBEDDED_LAYOUTS,
+  embedLayout,
+  isLayoutRegistered,
+  OPTIONS_SLOT,
 } from './embedded-layout';
-import type { LayoutEmbutido } from './embedded-layout.types';
+import type { EmbeddedLayout } from './embedded-layout.types';
 
-const propsDeLayout = (): LayoutProps => ({
-  collection: 'cidades',
+const layoutProps = (): LayoutProps => ({
+  collection: 'cities',
   selection: [],
   layoutOptions: {},
   layoutQuery: {},
@@ -26,7 +26,7 @@ const propsDeLayout = (): LayoutProps => ({
   readonly: false,
 });
 
-const layoutFalso = (id: string, setup: LayoutConfig['setup']): LayoutConfig =>
+const fakeLayout = (id: string, setup: LayoutConfig['setup']): LayoutConfig =>
   ({
     id,
     name: id,
@@ -40,203 +40,203 @@ const layoutFalso = (id: string, setup: LayoutConfig['setup']): LayoutConfig =>
     setup,
   }) as LayoutConfig;
 
-describe('embutirLayout', () => {
-  it('roda o setup do layout registrado e devolve o que ele expõe', () => {
-    const registro = [layoutFalso('tabular', () => ({ items: [{ id: 1 }], tableHeaders: [] }))];
+describe('embedLayout', () => {
+  it('runs the registered layout setup and returns what it exposes', () => {
+    const registry = [fakeLayout('tabular', () => ({ items: [{ id: 1 }], tableHeaders: [] }))];
 
-    const embutido = embutirLayout({
+    const embedded = embedLayout({
       id: 'tabular',
-      registro,
-      props: propsDeLayout(),
+      registry,
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(embutido?.state.items).toEqual([{ id: 1 }]);
-    expect(embutido?.component).toBeTruthy();
-    expect(embutido?.optionsComponent).toBeTruthy();
+    expect(embedded?.state.items).toEqual([{ id: 1 }]);
+    expect(embedded?.component).toBeTruthy();
+    expect(embedded?.optionsComponent).toBeTruthy();
   });
 
-  it('devolve nulo quando o id não está no registro, em vez de explodir', () => {
-    const embutido = embutirLayout({
-      id: 'inexistente',
-      registro: [],
-      props: propsDeLayout(),
+  it('returns null when the id is not in the registry, instead of throwing', () => {
+    const embedded = embedLayout({
+      id: 'missing',
+      registry: [],
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(embutido).toBeNull();
+    expect(embedded).toBeNull();
   });
 
-  it('repassa os props junto do estado, como o wrapper do Directus faz', () => {
-    const registro = [layoutFalso('tabular', () => ({ items: [] }))];
+  it('hands the props back alongside the state, as the Directus wrapper does', () => {
+    const registry = [fakeLayout('tabular', () => ({ items: [] }))];
 
-    const embutido = embutirLayout({
+    const embedded = embedLayout({
       id: 'tabular',
-      registro,
-      props: propsDeLayout(),
+      registry,
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    // sem isto o componente deles perde os proprios props
-    expect(embutido?.state.collection).toBe('cidades');
-    expect(embutido?.state.readonly).toBe(false);
+    // without this their component loses its own props
+    expect(embedded?.state.collection).toBe('cities');
+    expect(embedded?.state.readonly).toBe(false);
   });
 
-  it('sobe como emit o que é prop, porque é o pai que manda nesses', () => {
+  it('sends up as an emit what is a prop, because the parent owns those', () => {
     const emit = vi.fn();
-    const registro = [layoutFalso('tabular', () => ({ items: [] }))];
+    const registry = [fakeLayout('tabular', () => ({ items: [] }))];
 
-    const embutido = embutirLayout({ id: 'tabular', registro, props: propsDeLayout(), emit });
-    const aoAtualizar = embutido?.state['onUpdate:layoutQuery'] as (valor: unknown) => void;
-    aoAtualizar({ sort: ['-name'] });
+    const embedded = embedLayout({ id: 'tabular', registry, props: layoutProps(), emit });
+    const onUpdate = embedded?.state['onUpdate:layoutQuery'] as (value: unknown) => void;
+    onUpdate({ sort: ['-name'] });
 
     expect(emit).toHaveBeenCalledWith('update:layoutQuery', { sort: ['-name'] });
   });
 
-  it('guarda no estado local o que não é prop, sem incomodar o pai', () => {
+  it('keeps in the local state what is not a prop, without bothering the parent', () => {
     const emit = vi.fn();
-    const registro = [layoutFalso('tabular', () => ({ tableSpacing: 'cozy' }))];
+    const registry = [fakeLayout('tabular', () => ({ tableSpacing: 'cozy' }))];
 
-    const embutido = embutirLayout({ id: 'tabular', registro, props: propsDeLayout(), emit });
-    const aoAtualizar = embutido?.state['onUpdate:tableSpacing'] as (valor: unknown) => void;
-    aoAtualizar('compact');
+    const embedded = embedLayout({ id: 'tabular', registry, props: layoutProps(), emit });
+    const onUpdate = embedded?.state['onUpdate:tableSpacing'] as (value: unknown) => void;
+    onUpdate('compact');
 
-    expect(embutido?.state.tableSpacing).toBe('compact');
+    expect(embedded?.state.tableSpacing).toBe('compact');
     expect(emit).not.toHaveBeenCalled();
   });
 });
 
 /**
- * Teste de contrato.
+ * Contract test.
  *
- * Embutir os layouts do Directus depende do formato do `setup()` deles, que não
- * é API pública: uma atualização pode renomear uma chave e a composição para de
- * funcionar **sem avisar** — a grade fica vazia, o clique na linha volta a
- * navegar, o mapa não acha a geometria. Nada disso levanta exceção.
+ * Embedding the Directus layouts depends on the shape of their `setup()`, which
+ * is not public API: an update may rename a key and the composition stops
+ * working **without warning** — the grid goes empty, the row click navigates
+ * away again, the map cannot find the geometry. None of that throws.
  *
- * Por isso o contrato mora no código, não num comentário: `conferirContrato`
- * compara o que o layout devolveu com o que a composição lê, e `embutirLayout`
- * grita no console o que faltou. A versão anterior deste bloco comparava uma
- * lista literal com ela mesma e não tinha como falhar por causa do Directus.
+ * That is why the contract lives in the code, not in a comment: `checkContract`
+ * compares what the layout returned against what the composition reads, and
+ * `embedLayout` shouts in the console what was missing.
  *
- * Aqui se fixa a regra; quem mede contra o Directus de verdade é o
- * `tests/e2e/mapgrid-contrato.spec.ts`, que reprova se a mensagem aparecer.
+ * The rule is pinned here; what measures it against a real Directus is
+ * `tests/e2e/mapgrid-contract.spec.ts`, which fails if the message shows up.
  */
-describe('o contrato com os layouts do Directus', () => {
-  const estadoCompleto = (id: 'tabular' | 'map'): Record<string, unknown> =>
-    Object.fromEntries(CONTRATO_DOS_EMBUTIDOS[id].map((chave) => [chave, null]));
+describe('the contract with the Directus layouts', () => {
+  const fullState = (id: 'tabular' | 'map'): Record<string, unknown> =>
+    Object.fromEntries(EMBEDDED_CONTRACT[id].map((key) => [key, null]));
 
-  it('não acusa nada quando o layout devolve tudo que a composição lê', () => {
-    const registro = [layoutFalso('tabular', () => estadoCompleto('tabular'))];
-    const erro = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  it('flags nothing when the layout returns everything the composition reads', () => {
+    const registry = [fakeLayout('tabular', () => fullState('tabular'))];
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    const embutido = embutirLayout({
+    const embedded = embedLayout({
       id: 'tabular',
-      registro,
-      props: propsDeLayout(),
+      registry,
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([]);
-    expect(erro).not.toHaveBeenCalled();
-    erro.mockRestore();
+    expect(checkContract(embedded as EmbeddedLayout)).toEqual([]);
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 
-  it('acusa a chave que sumiu do que o layout devolveu', () => {
-    const semCabecalhos = estadoCompleto('tabular');
-    delete semCabecalhos.tableHeaders;
-    delete semCabecalhos.onSortChange;
+  it('flags the key that vanished from what the layout returned', () => {
+    const withoutHeaders = fullState('tabular');
+    delete withoutHeaders.tableHeaders;
+    delete withoutHeaders.onSortChange;
 
-    const embutido = embutirLayout({
+    const embedded = embedLayout({
       id: 'tabular',
-      registro: [layoutFalso('tabular', () => semCabecalhos)],
-      props: propsDeLayout(),
+      registry: [fakeLayout('tabular', () => withoutHeaders)],
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual(['tableHeaders', 'onSortChange']);
+    expect(checkContract(embedded as EmbeddedLayout)).toEqual(['tableHeaders', 'onSortChange']);
   });
 
-  it('o painel de opções é do contrato: sem ele a barra lateral fica sem a configuração deles', () => {
-    const semPainel = {
-      ...layoutFalso('map', () => estadoCompleto('map')),
+  it('the options panel is part of the contract: without it the sidebar loses their configuration', () => {
+    const withoutPanel = {
+      ...fakeLayout('map', () => fullState('map')),
       slots: {},
     } as LayoutConfig;
 
-    const embutido = embutirLayout({
+    const embedded = embedLayout({
       id: 'map',
-      registro: [semPainel],
-      props: propsDeLayout(),
+      registry: [withoutPanel],
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([SLOT_DE_OPCOES]);
+    expect(checkContract(embedded as EmbeddedLayout)).toEqual([OPTIONS_SLOT]);
   });
 
-  it('a chave que existe valendo `undefined` conta como entregue', () => {
+  it('a key present but `undefined` counts as delivered', () => {
     /*
-     * `cameraOptions` nasce sem valor enquanto ninguém mexeu na câmera, e
-     * `error` fica nulo sem erro. Exigir valor transformaria o contrato num
-     * alarme falso a cada primeira visita; o que se exige é a chave.
+     * `cameraOptions` starts with no value until someone moves the camera, and
+     * `error` stays null with no error. Demanding a value would turn the
+     * contract into a false alarm on every first visit; what is demanded is the
+     * key.
      */
-    const comVazios = { ...estadoCompleto('map'), cameraOptions: undefined };
+    const withEmpties = { ...fullState('map'), cameraOptions: undefined };
 
-    const embutido = embutirLayout({
+    const embedded = embedLayout({
       id: 'map',
-      registro: [layoutFalso('map', () => comVazios)],
-      props: propsDeLayout(),
+      registry: [fakeLayout('map', () => withEmpties)],
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([]);
+    expect(checkContract(embedded as EmbeddedLayout)).toEqual([]);
   });
 
-  it('grita no console ao embutir, que é como a falta chega ao e2e', () => {
-    const erro = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  it('shouts in the console while embedding, which is how the gap reaches the e2e', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    embutirLayout({
+    embedLayout({
       id: 'map',
-      registro: [layoutFalso('map', () => ({}))],
-      props: propsDeLayout(),
+      registry: [fakeLayout('map', () => ({}))],
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(erro).toHaveBeenCalledTimes(1);
-    const mensagem = String(erro.mock.calls[0]?.[0]);
-    expect(mensagem).toContain(MARCA_DO_CONTRATO);
-    expect(mensagem).toContain('map');
-    expect(mensagem).toContain('geometryField');
-    erro.mockRestore();
+    expect(error).toHaveBeenCalledTimes(1);
+    const message = String(error.mock.calls[0]?.[0]);
+    expect(message).toContain(CONTRACT_MARKER);
+    expect(message).toContain('map');
+    expect(message).toContain('geometryField');
+    error.mockRestore();
   });
 
-  it('só cobra de quem tem contrato declarado, e não de um layout qualquer', () => {
-    const embutido = embutirLayout({
+  it('only charges those with a declared contract, and not just any layout', () => {
+    const embedded = embedLayout({
       id: 'cards',
-      registro: [layoutFalso('cards', () => ({}))],
-      props: propsDeLayout(),
+      registry: [fakeLayout('cards', () => ({}))],
+      props: layoutProps(),
       emit: vi.fn(),
     });
 
-    expect(conferirContrato(embutido as LayoutEmbutido)).toEqual([]);
+    expect(checkContract(embedded as EmbeddedLayout)).toEqual([]);
   });
 
-  it('os ids procurados no registro são os do app, e não inventados', () => {
-    expect(LAYOUTS_EMBUTIDOS.grade).toBe('tabular');
-    expect(LAYOUTS_EMBUTIDOS.mapa).toBe('map');
-    expect(CONTRATO_DOS_EMBUTIDOS[LAYOUTS_EMBUTIDOS.grade]).toContain('tableHeaders');
-    expect(CONTRATO_DOS_EMBUTIDOS[LAYOUTS_EMBUTIDOS.mapa]).toContain('geometryField');
+  it('the ids looked up in the registry are the app ones, not made up', () => {
+    expect(EMBEDDED_LAYOUTS.grid).toBe('tabular');
+    expect(EMBEDDED_LAYOUTS.map).toBe('map');
+    expect(EMBEDDED_CONTRACT[EMBEDDED_LAYOUTS.grid]).toContain('tableHeaders');
+    expect(EMBEDDED_CONTRACT[EMBEDDED_LAYOUTS.map]).toContain('geometryField');
   });
 
-  it('reconhece um layout ausente do registro, que é como a falta aparece', () => {
-    const registro = [layoutFalso('tabular', () => ({}))];
+  it('recognises a layout missing from the registry, which is how the gap shows up', () => {
+    const registry = [fakeLayout('tabular', () => ({}))];
 
-    expect(layoutEstaRegistrado(registro, LAYOUTS_EMBUTIDOS.grade)).toBe(true);
-    expect(layoutEstaRegistrado(registro, LAYOUTS_EMBUTIDOS.mapa)).toBe(false);
+    expect(isLayoutRegistered(registry, EMBEDDED_LAYOUTS.grid)).toBe(true);
+    expect(isLayoutRegistered(registry, EMBEDDED_LAYOUTS.map)).toBe(false);
   });
 
-  it('o contrato do mapa cobre o que o centralizador lê e escreve no estado dele', () => {
-    const mapa: readonly string[] = CONTRATO_DOS_EMBUTIDOS[LAYOUTS_EMBUTIDOS.mapa];
-    for (const chave of [
+  it('the map contract covers what the centerer reads from and writes to its state', () => {
+    const map: readonly string[] = EMBEDDED_CONTRACT[EMBEDDED_LAYOUTS.map];
+    for (const key of [
       'geojson',
       'geojsonBounds',
       'geometryField',
@@ -245,7 +245,7 @@ describe('o contrato com os layouts do Directus', () => {
       'cameraOptions',
       'fitDataBounds',
     ]) {
-      expect(mapa, chave).toContain(chave);
+      expect(map, key).toContain(key);
     }
   });
 });

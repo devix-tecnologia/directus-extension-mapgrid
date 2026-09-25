@@ -2,39 +2,40 @@ import type { LayoutConfig, LayoutProps } from '@directus/types';
 import type { Component } from 'vue';
 
 /**
- * Um layout do Directus rodando dentro do nosso.
+ * A Directus layout running inside ours.
  *
- * `state` é o que o `setup()` dele devolveu, mais os props e os
- * `onUpdate:<chave>` — a mesma composição que o `createLayoutWrapper` monta.
- * `component` e `optionsComponent` são o que desenha a área e o painel.
+ * `state` is what its `setup()` returned, plus the props and the
+ * `onUpdate:<key>` handlers — the same composition `createLayoutWrapper`
+ * assembles. `component` and `optionsComponent` are what draws the area and the
+ * panel.
  */
-export interface LayoutEmbutido {
+export interface EmbeddedLayout {
   readonly id: string;
   readonly state: Record<string, unknown>;
   readonly component: Component | null;
   readonly optionsComponent: Component | null;
 }
 
-/** O que o registro de layouts do app entrega. */
-export type RegistroDeLayouts = readonly LayoutConfig[];
+/** What the app's layout registry hands over. */
+export type LayoutRegistry = readonly LayoutConfig[];
 
 /**
- * O estado que os layouts embutidos dividem entre si.
+ * The state the embedded layouts share.
  *
- * `selection` e `layoutQuery` são dois dos três props que sobem como emit no
- * contrato do Directus, e é por eles que mapa e grade se sincronizam: ordenar
- * num refaz a busca do outro, e marcar uma linha acende o marcador.
- * `layoutOptions` é de cada um — o mapa guarda ali o campo de geometria, a
- * grade o espaçamento.
+ * `selection` and `layoutQuery` are two of the three props that go up as emits
+ * in the Directus contract, and they are how map and grid stay in sync: sorting
+ * in one refetches the other, and marking a row lights up the marker.
+ * `layoutOptions` belongs to each one — the map keeps the geometry field there,
+ * the grid the spacing.
  */
-export interface EstadoCompartilhado {
+export interface SharedState {
   selection: (string | number)[];
   layoutQuery: Record<string, unknown>;
 }
 
-export interface OpcoesDeEmbutir {
+export interface EmbedOptions {
   readonly id: string;
-  readonly registro: RegistroDeLayouts;
+  readonly registry: LayoutRegistry;
   readonly props: LayoutProps;
-  readonly emit: (evento: string, valor: unknown) => void;
+  readonly emit: (event: string, value: unknown) => void;
 }
