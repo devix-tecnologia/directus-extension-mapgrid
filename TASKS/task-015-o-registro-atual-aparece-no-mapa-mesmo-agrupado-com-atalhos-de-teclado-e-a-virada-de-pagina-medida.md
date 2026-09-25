@@ -41,8 +41,8 @@ tem oito registros, que provam o comportamento mas não medem nada.
       e textos de ajuda em en-US e pt-BR
 - [ ] Contar as requisições de uma reprodução sobre um trajeto sintético de mil
       pontos no ambiente do e2e, com a consulta compartilhada
-- [ ] Decidir, com o número na mão, entre tamanho de página maior durante a
-      reprodução, buscar a próxima página antes de precisar dela, ou manter
+- [ ] Registrar a medição como linha de base da task-016, que explora antecipar
+      a busca da próxima página
 - [ ] Evidência de tela: a reprodução visível no mapa com o agrupamento ligado
 
 ## Notes
