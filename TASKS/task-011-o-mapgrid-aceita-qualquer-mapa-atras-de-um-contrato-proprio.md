@@ -18,11 +18,11 @@ for feito antes (task-006, task-007, Fase 3 da task-010) não feche a porta.
 
 ## O que já existe no MapGrid
 
-A semente do contrato: `ICentralizadorDeMapa`
-(`src/services/centralizador-de-mapa/`), com uma operação (`centralizar`) e uma
-implementação (`CentralizadorDoMapaDirectus`, o contorno da limitação do mapa do
+A semente do contrato: `IMapCenterer`
+(`src/services/map-centerer/`), com uma operação (`center`/`centerItem`) e uma
+implementação (`DirectusMapCenterer`, o contorno da limitação do mapa do
 Directus). A decisão da `MapToolbar` na task-010 acrescenta a segunda operação
-prevista, `enquadrarTudo`, e a primeira capacidade ("este mapa já tem o controle
+prevista, `fitAll`, e a primeira capacidade ("este mapa já tem o controle
 nativo?").
 
 ## O que o geohub tem — analisado em 2026-09-24
@@ -68,12 +68,12 @@ contrato como componente em vez de interface, e duas ordens de coordenada.
 
 - O contrato é uma **interface TypeScript**, sem Vue e sem Directus, com dados em
   GeoJSON (`[lng, lat]`, uma ordem só).
-- Operações que o MapGrid já precisa ou vai precisar: `centralizar`,
-  `enquadrarTudo`, evento de clique num item, evento de câmera (o `moveend`);
+- Operações que o MapGrid já precisa ou vai precisar: `center`/`centerItem`,
+  `fitAll`, evento de clique num item, evento de câmera (o `moveend`);
   depois, o que a task-006 pedir (acompanhamento da câmera).
 - **Capacidades declaradas** pela implementação, para o MapGrid decidir o que
   mostrar — a primeira é "já tem controle nativo de reenquadrar".
-- Uma implementação por mapa: Directus (hoje, `CentralizadorDoMapaDirectus` e
+- Uma implementação por mapa: Directus (hoje, `DirectusMapCenterer` e
   vizinhos), 3dmap, os que vierem. Nomes de coisa do MapGrid não levam
   "Directus"; só a implementação leva.
 
@@ -93,7 +93,7 @@ contrato como componente em vez de interface, e duas ordens de coordenada.
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
 - [x] Analisar a abstração de mapa do geohub (acima)
 - [ ] Decidir onde o contrato mora (MapGrid ou pacote do geohub)
-- [ ] Desenhar a interface a partir do `ICentralizadorDeMapa`, com as operações e
+- [ ] Desenhar a interface a partir do `IMapCenterer`, com as operações e
       capacidades que o MapGrid usa hoje
 - [ ] Mover o "reenquadrar" e o clique no ponto do MapGrid para trás do contrato,
       mantendo o Directus como única implementação

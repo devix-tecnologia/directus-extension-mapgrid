@@ -126,15 +126,19 @@ Os scripts do `package.json` acompanharam os caminhos: `sandcastle:rodada` →
   batido.
 - **`scripts/tamanho-de-evidencia/`** — a própria task manda não renomear: ele
   sai quando o taskin com teto de anexo for adotado.
-- **O alias `vue-do-directus`** (`package.json`,
-  `vitest.vue-do-directus.config.ts`, o sufixo `*.vue-do-directus.test.ts`).
-  Trocar o nome do alias exige `pnpm install` para refazer o link no
-  `node_modules`, e o ambiente do sandbox proíbe rodar install. **É o único item
-  desta lista que vale a pena fazer numa rodada futura**, fora do sandbox.
 - **`docs/tela.jpg`** e `test-results/video-evidencia` — caminhos citados no
   README e em docs; renomeá-los é mudança de documentação, não de código.
-- **O prefixo de branch `sandcastle/rodada-`** — combina com a mensagem de
-  merge, que é commit e portanto português.
+
+### Na revisão, fora do sandbox
+
+- O alias `vue-do-directus` virou `directus-vue` (`package.json`,
+  `vitest.directus-vue.config.ts`, `*.directus-vue.test.ts`), com o
+  `pnpm install` que o sandbox não podia rodar.
+- O prefixo de branch da rodada virou `sandcastle/round-`: é nome gerado pelo
+  código, não mensagem de commit.
+- O TSDoc de `KEYS_THAT_THROW_OUTSIDE_RENDER` encolheu para o contrato.
+- As tasks 006 e 011 passaram a citar os nomes novos.
+- Gates e e2e (21/21) rodados de novo sobre o `origin/develop` mais recente.
 
 ### Descobertas do caminho
 
