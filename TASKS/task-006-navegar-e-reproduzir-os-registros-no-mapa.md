@@ -1,6 +1,6 @@
 # Task 006 — Navegar e reproduzir os registros no mapa
 
-Status: in-progress
+Status: in-review
 Type: feat
 Assignee: sidartaveloso
 Difficulty: 3
