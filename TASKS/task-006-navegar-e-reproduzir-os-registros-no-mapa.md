@@ -36,14 +36,14 @@ direções:
   e um balão sem injeção de HTML existem nos layouts deles.
 - **Grade e mapa não recebem mais "o registro atual" por prop.** Não são nossos
   componentes: a única forma de mandar neles é pelo estado que o `setup()` deles
-  devolve (`embutirLayout`, em `src/services/embedded-layout/`), trocando
+  devolve (`embedLayout`, em `src/services/embedded-layout/`), trocando
   handlers e escrevendo nas chaves que eles leem.
 - **O Storybook deixou de alcançar grade e mapa**, porque lá o SDK é um mock nosso
   e o registro de layouts não existe. O comportamento desta task se prova no e2e.
 - **A câmera não se move pelo `cameraOptions`.** O componente de mapa do
   Directus só lê a câmera ao montar. Quem move o mapa é o
-  `CentralizadorDoMapaDirectus` (`src/services/centralizador-de-mapa/`), atrás
-  do contrato `ICentralizadorDeMapa` — o contorno documentado dessa limitação.
+  `DirectusMapCenterer` (`src/services/map-centerer/`), atrás
+  do contrato `IMapCenterer` — o contorno documentado dessa limitação.
   Revisado em 2026-09-24, depois de a task-010 fechar.
 
 Conferido na fonte do Directus 10.13.1 (`app/src/layouts/tabular/` e
@@ -59,7 +59,7 @@ Conferido na fonte do Directus 10.13.1 (`app/src/layouts/tabular/` e
 - **grade e mapa (layouts do Directus)** — mostram o registro atual porque o
   template escreve no estado deles, não porque recebem prop nossa. Nenhum dos
   dois decide qual é o próximo.
-- **câmera** — o template pede ao `ICentralizadorDeMapa`, nunca ao estado do
+- **câmera** — o template pede ao `IMapCenterer`, nunca ao estado do
   mapa do Directus direto. É o começo do contrato de mapa da
   [task-011](task-011-o-mapgrid-aceita-qualquer-mapa-atras-de-um-contrato-proprio.md),
   e o que esta task acrescentar à câmera entra por ele.
@@ -94,8 +94,8 @@ Directus. Escolher e registrar o motivo.
 
 **O controle de câmera absorve parte do `zoomOnClick`.** A opção booleana, que
 continua nossa, mistura duas coisas: se a câmera se move e se ela também
-aproxima. Hoje o `enquadrarItem` sempre move (`somenteSeFora: false`) e, com
-`zoomOnClick`, aproxima (`aproximar: true`, até o `maxZoom` 14 do Directus). Com
+aproxima. Hoje o `centerItem` sempre move (`onlyIfOutside: false`) e, com
+`zoomOnClick`, aproxima (`zoomIn: true`, até o `maxZoom` 14 do Directus). Com
 o controle de três estados, `zoomOnClick` deve deixar de decidir
 movimento e passar a significar apenas "aproximar ao focar", que é uma escolha
 ortogonal.
@@ -163,7 +163,7 @@ que cicla entre os três estados, na `MapToolbar`.
       mesmo estado, e não dois caminhos separados
 - [ ] A grade destaca e rola até a linha do registro atual, pela forma decidida
       nos pré-requisitos, sem usar `selection`
-- [ ] O mapa enquadra o registro atual pelo `ICentralizadorDeMapa`,
+- [ ] O mapa enquadra o registro atual pelo `IMapCenterer`,
       respeitando o acompanhamento de câmera da Fase 6
 
 ### Fase 3: navegação manual
@@ -200,8 +200,8 @@ que cicla entre os três estados, na `MapToolbar`.
 
 ### Fase 6: acompanhamento da câmera
 - [ ] Traduzir o estado para o centralizador: `off` não chama, `follow` chama
-      `centralizar(item)` (o `somenteSeFora: true` padrão, que já compara com o
-      `cameraOptions.bbox`), `center` chama com `somenteSeFora: false`. O
+      `centerItem(item)` (o `onlyIfOutside: true` padrão, que já compara com o
+      `cameraOptions.bbox`), `center` chama com `onlyIfOutside: false`. O
       cálculo de "fora da área visível" já existe e está testado no
       centralizador; o `isOutsideBounds` que esta fase citava saiu com
       `src/services/geo/`

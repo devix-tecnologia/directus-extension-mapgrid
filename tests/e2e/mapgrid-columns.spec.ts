@@ -1,13 +1,13 @@
 /**
- * As colunas da grade, ponta a ponta.
+ * The grid columns, end to end.
  *
- * Depois da task-010 quem desenha a grade é o layout tabular do Directus, e as
- * colunas continuam saindo de `layoutQuery.fields` — o contrato que a task-005
- * estabeleceu e que eles leem nativamente. É isso que esta suíte mede: a
- * escolha feita no cabeçalho deles chega ao preset e volta dele.
+ * After task-010 what draws the grid is the Directus tabular layout, and the
+ * columns still come out of `layoutQuery.fields` — the contract task-005
+ * established and that they read natively. That is what this suite measures:
+ * the choice made in their header reaches the preset and comes back from it.
  *
- * Os seletores são os de `helpers/mapgrid-page.ts`. Nenhum spec volta a falar
- * de `.map-container` ou `.v-table`, que saíram com os nossos componentes.
+ * The selectors are the ones in `helpers/mapgrid-page.ts`. No spec talks about
+ * `.map-container` or `.v-table` again, which left with our components.
  */
 import { expect, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
@@ -18,13 +18,13 @@ import {
 } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
-  ADICIONAR_CAMPO,
-  celulaDaColuna,
-  colunasVisiveis,
-  esperarOMapGrid,
+  ADD_FIELD,
+  columnCell,
   login,
   openCollection,
-  ordenarPor,
+  sortBy,
+  visibleColumns,
+  waitForMapGrid,
 } from './helpers/mapgrid-page';
 
 test.describe('MapGrid sorting', () => {
@@ -36,38 +36,38 @@ test.describe('MapGrid sorting', () => {
     await ensureMapGridPreset();
   });
 
-  test('ordenar pelo cabeçalho reordena as linhas, e a escolha fica gravada', async ({ page }) => {
+  test('sorting by the header reorders the rows, and the choice is stored', async ({ page }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
 
-    // o preset semeia sort por `name` ascendente, entao a primeira linha e a
-    // primeira em ordem alfabetica
-    const crescente = (await (await celulaDaColuna(page, 'name')).innerText()).trim();
+    // the preset seeds sort by `name` ascending, so the first row is the first
+    // one in alphabetical order
+    const ascending = (await (await columnCell(page, 'name')).innerText()).trim();
 
-    await ordenarPor(page, 'name', 'desc');
+    await sortBy(page, 'name', 'desc');
 
     await expect
-      .poll(async () => (await (await celulaDaColuna(page, 'name')).innerText()).trim(), {
+      .poll(async () => (await (await columnCell(page, 'name')).innerText()).trim(), {
         timeout: 20_000,
       })
-      .not.toBe(crescente);
+      .not.toBe(ascending);
 
     /*
-     * Conferir no preset antes de recarregar. A gravacao do Directus e
-     * debounced: recarregar assim que a tela muda chega antes de ela acontecer,
-     * e o teste acusaria perda do que so ainda nao tinha sido gravado.
+     * Check the preset before reloading. The Directus write is debounced:
+     * reloading as soon as the screen changes gets there before it happens, and
+     * the test would report as lost what had merely not been stored yet.
      */
     await expect
       .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
       .toEqual(['-name']);
 
-    // e sobrevive ao reload, que e o que escrever em `layoutQuery` compra
-    const decrescente = (await (await celulaDaColuna(page, 'name')).innerText()).trim();
+    // and it survives the reload, which is what writing to `layoutQuery` buys
+    const descending = (await (await columnCell(page, 'name')).innerText()).trim();
     await page.reload();
-    await esperarOMapGrid(page);
+    await waitForMapGrid(page);
 
-    expect((await (await celulaDaColuna(page, 'name')).innerText()).trim()).toBe(decrescente);
+    expect((await (await columnCell(page, 'name')).innerText()).trim()).toBe(descending);
   });
 });
 
@@ -100,45 +100,47 @@ test.describe('MapGrid columns', () => {
     expect(options).not.toHaveProperty('coluna6');
 
     await page.goto(`/admin/content/${COLLECTION_NAME}`);
-    await esperarOMapGrid(page);
+    await waitForMapGrid(page);
 
     // the test collection has four fields; all four can be columns at once,
     // which the numbered format allowed but only up to five
-    const columns = await colunasVisiveis(page);
+    const columns = await visibleColumns(page);
     expect(columns.length).toBeGreaterThan(0);
   });
 
-  test('escolher um campo no cabeçalho muda a grade, e sobrevive ao reload', async ({ page }) => {
+  test('picking a field in the header changes the grid, and survives the reload', async ({
+    page,
+  }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
 
-    const antes = await colunasVisiveis(page);
-    expect(antes).not.toContain('status');
+    const before = await visibleColumns(page);
+    expect(before).not.toContain('status');
 
-    // o `+` do cabecalho e o seletor de campos sao do layout tabular deles
-    await page.locator(ADICIONAR_CAMPO).first().click();
+    // the header's `+` and the field picker belong to their tabular layout
+    await page.locator(ADD_FIELD).first().click();
     await page
       .getByRole('listitem')
       .filter({ hasText: /^Status$/ })
       .first()
       .click();
 
-    await expect.poll(async () => colunasVisiveis(page), { timeout: 20_000 }).toContain('status');
+    await expect.poll(async () => visibleColumns(page), { timeout: 20_000 }).toContain('status');
 
     /*
-     * E aqui esta o ganho de a escolha morar no cabecalho: ela e escrita pelo
-     * componente do layout, em `layoutQuery.fields`, e nao pelo painel de
-     * opcoes. Primeiro no preset, depois na tela: se so a segunda falhar, o
-     * defeito esta na leitura, e nao na gravacao.
+     * And here is the gain of the choice living in the header: it is written by
+     * the layout component, in `layoutQuery.fields`, and not by the options
+     * panel. The preset first, the screen after: if only the second fails, the
+     * defect is in the reading, not in the write.
      */
     await expect
       .poll(async () => (await readMapGridPresetQuery()).fields, { timeout: 20_000 })
       .toContain('status');
 
     await page.reload();
-    await esperarOMapGrid(page);
+    await waitForMapGrid(page);
 
-    expect(await colunasVisiveis(page)).toContain('status');
+    expect(await visibleColumns(page)).toContain('status');
   });
 });

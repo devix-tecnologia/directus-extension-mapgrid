@@ -4,8 +4,8 @@ import type { DeleteActionType } from './DeleteAction.types';
 export const generateMockData = (): DeleteActionType => {
   const props: DeleteActionType['props'] = {
     selectedItems: [
-      { id: 1, nome: 'Item 1' },
-      { id: 2, nome: 'Item 2' },
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
     ],
     deleteSelectedItems: vi.fn().mockResolvedValue(undefined),
   };

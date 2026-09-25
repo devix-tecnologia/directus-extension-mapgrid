@@ -1,9 +1,9 @@
-/** O que o MapGrid guarda no preset do Directus. */
+/** What the MapGrid stores in the Directus preset. */
 export interface LayoutOptions {
-  /** A configuração do layout tabular embutido; o conteúdo é do Directus. */
+  /** The embedded tabular layout's configuration; the content is Directus'. */
   tabular?: Record<string, unknown>;
-  /** A configuração do layout de mapa embutido; o conteúdo é do Directus. */
+  /** The embedded map layout's configuration; the content is Directus'. */
   map?: Record<string, unknown>;
-  /** Aproximar o mapa ao clicar numa linha, em vez de manter o zoom. */
+  /** Zoom the map in when a row is clicked, instead of keeping the zoom. */
   zoomOnClick?: boolean;
 }

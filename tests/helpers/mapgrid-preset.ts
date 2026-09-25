@@ -20,13 +20,14 @@ export const mapGridPresetFor = (collection: string): Omit<Preset, 'id'> => ({
       limit: 25,
       sort: ['name'],
       /*
-       * As colunas vao explicitas de proposito.
+       * The columns are explicit on purpose.
        *
-       * Sem `fields`, quem escolhe e o layout tabular do Directus, que mostra
-       * todos os campos visiveis da colecao — inclusive `status`. O spec que
-       * acrescenta `status` pelo cabecalho entao comecava com ele ja na tela e
-       * media nada. A semente passa a dizer de qual estado todo spec parte, em
-       * vez de herda-lo de um padrao deles que pode mudar de versao.
+       * Without `fields`, the one choosing is the Directus tabular layout,
+       * which shows every visible field of the collection — `status`
+       * included. The spec that adds `status` through the header then started
+       * with it already on screen and measured nothing. The seed now says
+       * which state every spec starts from, instead of inheriting it from a
+       * default of theirs that may change with the version.
        */
       fields: ['name', 'location'],
     },
@@ -39,22 +40,23 @@ export const mapGridPresetFor = (collection: string): Omit<Preset, 'id'> => ({
 });
 
 /**
- * O mesmo preset, com a camera do mapa ja apontada para um ponto.
+ * The same preset, with the map camera already pointed at a place.
  *
- * Existe porque nao ha como achar um marcador num canvas de MapLibre sem saber
- * onde a camera esta, e a instancia do mapa e do layout do Directus — de fora
- * nao se alcanca. Dizendo de onde a camera parte, a projecao vira conta: o
- * ponto semeado cai no centro do canvas, e o clique tem alvo certo.
+ * It exists because there is no way to find a marker on a MapLibre canvas
+ * without knowing where the camera is, and the map instance belongs to the
+ * Directus layout — unreachable from outside. By saying where the camera
+ * starts, the projection becomes arithmetic: the seeded point lands at the
+ * centre of the canvas, and the click has a sure target.
  *
- * O caminho de mover a camera pela interface nao serve para isso: escrever
- * `cameraOptions` grava no preset mas nao mexe no mapa desenhado (medido em
- * 2026-09-24, ver task-010).
+ * Moving the camera through the interface does not work for this: writing
+ * `cameraOptions` stores it in the preset but does not move the drawn map
+ * (measured on 2026-09-24, see task-010).
  */
-export const mapGridPresetCentradoEm = (
+export const mapGridPresetCenteredOn = (
   collection: string,
-  centro: [number, number],
+  center: [number, number],
   zoom: number,
-  opcoes: Record<string, unknown> = {}
+  options: Record<string, unknown> = {}
 ): Omit<Preset, 'id'> => {
   const preset = mapGridPresetFor(collection);
   return {
@@ -62,8 +64,8 @@ export const mapGridPresetCentradoEm = (
     layout_options: {
       mapgrid: {
         ...preset.layout_options?.mapgrid,
-        ...opcoes,
-        map: { geometryField: 'location', cameraOptions: { center: centro, zoom } },
+        ...options,
+        map: { geometryField: 'location', cameraOptions: { center, zoom } },
       },
     },
   };
@@ -86,7 +88,7 @@ export async function ensureMapGridPreset(collection: string = COLLECTION_NAME):
   await apiRequest('POST', '/presets', mapGridPresetFor(collection));
 }
 
-/** O layout de mapa puro do Directus, sem o MapGrid, para comparar com ele. */
+/** The plain Directus map layout, without the MapGrid, to compare against it. */
 export async function ensureMapLayoutPreset(collection: string): Promise<void> {
   await deleteAllPresetsFor(collection);
   await apiRequest('POST', '/presets', {
@@ -97,28 +99,29 @@ export async function ensureMapLayoutPreset(collection: string): Promise<void> {
   });
 }
 
-/** O preset da semente, com a camera do mapa ja apontada para um ponto. */
-export async function ensureMapGridPresetCentradoEm(
-  centro: [number, number],
+/** The seed preset, with the map camera already pointed at a place. */
+export async function ensureMapGridPresetCenteredOn(
+  center: [number, number],
   zoom: number,
   collection: string = COLLECTION_NAME,
-  opcoes: Record<string, unknown> = {}
+  options: Record<string, unknown> = {}
 ): Promise<void> {
   await deleteAllPresetsFor(collection);
-  await apiRequest('POST', '/presets', mapGridPresetCentradoEm(collection, centro, zoom, opcoes));
+  await apiRequest('POST', '/presets', mapGridPresetCenteredOn(collection, center, zoom, options));
 }
 
 /*
- * Qual preset o Directus realmente le.
+ * Which preset Directus actually reads.
  *
- * A semente grava um preset global — sem `user` e sem `role`. Quando alguem
- * muda uma opcao do layout pela interface, o Directus nao edita esse global: ele
- * cria um preset novo, so daquela pessoa. Ler "o primeiro preset da colecao"
- * devolve entao o global, que ficou parado no que a semente escreveu, e o teste
- * conclui que nada foi gravado quando na verdade foi gravado em outra linha.
+ * The seed stores a global preset — no `user` and no `role`. When someone
+ * changes a layout option through the interface, Directus does not edit that
+ * global one: it creates a new preset, that person's only. Reading "the
+ * collection's first preset" then returns the global one, frozen at whatever
+ * the seed wrote, and the test concludes nothing was stored when in fact it was
+ * stored in another row.
  *
- * A precedencia e a mesma que o Directus aplica: o da pessoa vence o do papel,
- * que vence o global.
+ * The precedence is the same one Directus applies: the person's beats the
+ * role's, which beats the global one.
  */
 const presetPrecedence = (preset: Preset): number => {
   if (preset.user) return 2;

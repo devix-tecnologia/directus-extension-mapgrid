@@ -1,17 +1,17 @@
 <template>
   <div class="mapgrid-layout">
-    <v-info v-if="faltaLayout" icon="warning" :title="t('missingLayout')" center>
+    <v-info v-if="missingLayout" icon="warning" :title="t('missingLayout')" center>
       {{ t('missingLayoutHint') }}
     </v-info>
 
     <div v-else class="mapgrid-container">
-      <div ref="painelDoMapa" class="mapgrid-pane mapgrid-pane--map">
-        <component :is="mapa?.component" v-if="mapa?.component" v-bind="propsDoMapa" />
-        <MapToolbar class="mapgrid-toolbar" @reset="reenquadrar" />
+      <div ref="mapPane" class="mapgrid-pane mapgrid-pane--map">
+        <component :is="map?.component" v-if="map?.component" v-bind="mapProps" />
+        <MapToolbar class="mapgrid-toolbar" @reset="resetView" />
       </div>
 
       <div class="mapgrid-pane mapgrid-pane--grid">
-        <component :is="grade?.component" v-if="grade?.component" v-bind="propsDaGrade" />
+        <component :is="grid?.component" v-if="grid?.component" v-bind="gridProps" />
       </div>
     </div>
   </div>
@@ -21,8 +21,8 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
-import { CentralizadorDoMapaDirectus } from '../../../services/centralizador-de-mapa/index';
-import { leitorDeEstadoEmbutido } from '../../../services/embedded-layout/index';
+import { EmbeddedStateReader } from '../../../services/embedded-state-reader/index';
+import { DirectusMapCenterer } from '../../../services/map-centerer/index';
 import { MESSAGES } from '../../../shared/messages';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import type { MapgridLayoutProps } from './MapgridLayout.types';
@@ -31,104 +31,99 @@ const props = defineProps<MapgridLayoutProps>();
 
 const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
-const faltaLayout = computed(() => !props.grade?.component || !props.mapa?.component);
+const missingLayout = computed(() => !props.grid?.component || !props.map?.component);
 
-const doMapa = <T>(chave: string): T | undefined => props.mapa?.state[chave] as T | undefined;
+const fromMap = <T>(key: string): T | undefined => props.map?.state[key] as T | undefined;
 
-const painelDoMapa = ref<HTMLElement | null>(null);
+const mapPane = ref<HTMLElement | null>(null);
 
-const centralizador = computed<CentralizadorDoMapaDirectus | null>(() => {
-  const estado = props.mapa?.state;
-  if (!estado) return null;
-  return new CentralizadorDoMapaDirectus(
-    estado,
+const centerer = computed<DirectusMapCenterer | null>(() => {
+  const state = props.map?.state;
+  if (!state) return null;
+  return new DirectusMapCenterer(
+    state,
     () => {
-      const painel = painelDoMapa.value;
-      return painel ? { altura: painel.clientHeight, largura: painel.clientWidth } : null;
+      const pane = mapPane.value;
+      return pane ? { height: pane.clientHeight, width: pane.clientWidth } : null;
     },
     {
-      depoisDaAtualizacao: (tarefa) => {
-        void nextTick(tarefa);
+      afterUpdate: (task) => {
+        void nextTick(task);
       },
-      repetir: (tarefa, intervaloMs) => {
-        const id = setInterval(tarefa, intervaloMs);
+      repeat: (task, intervalMs) => {
+        const id = setInterval(task, intervalMs);
         return () => clearInterval(id);
       },
     },
     {
-      buscarItens: (chaves, campos) => props.buscarItens?.(chaves, campos) ?? Promise.resolve([]),
-      itensDaGrade: () => (props.grade?.state.items as Record<string, unknown>[] | undefined) ?? [],
+      fetchItems: (keys, fields) => props.fetchItems?.(keys, fields) ?? Promise.resolve([]),
+      gridItems: () => (props.grid?.state.items as Record<string, unknown>[] | undefined) ?? [],
     }
   );
 });
 
 watch(
-  () => props.mapa?.state?.cameraOptions,
-  () => centralizador.value?.aoMoverACamera()
+  () => props.map?.state?.cameraOptions,
+  () => centerer.value?.onCameraMove()
 );
 
-const reenquadrar = (): void => {
-  centralizador.value?.enquadrarTudo();
+const resetView = (): void => {
+  centerer.value?.fitAll();
 };
 
 /**
- * O clique na linha é nosso, e precisa ser: sem trocar o `onRowClick`, a grade
- * do Directus navega para a tela do item, que é o oposto de sincronizar com o
- * mapa — a razão de existir desta extensão.
+ * The row click is ours, and it has to be: without overriding `onRowClick`, the
+ * Directus grid navigates to the item screen, which is the opposite of syncing
+ * with the map — this extension's reason to exist.
  */
-const enquadrarItem = (payload: unknown): void => {
+const frameItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;
   if (!item) return;
 
-  centralizador.value?.centralizarItem(item, {
-    aproximar: props.zoomOnClick === true,
-    somenteSeFora: false,
+  centerer.value?.centerItem(item, {
+    zoomIn: props.zoomOnClick === true,
+    onlyIfOutside: false,
   });
 };
 
 /**
- * O clique no ponto é o caminho inverso, e também precisa ser nosso: o
- * `handleClick` do layout de mapa faz `router.push` para a tela do item quando
- * não está em modo de seleção, então clicar num marcador *saía do MapGrid*.
+ * The marker click is the inverse path, and it also has to be ours: the map
+ * layout's `handleClick` does a `router.push` to the item screen when it is not
+ * in selection mode, so clicking a marker *left the MapGrid*.
  *
- * O que entra no lugar é a outra metade deles: marcar o item na `selection`,
- * que é estado compartilhado pelos dois embutidos, e é assim que a linha
- * correspondente acende na grade sem o template tocar no DOM dela. Acrescenta e
- * remove como a caixa de marcação da grade, para marcador e caixa serem a mesma
- * linguagem.
+ * What takes its place is their other half: marking the item in `selection`,
+ * which is state shared by both embedded layouts, and is how the matching row
+ * lights up in the grid without the template touching its DOM. It adds and
+ * removes like the grid checkbox, so marker and checkbox speak the same
+ * language.
  *
- * Herda uma ressalva: a `selection` também arma as ações em lote, então marcar
- * pelo mapa habilita apagar. Quem decide se "registro atual" ganha destaque
- * próprio é a task-006.
+ * It inherits a caveat: `selection` also arms the bulk actions, so marking from
+ * the map enables deleting. Whether "current record" gets a highlight of its
+ * own is task-006's call.
  */
-const selecionarItem = (payload: unknown): void => {
+const selectItem = (payload: unknown): void => {
   const id = (payload as { id?: string | number } | null | undefined)?.id;
   if (id === undefined || id === null) return;
 
-  const selecionados = doMapa<(string | number)[]>('selection') ?? [];
-  const proxima = selecionados.includes(id)
-    ? selecionados.filter((selecionado) => selecionado !== id)
-    : [...selecionados, id];
+  const selected = fromMap<(string | number)[]>('selection') ?? [];
+  const next = selected.includes(id)
+    ? selected.filter((candidate) => candidate !== id)
+    : [...selected, id];
 
-  doMapa<(valor: unknown) => void>('onUpdate:selection')?.(proxima);
+  fromMap<(value: unknown) => void>('onUpdate:selection')?.(next);
 };
 
-/*
- * O estado embutido não se espalha direto: um getter dele que explode fora do
- * render congelava a composição inteira. O porquê está no
- * `leitorDeEstadoEmbutido`.
- */
-const lerEstadoDaGrade = leitorDeEstadoEmbutido();
-const lerEstadoDoMapa = leitorDeEstadoEmbutido();
+const readGridState = new EmbeddedStateReader();
+const readMapState = new EmbeddedStateReader();
 
-const propsDaGrade = computed(() => ({
-  ...lerEstadoDaGrade(props.grade?.state),
-  onRowClick: enquadrarItem,
+const gridProps = computed(() => ({
+  ...readGridState.read(props.grid?.state),
+  onRowClick: frameItem,
 }));
 
-const propsDoMapa = computed(() => ({
-  ...lerEstadoDoMapa(props.mapa?.state),
-  handleClick: selecionarItem,
+const mapProps = computed(() => ({
+  ...readMapState.read(props.map?.state),
+  handleClick: selectItem,
 }));
 </script>
 
@@ -140,7 +135,7 @@ const propsDoMapa = computed(() => ({
   position: relative;
   padding: var(--content-padding);
   padding-top: 0;
-  /* não --content-padding-bottom: é a folga da paginação de página inteira */
+  /* not --content-padding-bottom: that is the gap for full-page pagination */
   padding-bottom: var(--content-padding);
 }
 
@@ -179,16 +174,17 @@ const propsDoMapa = computed(() => ({
 }
 
 /*
- * Os layouts do Directus assumem a página inteira em detalhes que não estão na
- * API, e compor exige desfazer cada um. Os três abaixo foram medidos no DOM,
- * não deduzidos:
+ * The Directus layouts assume the whole page in details that are not in the
+ * API, and composing means undoing each one. The three below were measured in
+ * the DOM, not deduced:
  *
- * - `.layout-tabular` traz `margin: 32px 0 132px`, a folga de cabeçalho e
- *   paginação de uma página inteira — em meia tela vira buraco;
- * - o cabeçalho da grade é `sticky` com deslocamento da altura do cabeçalho do
- *   app: o `tr.fixed` caía 60px abaixo do topo da tabela, com as primeiras
- *   linhas correndo por baixo dele. Aqui quem rola é o painel;
- * - `.layout-map` nasce `flex: 0 1 auto` e não estica, deixando faixa branca.
+ * - `.layout-tabular` carries `margin: 32px 0 132px`, the gap for a full-page
+ *   header and pagination — in half a screen it becomes a hole;
+ * - the grid header is `sticky` offset by the app header's height: `tr.fixed`
+ *   fell 60px below the top of the table, with the first rows running under it.
+ *   Here what scrolls is the pane;
+ * - `.layout-map` starts as `flex: 0 1 auto` and does not stretch, leaving a
+ *   white band.
  */
 .mapgrid-pane--grid :deep(.layout-tabular) {
   margin-block: 0;

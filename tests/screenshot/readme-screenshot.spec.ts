@@ -1,6 +1,10 @@
 import { expect, type Page, test } from '@playwright/test';
-import { DIRETORIO_DE_EVIDENCIAS, nomeDeEvidencia } from '../../scripts/captura-de-tela/index';
-import { esperarOMapGrid } from '../e2e/helpers/mapgrid-page';
+import {
+  EVIDENCE_DIRECTORY,
+  type EvidenceMoment,
+  evidenceName,
+} from '../../scripts/screenshot/index';
+import { waitForMapGrid } from '../e2e/helpers/mapgrid-page';
 import { COLLECTION_NAME } from '../helper-collection';
 import { apiRequest } from '../helpers/directus-api';
 import { ensureMapGridPreset } from '../helpers/mapgrid-preset';
@@ -25,35 +29,36 @@ import { testEnv } from '../test-env';
 const VIEWPORT = { width: 1600, height: 900 };
 
 /**
- * A mesma captura também vira evidência de task, quando pedida.
+ * The same capture also becomes task evidence, when asked for.
  *
- * A convenção de nome vem do geohub: `TASKS/assets/task-NNN-<rotulo>-<momento>.png`,
- * com o momento no nome e não em subpasta, para que o par antes/depois apareça
- * lado a lado ao abrir a pasta.
+ * The naming convention comes from geohub:
+ * `TASKS/assets/task-NNN-<label>-<moment>.png`, with the moment in the name and
+ * not in a subfolder, so the before/after pair shows up side by side when the
+ * folder is opened.
  *
- * O "antes" se obtém rodando este mesmo roteiro contra o `dist/index.js`
- * construído de uma revisão anterior: as duas imagens saem então do mesmo
- * ambiente, mesma coleção e mesmo viewport, e a única diferença entre elas é a
- * extensão. Capturar o "antes" depois da mudança seria tarde demais — só o git
- * ainda tem aquele estado.
+ * The "before" is obtained by running this same script against the
+ * `dist/index.js` built from an earlier revision: both images then come from
+ * the same environment, same collection and same viewport, and the only
+ * difference between them is the extension. Capturing the "before" after the
+ * change would be too late — only git still has that state.
  */
-const evidencia = (): string | undefined => {
-  const momento = process.env.EVIDENCE_MOMENT;
+const evidence = (): string | undefined => {
+  const moment = process.env.EVIDENCE_MOMENT;
   const task = process.env.EVIDENCE_TASK;
-  if (!momento || !task) return undefined;
+  if (!moment || !task) return undefined;
 
-  if (momento !== 'antes' && momento !== 'depois') {
+  if (moment !== 'antes' && moment !== 'depois') {
     throw new Error(
-      `EVIDENCE_MOMENT deve ser "antes" ou "depois", e veio ${JSON.stringify(momento)}`
+      `EVIDENCE_MOMENT must be "antes" or "depois", and it came as ${JSON.stringify(moment)}`
     );
   }
 
-  return `${DIRETORIO_DE_EVIDENCIAS}/${nomeDeEvidencia({
+  return `${EVIDENCE_DIRECTORY}/${evidenceName({
     task,
-    // `||`, e nao `??`: o compose entrega a variavel nao definida como string
-    // vazia, e `??` a aceitava — o roteiro entao morria em "rotulo invalido"
-    rotulo: process.env.EVIDENCE_LABEL || 'tela',
-    momento,
+    // `||`, and not `??`: compose hands an undefined variable over as an empty
+    // string, and `??` accepted it — the script then died on "invalid label"
+    label: process.env.EVIDENCE_LABEL || 'tela',
+    moment: moment as EvidenceMoment,
   })}`;
 };
 
@@ -75,20 +80,20 @@ async function login(page: Page): Promise<void> {
  * Opens the layout options panel, so the shot shows how the layout is
  * configured.
  *
- * A seção que se abre é a do mapa. Era a do template do popup, e ela não existe
- * mais: depois da task-010 o painel hospeda a configuração dos próprios layouts
- * do Directus, em duas seções — mapa e grade. O roteiro ficou procurando
- * "Popup Pin Map" e falhava por 30s de espera, então `pnpm screenshot` deixou
- * de produzir a imagem do README sem que ninguém percebesse.
+ * The section it opens is the map one. It used to be the popup template one,
+ * and that does not exist any more: after task-010 the panel hosts the Directus
+ * layouts' own configuration, in two sections — map and grid. The script went
+ * on looking for "Popup Pin Map" and failed after 30s of waiting, so
+ * `pnpm screenshot` stopped producing the README image without anyone noticing.
  */
 async function openLayoutOptions(page: Page): Promise<void> {
   const header = page.getByRole('button', { name: /^layers/ });
   await expect(header).toBeVisible({ timeout: 30_000 });
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
 
-  const secaoDoMapa = page.getByText(/^(map|mapa)$/i).first();
-  await expect(secaoDoMapa).toBeVisible({ timeout: 30_000 });
-  await secaoDoMapa.click();
+  const mapSection = page.getByText(/^(map|mapa)$/i).first();
+  await expect(mapSection).toBeVisible({ timeout: 30_000 });
+  await mapSection.click();
 }
 
 test('captures the README screenshot', async ({ page }) => {
@@ -100,8 +105,8 @@ test('captures the README screenshot', async ({ page }) => {
   await apiRequest('POST', '/presets', {
     collection: COLLECTION_NAME,
     layout: 'mapgrid',
-    // as colunas moram na consulta, e nao nas opcoes: e onde o Directus as
-    // guarda, e e de la que a grade as le desde a task-005
+    // the columns live in the query, and not in the options: that is where
+    // Directus keeps them, and where the grid reads them from since task-005
     layout_query: { mapgrid: { page: 1, limit: 25, sort: ['name'], fields: ['name', 'status'] } },
     layout_options: {
       mapgrid: {
@@ -115,7 +120,7 @@ test('captures the README screenshot', async ({ page }) => {
   await page.setViewportSize(VIEWPORT);
   await login(page);
   await page.goto(`/admin/content/${COLLECTION_NAME}`);
-  await esperarOMapGrid(page);
+  await waitForMapGrid(page);
 
   await openLayoutOptions(page);
 
@@ -130,8 +135,8 @@ test('captures the README screenshot', async ({ page }) => {
     animations: 'disabled',
   });
 
-  const caminhoDaEvidencia = evidencia();
-  if (caminhoDaEvidencia) {
-    await page.screenshot({ path: caminhoDaEvidencia, animations: 'disabled' });
+  const evidencePath = evidence();
+  if (evidencePath) {
+    await page.screenshot({ path: evidencePath, animations: 'disabled' });
   }
 });

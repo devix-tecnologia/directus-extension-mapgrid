@@ -1,71 +1,71 @@
 import { describe, expect, it } from 'vitest';
 import { computed, nextTick, ref } from 'vue';
-import { useEscritaOtimista } from './optimistic-sync';
+import { useOptimisticWrite } from './optimistic-sync';
 
 /**
- * Um `useSync` do Directus, com a demora que ele tem de verdade: escrever
- * publica na hora, mas o valor lido só muda no tick seguinte — porque o que se
- * lê é um prop, e prop do Vue só muda quando o pai re-renderiza.
+ * A Directus `useSync`, with the delay it really has: writing publishes right
+ * away, but the value read only changes on the next tick — because what is read
+ * is a prop, and a Vue prop only changes when the parent re-renders.
  */
-function propComVoltaAtrasada<Valor>(inicial: Valor) {
-  const prop = ref<Valor>(inicial);
-  const publicado = ref<Valor>(inicial);
+function propWithDelayedReturn<Value>(initial: Value) {
+  const prop = ref<Value>(initial);
+  const published = ref<Value>(initial);
 
-  const sincronizado = computed<Valor>({
+  const synced = computed<Value>({
     get: () => prop.value,
-    set: (valor) => {
-      publicado.value = valor;
+    set: (value) => {
+      published.value = value;
       void nextTick(() => {
-        prop.value = publicado.value;
+        prop.value = published.value;
       });
     },
   });
 
-  return { sincronizado, publicado, prop };
+  return { synced, published, prop };
 }
 
-describe('useEscritaOtimista', () => {
-  it('lê o que acabou de ser escrito, antes de o prop voltar', () => {
-    const { sincronizado } = propComVoltaAtrasada({ a: 1 });
-    const espelhado = useEscritaOtimista(sincronizado);
+describe('useOptimisticWrite', () => {
+  it('reads what was just written, before the prop comes back', () => {
+    const { synced } = propWithDelayedReturn({ a: 1 });
+    const mirrored = useOptimisticWrite(synced);
 
-    espelhado.value = { a: 2 };
+    mirrored.value = { a: 2 };
 
-    expect(sincronizado.value).toEqual({ a: 1 });
-    expect(espelhado.value).toEqual({ a: 2 });
+    expect(synced.value).toEqual({ a: 1 });
+    expect(mirrored.value).toEqual({ a: 2 });
   });
 
-  it('deixa duas escritas no mesmo tick se acumularem em vez de uma apagar a outra', async () => {
-    const { sincronizado, publicado } = propComVoltaAtrasada<Record<string, number>>({});
-    const espelhado = useEscritaOtimista(sincronizado);
+  it('lets two writes in the same tick pile up instead of one erasing the other', async () => {
+    const { synced, published } = propWithDelayedReturn<Record<string, number>>({});
+    const mirrored = useOptimisticWrite(synced);
 
-    espelhado.value = { ...espelhado.value, primeira: 1 };
-    espelhado.value = { ...espelhado.value, segunda: 2 };
+    mirrored.value = { ...mirrored.value, first: 1 };
+    mirrored.value = { ...mirrored.value, second: 2 };
     await nextTick();
 
-    expect(publicado.value).toEqual({ primeira: 1, segunda: 2 });
+    expect(published.value).toEqual({ first: 1, second: 2 });
   });
 
-  it('volta a obedecer ao prop assim que ele muda por fora', async () => {
-    const { sincronizado, prop } = propComVoltaAtrasada<Record<string, number>>({});
-    const espelhado = useEscritaOtimista(sincronizado);
+  it('obeys the prop again as soon as it changes from outside', async () => {
+    const { synced, prop } = propWithDelayedReturn<Record<string, number>>({});
+    const mirrored = useOptimisticWrite(synced);
 
-    espelhado.value = { otimista: 1 };
+    mirrored.value = { optimistic: 1 };
     await nextTick();
 
-    /* O preset restaurado por fora, que é o que o botão de redefinir faz. */
-    prop.value = { restaurado: 9 };
+    /* The preset restored from outside, which is what the reset button does. */
+    prop.value = { restored: 9 };
     await nextTick();
 
-    expect(espelhado.value).toEqual({ restaurado: 9 });
+    expect(mirrored.value).toEqual({ restored: 9 });
   });
 
-  it('publica `undefined` como valor, e não como ausência de escrita', () => {
-    const { sincronizado } = propComVoltaAtrasada<number | undefined>(7);
-    const espelhado = useEscritaOtimista(sincronizado);
+  it('publishes `undefined` as a value, and not as the absence of a write', () => {
+    const { synced } = propWithDelayedReturn<number | undefined>(7);
+    const mirrored = useOptimisticWrite(synced);
 
-    espelhado.value = undefined;
+    mirrored.value = undefined;
 
-    expect(espelhado.value).toBeUndefined();
+    expect(mirrored.value).toBeUndefined();
   });
 });

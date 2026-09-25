@@ -1,85 +1,84 @@
 import { expect, test } from '@playwright/test';
 import { EMPTY_COLLECTION_NAME } from '../helper-collection';
-import {
-  ATRIBUICAO_DE_TESTE,
-  BASEMAP_DE_TESTE,
-  configurarBasemapDoProjeto,
-  removerBasemapsDoProjeto,
-  servirTilesDeTeste,
-} from '../helpers/basemap-do-projeto';
 import { ensureMapGridPreset, ensureMapLayoutPreset } from '../helpers/mapgrid-preset';
+import {
+  configureProjectBasemap,
+  removeProjectBasemaps,
+  serveTestTiles,
+  TEST_ATTRIBUTION,
+  TEST_BASEMAP,
+} from '../helpers/project-basemap';
 import { setupTestEnvironment } from '../setup';
 import {
-  abrirOpcoesDoLayout,
-  abrirSecaoDasOpcoes,
-  escolherNoSeletor,
   login,
-  MAPA,
-  OPCOES_DO_MAPA,
+  MAP,
+  MAP_OPTIONS,
   openCollection,
+  openLayoutOptions,
+  openOptionsSection,
+  pickInSelect,
 } from './helpers/mapgrid-page';
 
-const NOME_DO_BASEMAP = new RegExp(BASEMAP_DE_TESTE);
+const BASEMAP_NAME = new RegExp(TEST_BASEMAP);
 
-test.describe('MapGrid — o basemap configurado no projeto', () => {
+test.describe('MapGrid — the basemap configured in the project', () => {
   test.beforeAll(async () => {
     await setupTestEnvironment();
-    await configurarBasemapDoProjeto();
+    await configureProjectBasemap();
   });
 
   test.afterAll(async () => {
-    await removerBasemapsDoProjeto();
+    await removeProjectBasemaps();
   });
 
   test.beforeEach(async () => {
     await ensureMapGridPreset();
   });
 
-  test('o basemap do Project Settings aparece no painel do MapGrid e desenha o mapa', async ({
+  test('the Project Settings basemap shows up in the MapGrid panel and draws the map', async ({
     page,
   }) => {
-    const tilesPedidos = await servirTilesDeTeste(page);
+    const requestedTiles = await serveTestTiles(page);
     await login(page);
     await openCollection(page);
-    await abrirOpcoesDoLayout(page);
-    await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
+    await openLayoutOptions(page);
+    await openOptionsSection(page, MAP_OPTIONS);
 
-    await escolherNoSeletor(page, OPCOES_DO_MAPA, NOME_DO_BASEMAP);
+    await pickInSelect(page, MAP_OPTIONS, BASEMAP_NAME);
 
-    await expect.poll(tilesPedidos, { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect.poll(requestedTiles, { timeout: 20_000 }).toBeGreaterThan(0);
   });
 
-  test('a atribuição do basemap aparece no canto do mapa', async ({ page }) => {
-    await servirTilesDeTeste(page);
+  test('the basemap attribution shows up in the corner of the map', async ({ page }) => {
+    await serveTestTiles(page);
     await login(page);
     await openCollection(page);
-    await abrirOpcoesDoLayout(page);
-    await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
-    await escolherNoSeletor(page, OPCOES_DO_MAPA, NOME_DO_BASEMAP);
+    await openLayoutOptions(page);
+    await openOptionsSection(page, MAP_OPTIONS);
+    await pickInSelect(page, MAP_OPTIONS, BASEMAP_NAME);
 
-    await expect(page.locator(`${MAPA} .maplibregl-ctrl-attrib`)).toContainText(
-      ATRIBUICAO_DE_TESTE,
-      { timeout: 20_000 }
-    );
+    await expect(page.locator(`${MAP} .maplibregl-ctrl-attrib`)).toContainText(TEST_ATTRIBUTION, {
+      timeout: 20_000,
+    });
   });
 
-  test('a escolha é a do app: o layout de mapa puro de outra coleção passa a usar o mesmo basemap', async ({
+  test("the choice is the app's: another collection's plain map layout starts using the same basemap", async ({
     page,
   }) => {
     await ensureMapLayoutPreset(EMPTY_COLLECTION_NAME);
-    const tilesPedidos = await servirTilesDeTeste(page);
+    const requestedTiles = await serveTestTiles(page);
     await login(page);
     await openCollection(page);
-    await abrirOpcoesDoLayout(page);
-    await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
-    await escolherNoSeletor(page, OPCOES_DO_MAPA, NOME_DO_BASEMAP);
-    await expect.poll(tilesPedidos, { timeout: 20_000 }).toBeGreaterThan(0);
+    await openLayoutOptions(page);
+    await openOptionsSection(page, MAP_OPTIONS);
+    await pickInSelect(page, MAP_OPTIONS, BASEMAP_NAME);
+    await expect.poll(requestedTiles, { timeout: 20_000 }).toBeGreaterThan(0);
 
-    // navegação dentro do app, sem recarregar: vale esteja a escolha em memória ou no navegador
+    // in-app navigation, no reload: holds whether the choice is in memory or in the browser
     await page.locator(`a[href$="/content/${EMPTY_COLLECTION_NAME}"]`).first().click();
-    // os tiles podem vir do cache; a atribuição só existe no basemap de teste
+    // the tiles may come from cache; the attribution only exists in the test basemap
     await expect(page.locator('.layout-map .maplibregl-ctrl-attrib')).toContainText(
-      ATRIBUICAO_DE_TESTE,
+      TEST_ATTRIBUTION,
       { timeout: 30_000 }
     );
   });

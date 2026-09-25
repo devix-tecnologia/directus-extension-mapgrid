@@ -5,7 +5,7 @@ feche-a por completo, e pare.
 ## Escolha da tarefa
 
 ```
-!`node --experimental-strip-types .sandcastle/fila-de-tarefas/cli.ts`
+!`node --experimental-strip-types .sandcastle/task-queue/cli.ts`
 ```
 
 **A primeira linha da tabela é a sua: o menor número de `Priority` vence.**
@@ -71,16 +71,16 @@ Este sandbox recebe o socket do Docker do host, então a suíte que sobe Directu
 de verdade **roda**. Mas ela só funciona por um caminho:
 
 ```
-.sandcastle/no-espelho.sh pnpm test:e2e
-.sandcastle/no-espelho.sh pnpm test:integration
-.sandcastle/no-espelho.sh pnpm screenshot
+.sandcastle/on-mirror.sh pnpm test:e2e
+.sandcastle/on-mirror.sh pnpm test:integration
+.sandcastle/on-mirror.sh pnpm screenshot
 ```
 
 O motivo, porque ele decide se você vai perder uma hora: o daemon do Docker é o
 do host. Todo caminho do `docker-compose.test.yml` (`./`, `./dist/index.js`) é
 resolvido **no host**, onde `/home/agent/workspace` não existe — e o Docker,
 nesse caso, **cria um diretório vazio em vez de falhar**. O Directus sobe sem a
-extensão e a suíte reprova por um motivo que não é o dela. O `no-espelho.sh`
+extensão e a suíte reprova por um motivo que não é o dela. O `on-mirror.sh`
 troca para o caminho que o host entende, e confere que é a mesma árvore antes de
 rodar.
 
@@ -102,7 +102,7 @@ permite julgar espaçamento, contraste, nem se a tela renderiza.
 
 ```
 EVIDENCE_TASK=010 EVIDENCE_LABEL=composicao EVIDENCE_MOMENT=depois \
-  .sandcastle/no-espelho.sh pnpm screenshot
+  .sandcastle/on-mirror.sh pnpm screenshot
 ```
 
 As imagens vão para `TASKS/assets/`, no formato `task-NNN-<rotulo>-<momento>.png`.

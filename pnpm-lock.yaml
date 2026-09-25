@@ -66,6 +66,9 @@ importers:
       axios:
         specifier: ^1.19.0
         version: 1.19.0
+      directus-vue:
+        specifier: npm:vue@3.4.27
+        version: vue@3.4.27(typescript@5.9.3)
       globals:
         specifier: ^16.4.0
         version: 16.4.0
@@ -102,9 +105,6 @@ importers:
       vue:
         specifier: ^3.5.22
         version: 3.5.22(typescript@5.9.3)
-      vue-do-directus:
-        specifier: npm:vue@3.4.27
-        version: vue@3.4.27(typescript@5.9.3)
       vue-i18n:
         specifier: ^11.4.10
         version: 11.4.10(vue@3.5.22(typescript@5.9.3))

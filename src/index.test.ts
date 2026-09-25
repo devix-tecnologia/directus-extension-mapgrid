@@ -1,119 +1,122 @@
 /**
- * As duas seções de `layoutOptions`, gravando no mesmo preset.
+ * The two `layoutOptions` sections, writing to the same preset.
  *
- * O mapa guarda a configuração dele em `layoutOptions.map` e a grade em
- * `layoutOptions.tabular`, justamente para uma não sobrescrever a outra. O que
- * este arquivo mede é se a separação aguenta o caminho de volta: quem publica a
- * opção é um `emit`, e o valor só volta ao layout pelo **prop**, que no Vue só
- * muda quando o pai re-renderiza — no tick seguinte, não na hora.
+ * The map keeps its configuration in `layoutOptions.map` and the grid in
+ * `layoutOptions.tabular`, precisely so that one does not overwrite the other.
+ * What this file measures is whether the separation survives the way back: what
+ * publishes an option is an `emit`, and the value only reaches the layout again
+ * through the **prop**, which in Vue only changes when the parent re-renders —
+ * on the next tick, not right away.
  *
- * Por isso o Directus de mentira daqui atrasa o prop de propósito. Um duplo de
- * teste que devolvesse o valor na hora esconderia exatamente a janela onde as
- * duas seções se perdem, e o teste nasceria verde sem provar nada.
+ * That is why the fake Directus here delays the prop on purpose. A test double
+ * that returned the value right away would hide exactly the window where the
+ * two sections get lost, and the test would be born green without proving
+ * anything.
  */
 import type { LayoutConfig, LayoutProps } from '@directus/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue';
-import { CONTRATO_DOS_EMBUTIDOS } from './services/embedded-layout/index';
+import { EMBEDDED_CONTRACT } from './services/embedded-layout/index';
 
-const registro = vi.hoisted(() => ({ layouts: [] as unknown[] }));
+const registry = vi.hoisted(() => ({ layouts: [] as unknown[] }));
 
 /**
- * O SDK do Directus, reduzido ao que o `setup()` usa. O `useSync` é o de
- * verdade — lê do prop, escreve por `emit` —, porque é dele que sai a janela
- * que este arquivo mede.
+ * The Directus SDK, reduced to what `setup()` uses. `useSync` is the real one —
+ * it reads from the prop and writes through `emit` — because that is where the
+ * window this file measures comes from.
  */
 vi.mock('@directus/extensions-sdk', async () => {
-  const { computed: computar, ref: referencia } = await import('vue');
+  const { computed: vueComputed, ref: vueRef } = await import('vue');
 
   return {
     defineLayout: (config: unknown) => config,
     useSync: (
       props: Record<string, unknown>,
-      chave: string,
-      emit: (evento: string, valor: unknown) => void
+      key: string,
+      emit: (event: string, value: unknown) => void
     ) =>
-      computar({
-        get: () => props[chave],
-        set: (valor: unknown) => emit(`update:${chave}`, valor),
+      vueComputed({
+        get: () => props[key],
+        set: (value: unknown) => emit(`update:${key}`, value),
       }),
     useApi: () => ({ delete: () => Promise.resolve() }),
-    useCollection: () => ({ fields: referencia([]), primaryKeyField: referencia(null) }),
-    useExtensions: () => ({ layouts: computar(() => registro.layouts) }),
+    useCollection: () => ({ fields: vueRef([]), primaryKeyField: vueRef(null) }),
+    useExtensions: () => ({ layouts: vueComputed(() => registry.layouts) }),
   };
 });
 
-const componenteVazio = defineComponent({
-  name: 'ComponenteVazio',
+const emptyComponent = defineComponent({
+  name: 'EmptyComponent',
   setup: () => () => h('div'),
 });
 
 /**
- * Um layout do Directus de mentira, escrito como os deles: as opções de vista
- * são computeds que leem e escrevem `layoutOptions` inteiro, uma chave por vez
- * (`{ ...layoutOptions.value, [chave]: valor }`). É essa forma — e não um
- * `emit` direto — que faz a opção anterior depender do que o prop já devolveu.
+ * A fake Directus layout, written the way theirs are: the view options are
+ * computeds that read and write the whole `layoutOptions`, one key at a time
+ * (`{ ...layoutOptions.value, [key]: value }`). It is that shape — and not a
+ * direct `emit` — that makes the previous option depend on the prop having come
+ * back already.
  */
-function layoutDoDirectus(
+function directusLayout(
   id: 'tabular' | 'map',
-  opcoesDeVista: readonly string[],
-  chavesDaConsulta: readonly string[] = []
+  viewOptions: readonly string[],
+  queryKeys: readonly string[] = []
 ): LayoutConfig {
   return {
     id,
     name: id,
     icon: 'box',
-    component: componenteVazio,
-    slots: { options: componenteVazio, sidebar: componenteVazio, actions: componenteVazio },
+    component: emptyComponent,
+    slots: { options: emptyComponent, sidebar: emptyComponent, actions: emptyComponent },
     setup(props: Record<string, unknown>, { emit }: { emit: (e: string, v: unknown) => void }) {
       const layoutOptions = computed<Record<string, unknown>>({
         get: () => (props.layoutOptions as Record<string, unknown>) ?? {},
-        set: (valor) => emit('update:layoutOptions', valor),
+        set: (value) => emit('update:layoutOptions', value),
       });
 
-      const estado: Record<string, unknown> = {};
-      for (const chave of CONTRATO_DOS_EMBUTIDOS[id]) estado[chave] = ref(undefined);
-      estado.items = ref([]);
+      const state: Record<string, unknown> = {};
+      for (const key of EMBEDDED_CONTRACT[id]) state[key] = ref(undefined);
+      state.items = ref([]);
 
-      for (const chave of opcoesDeVista) {
-        estado[chave] = computed({
-          get: () => layoutOptions.value[chave],
-          set: (valor: unknown) => {
-            layoutOptions.value = { ...layoutOptions.value, [chave]: valor };
+      for (const key of viewOptions) {
+        state[key] = computed({
+          get: () => layoutOptions.value[key],
+          set: (value: unknown) => {
+            layoutOptions.value = { ...layoutOptions.value, [key]: value };
           },
         });
       }
 
-      /* A consulta é dos dois, e eles a escrevem do mesmo jeito: chave a chave. */
+      /* The query belongs to both, and they write it the same way: key by key. */
       const layoutQuery = computed<Record<string, unknown>>({
         get: () => (props.layoutQuery as Record<string, unknown>) ?? {},
-        set: (valor) => emit('update:layoutQuery', valor),
+        set: (value) => emit('update:layoutQuery', value),
       });
 
-      for (const chave of chavesDaConsulta) {
-        estado[chave] = computed({
-          get: () => layoutQuery.value[chave],
-          set: (valor: unknown) => {
-            layoutQuery.value = { ...layoutQuery.value, [chave]: valor };
+      for (const key of queryKeys) {
+        state[key] = computed({
+          get: () => layoutQuery.value[key],
+          set: (value: unknown) => {
+            layoutQuery.value = { ...layoutQuery.value, [key]: value };
           },
         });
       }
 
-      return estado;
+      return state;
     },
   } as unknown as LayoutConfig;
 }
 
-interface Composicao {
+interface Composition {
   preset: Record<string, unknown>;
-  estado: Record<string, unknown>;
+  state: Record<string, unknown>;
 }
 
 /**
- * Monta a composição contra um Directus de mentira que grava na hora e devolve
- * o prop no tick seguinte — que é o que o Vue faz.
+ * Mounts the composition against a fake Directus that stores right away and
+ * returns the prop on the next tick — which is what Vue does.
  */
-async function montarComposicao(): Promise<Composicao> {
+async function mountComposition(): Promise<Composition> {
   const { default: layout } = await import('./index');
 
   const preset: Record<string, unknown> = {
@@ -123,7 +126,7 @@ async function montarComposicao(): Promise<Composicao> {
   };
 
   const props = reactive<Record<string, unknown>>({
-    collection: 'cidades',
+    collection: 'cities',
     layoutOptions: preset.layoutOptions,
     layoutQuery: preset.layoutQuery,
     selection: preset.selection,
@@ -131,159 +134,159 @@ async function montarComposicao(): Promise<Composicao> {
     search: null,
   });
 
-  const emit = (evento: string, valor: unknown): void => {
-    const chave = evento.replace(/^update:/, '');
-    preset[chave] = valor;
+  const emit = (event: string, value: unknown): void => {
+    const key = event.replace(/^update:/, '');
+    preset[key] = value;
     void nextTick(() => {
-      props[chave] = preset[chave];
+      props[key] = preset[key];
     });
   };
 
   const setup = (layout as { setup: (p: LayoutProps, c: { emit: typeof emit }) => unknown }).setup;
-  const estado = setup(props as unknown as LayoutProps, { emit }) as Record<string, unknown>;
+  const state = setup(props as unknown as LayoutProps, { emit }) as Record<string, unknown>;
 
-  return { preset, estado };
+  return { preset, state };
 }
 
-const embutido = (composicao: Composicao, nome: 'grade' | 'mapa') =>
-  composicao.estado[nome] as { state: Record<string, unknown> };
+const embedded = (composition: Composition, name: 'grid' | 'map') =>
+  composition.state[name] as { state: Record<string, unknown> };
 
-/** Grava uma opção pelo caminho que o painel de opções deles usa. */
-const gravarOpcao = (
-  composicao: Composicao,
-  nome: 'grade' | 'mapa',
-  chave: string,
-  valor: unknown
+/** Writes an option through the path their options panel uses. */
+const writeOption = (
+  composition: Composition,
+  name: 'grid' | 'map',
+  key: string,
+  value: unknown
 ): void => {
-  const escrever = embutido(composicao, nome).state[`onUpdate:${chave}`];
-  (escrever as (valor: unknown) => void)(valor);
+  const write = embedded(composition, name).state[`onUpdate:${key}`];
+  (write as (value: unknown) => void)(value);
 };
 
-const opcoesGravadas = (composicao: Composicao) =>
-  composicao.preset.layoutOptions as Record<string, Record<string, unknown>>;
+const storedOptions = (composition: Composition) =>
+  composition.preset.layoutOptions as Record<string, Record<string, unknown>>;
 
-/** Dois ticks: um para o prop voltar, outro para quem observa o prop correr. */
-const deixarOPresetVoltar = async (): Promise<void> => {
+/** Two ticks: one for the prop to come back, another for its watchers to run. */
+const letThePresetComeBack = async (): Promise<void> => {
   await nextTick();
   await nextTick();
 };
 
 beforeEach(() => {
-  registro.layouts = [
-    layoutDoDirectus('tabular', ['spacing', 'align'], ['sort', 'page']),
-    layoutDoDirectus('map', ['displayTemplate', 'basemap'], ['page']),
+  registry.layouts = [
+    directusLayout('tabular', ['spacing', 'align'], ['sort', 'page']),
+    directusLayout('map', ['displayTemplate', 'basemap'], ['page']),
   ];
 });
 
-/** Grava uma chave da consulta pelo caminho que o layout embutido usa. */
-const gravarConsulta = (
-  composicao: Composicao,
-  nome: 'grade' | 'mapa',
-  chave: string,
-  valor: unknown
+/** Writes a query key through the path the embedded layout uses. */
+const writeQuery = (
+  composition: Composition,
+  name: 'grid' | 'map',
+  key: string,
+  value: unknown
 ): void => {
-  const escrever = embutido(composicao, nome).state[`onUpdate:${chave}`];
-  (escrever as (valor: unknown) => void)(valor);
+  const write = embedded(composition, name).state[`onUpdate:${key}`];
+  (write as (value: unknown) => void)(value);
 };
 
-const consultaGravada = (composicao: Composicao) =>
-  composicao.preset.layoutQuery as Record<string, unknown>;
+const storedQuery = (composition: Composition) =>
+  composition.preset.layoutQuery as Record<string, unknown>;
 
-/** Marca um item pelo caminho que o marcador e a caixa de marcação usam. */
-const marcar = (composicao: Composicao, nome: 'grade' | 'mapa', id: string | number): void => {
-  const estado = embutido(composicao, nome).state;
-  const marcados = (estado.selection ?? []) as (string | number)[];
-  (estado['onUpdate:selection'] as (valor: unknown) => void)([...marcados, id]);
+/** Marks an item through the path the marker and the checkbox use. */
+const mark = (composition: Composition, name: 'grid' | 'map', id: string | number): void => {
+  const state = embedded(composition, name).state;
+  const marked = (state.selection ?? []) as (string | number)[];
+  (state['onUpdate:selection'] as (value: unknown) => void)([...marked, id]);
 };
 
-const selecaoGravada = (composicao: Composicao) => composicao.preset.selection;
+const storedSelection = (composition: Composition) => composition.preset.selection;
 
-describe('a seleção compartilhada não perde marcação no mesmo tick', () => {
-  it('acumula o que o mapa marcou e o que a grade marcou', async () => {
-    const composicao = await montarComposicao();
+describe('the shared selection does not lose a mark in the same tick', () => {
+  it('accumulates what the map marked and what the grid marked', async () => {
+    const composition = await mountComposition();
 
-    marcar(composicao, 'mapa', 1);
-    marcar(composicao, 'grade', 2);
-    await deixarOPresetVoltar();
+    mark(composition, 'map', 1);
+    mark(composition, 'grid', 2);
+    await letThePresetComeBack();
 
-    expect(selecaoGravada(composicao)).toEqual([1, 2]);
+    expect(storedSelection(composition)).toEqual([1, 2]);
   });
 });
 
 /**
- * A consulta tem a mesma janela que as opções, e alcança mais gente: mapa e
- * grade escrevem nela os dois, e `page`, `limit` e `sort` saem do mesmo
- * `syncRefProperty` deles. O componente de mapa do Directus 10.13.1, por
- * exemplo, escreve `limit` no próprio `setup()` — ou seja, já na montagem.
+ * The query has the same window as the options, and it reaches more people: map
+ * and grid both write to it, and `page`, `limit` and `sort` come out of the same
+ * `syncRefProperty` of theirs. The Directus 10.13.1 map component, for
+ * instance, writes `limit` inside its own `setup()` — that is, on mount.
  */
-describe('a consulta compartilhada não perde escrita no mesmo tick', () => {
-  it('guarda duas chaves da consulta trocadas juntas pela grade', async () => {
-    const composicao = await montarComposicao();
+describe('the shared query does not lose a write in the same tick', () => {
+  it('keeps two query keys changed together by the grid', async () => {
+    const composition = await mountComposition();
 
-    gravarConsulta(composicao, 'grade', 'sort', ['-name']);
-    gravarConsulta(composicao, 'grade', 'page', 1);
-    await deixarOPresetVoltar();
+    writeQuery(composition, 'grid', 'sort', ['-name']);
+    writeQuery(composition, 'grid', 'page', 1);
+    await letThePresetComeBack();
 
-    expect(consultaGravada(composicao).sort).toEqual(['-name']);
-    expect(consultaGravada(composicao).page).toBe(1);
+    expect(storedQuery(composition).sort).toEqual(['-name']);
+    expect(storedQuery(composition).page).toBe(1);
   });
 
-  it('guarda a escrita do mapa e a da grade feitas no mesmo tick', async () => {
-    const composicao = await montarComposicao();
+  it('keeps the map write and the grid write made in the same tick', async () => {
+    const composition = await mountComposition();
 
-    gravarConsulta(composicao, 'mapa', 'page', 2);
-    gravarConsulta(composicao, 'grade', 'sort', ['-name']);
-    await deixarOPresetVoltar();
+    writeQuery(composition, 'map', 'page', 2);
+    writeQuery(composition, 'grid', 'sort', ['-name']);
+    await letThePresetComeBack();
 
-    expect(consultaGravada(composicao).page).toBe(2);
-    expect(consultaGravada(composicao).sort).toEqual(['-name']);
+    expect(storedQuery(composition).page).toBe(2);
+    expect(storedQuery(composition).sort).toEqual(['-name']);
   });
 });
 
-describe('as seções de layoutOptions não se sobrescrevem', () => {
-  it('guarda a opção de cada layout embutido na seção dele', async () => {
-    const composicao = await montarComposicao();
+describe('the layoutOptions sections do not overwrite each other', () => {
+  it('keeps each embedded layout option in its own section', async () => {
+    const composition = await mountComposition();
 
-    gravarOpcao(composicao, 'mapa', 'displayTemplate', '{{name}}');
-    await deixarOPresetVoltar();
-    gravarOpcao(composicao, 'grade', 'spacing', 'cozy');
-    await deixarOPresetVoltar();
+    writeOption(composition, 'map', 'displayTemplate', '{{name}}');
+    await letThePresetComeBack();
+    writeOption(composition, 'grid', 'spacing', 'cozy');
+    await letThePresetComeBack();
 
-    expect(opcoesGravadas(composicao).map?.displayTemplate).toBe('{{name}}');
-    expect(opcoesGravadas(composicao).tabular?.spacing).toBe('cozy');
+    expect(storedOptions(composition).map?.displayTemplate).toBe('{{name}}');
+    expect(storedOptions(composition).tabular?.spacing).toBe('cozy');
   });
 
-  it('não perde a seção do mapa quando a grade grava no mesmo tick', async () => {
-    const composicao = await montarComposicao();
+  it('does not lose the map section when the grid writes in the same tick', async () => {
+    const composition = await mountComposition();
 
-    gravarOpcao(composicao, 'mapa', 'displayTemplate', '{{name}}');
-    gravarOpcao(composicao, 'grade', 'spacing', 'cozy');
-    await deixarOPresetVoltar();
+    writeOption(composition, 'map', 'displayTemplate', '{{name}}');
+    writeOption(composition, 'grid', 'spacing', 'cozy');
+    await letThePresetComeBack();
 
-    expect(opcoesGravadas(composicao).map?.displayTemplate).toBe('{{name}}');
-    expect(opcoesGravadas(composicao).tabular?.spacing).toBe('cozy');
+    expect(storedOptions(composition).map?.displayTemplate).toBe('{{name}}');
+    expect(storedOptions(composition).tabular?.spacing).toBe('cozy');
   });
 
-  it('não perde a opção anterior do próprio mapa gravada no mesmo tick', async () => {
-    const composicao = await montarComposicao();
+  it("does not lose the map's own previous option written in the same tick", async () => {
+    const composition = await mountComposition();
 
-    gravarOpcao(composicao, 'mapa', 'displayTemplate', '{{name}}');
-    gravarOpcao(composicao, 'mapa', 'basemap', 'Satellite');
-    await deixarOPresetVoltar();
+    writeOption(composition, 'map', 'displayTemplate', '{{name}}');
+    writeOption(composition, 'map', 'basemap', 'Satellite');
+    await letThePresetComeBack();
 
-    expect(opcoesGravadas(composicao).map?.displayTemplate).toBe('{{name}}');
-    expect(opcoesGravadas(composicao).map?.basemap).toBe('Satellite');
+    expect(storedOptions(composition).map?.displayTemplate).toBe('{{name}}');
+    expect(storedOptions(composition).map?.basemap).toBe('Satellite');
   });
 
-  it('não perde o zoomOnClick da composição quando um embutido grava junto', async () => {
-    const composicao = await montarComposicao();
+  it("does not lose the composition's zoomOnClick when an embedded layout writes alongside", async () => {
+    const composition = await mountComposition();
 
-    const zoomOnClick = composicao.estado.zoomOnClick as { value: boolean | undefined };
+    const zoomOnClick = composition.state.zoomOnClick as { value: boolean | undefined };
     zoomOnClick.value = true;
-    gravarOpcao(composicao, 'grade', 'spacing', 'cozy');
-    await deixarOPresetVoltar();
+    writeOption(composition, 'grid', 'spacing', 'cozy');
+    await letThePresetComeBack();
 
-    expect(opcoesGravadas(composicao).zoomOnClick).toBe(true);
-    expect(opcoesGravadas(composicao).tabular?.spacing).toBe('cozy');
+    expect(storedOptions(composition).zoomOnClick).toBe(true);
+    expect(storedOptions(composition).tabular?.spacing).toBe('cozy');
   });
 });

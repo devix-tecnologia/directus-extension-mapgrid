@@ -10,7 +10,7 @@
 
 import type { GeoItem } from '../contract/index';
 
-/** Um campo da coleção como o Storybook precisa vê-lo. */
+/** A collection field as Storybook needs to see it. */
 export interface CollectionFieldSummary {
   name: string;
   field: string;

@@ -12,112 +12,112 @@ import {
   useAttrs,
 } from 'vue';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
-import type { LayoutEmbutido } from '../../../services/embedded-layout/index';
+import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import MapgridLayout from './MapgridLayout.vue';
 
 /**
- * Um layout embutido de mentira: o componente dele não desenha nada, só guarda
- * os atributos que recebeu. É por eles que a composição fala com os layouts do
- * Directus — `onRowClick` e `handleClick` chegam assim — então é o que um teste
- * do template precisa enxergar.
+ * A fake embedded layout: its component draws nothing, it only keeps the
+ * attributes it received. Those attributes are how the composition talks to the
+ * Directus layouts — `onRowClick` and `handleClick` arrive that way — so they
+ * are what a template test needs to see.
  */
-function embutidoFalso(id: string, state: Record<string, unknown>) {
-  const recebidos: { atributos: Record<string, unknown> } = { atributos: {} };
+function fakeEmbedded(id: string, state: Record<string, unknown>) {
+  const received: { attrs: Record<string, unknown> } = { attrs: {} };
 
   const component = defineComponent({
-    name: `embutido-${id}`,
+    name: `embedded-${id}`,
     inheritAttrs: false,
     setup() {
-      recebidos.atributos = useAttrs();
-      return () => h('div', { class: `embutido-${id}` });
+      received.attrs = useAttrs();
+      return () => h('div', { class: `embedded-${id}` });
     },
   });
 
-  const embutido: LayoutEmbutido = { id, state, component, optionsComponent: null };
-  return { embutido, recebidos };
+  const embedded: EmbeddedLayout = { id, state, component, optionsComponent: null };
+  return { embedded, received };
 }
 
 const BRASILIA: [number, number] = [-47.9292, -15.7801];
 
-interface Composicao {
-  atributosDoMapa: Record<string, unknown>;
-  atributosDaGrade: Record<string, unknown>;
-  atualizarSelecao: ReturnType<typeof vi.fn>;
-  handleClickDeles: ReturnType<typeof vi.fn>;
+interface Composition {
+  mapAttrs: Record<string, unknown>;
+  gridAttrs: Record<string, unknown>;
+  updateSelection: ReturnType<typeof vi.fn>;
+  theirHandleClick: ReturnType<typeof vi.fn>;
 }
 
-function montarComposicao(selecaoInicial: (string | number)[] = []): Composicao {
-  const atualizarSelecao = vi.fn();
-  const handleClickDeles = vi.fn();
+function mountComposition(initialSelection: (string | number)[] = []): Composition {
+  const updateSelection = vi.fn();
+  const theirHandleClick = vi.fn();
 
-  const mapa = embutidoFalso('map', {
+  const map = fakeEmbedded('map', {
     geometryField: 'location',
-    selection: selecaoInicial,
-    'onUpdate:selection': atualizarSelecao,
-    handleClick: handleClickDeles,
+    selection: initialSelection,
+    'onUpdate:selection': updateSelection,
+    handleClick: theirHandleClick,
     cameraOptions: { center: [0, 0], zoom: 3 },
     'onUpdate:cameraOptions': vi.fn(),
   });
 
-  const grade = embutidoFalso('tabular', { items: [], onRowClick: vi.fn() });
+  const grid = fakeEmbedded('tabular', { items: [], onRowClick: vi.fn() });
 
   mount(MapgridLayout, {
-    props: { grade: grade.embutido, mapa: mapa.embutido },
+    props: { grid: grid.embedded, map: map.embedded },
     global: { components: directusComponentStubs },
   });
 
   return {
-    atributosDoMapa: mapa.recebidos.atributos,
-    atributosDaGrade: grade.recebidos.atributos,
-    atualizarSelecao,
-    handleClickDeles,
+    mapAttrs: map.received.attrs,
+    gridAttrs: grid.received.attrs,
+    updateSelection,
+    theirHandleClick,
   };
 }
 
-const clicarNoPonto = (composicao: Composicao, payload: unknown): void => {
-  const handleClick = composicao.atributosDoMapa.handleClick as (payload: unknown) => void;
+const clickMarker = (composition: Composition, payload: unknown): void => {
+  const handleClick = composition.mapAttrs.handleClick as (payload: unknown) => void;
   handleClick(payload);
 };
 
-describe('MapgridLayout — o clique no ponto', () => {
-  it('seleciona a linha da grade em vez de navegar para a tela do item', () => {
-    const composicao = montarComposicao();
+describe('MapgridLayout — the marker click', () => {
+  it('selects the grid row instead of navigating to the item screen', () => {
+    const composition = mountComposition();
 
-    clicarNoPonto(composicao, { id: 3, replace: false });
+    clickMarker(composition, { id: 3, replace: false });
 
-    expect(composicao.atualizarSelecao).toHaveBeenCalledWith([3]);
-    expect(composicao.handleClickDeles).not.toHaveBeenCalled();
+    expect(composition.updateSelection).toHaveBeenCalledWith([3]);
+    expect(composition.theirHandleClick).not.toHaveBeenCalled();
   });
 
-  it('acrescenta à seleção que já existe, como a caixa de marcação da grade', () => {
-    const composicao = montarComposicao([1]);
+  it('adds to the selection that already exists, like the grid checkbox', () => {
+    const composition = mountComposition([1]);
 
-    clicarNoPonto(composicao, { id: 3 });
+    clickMarker(composition, { id: 3 });
 
-    expect(composicao.atualizarSelecao).toHaveBeenCalledWith([1, 3]);
+    expect(composition.updateSelection).toHaveBeenCalledWith([1, 3]);
   });
 
-  it('desmarca o ponto que já estava selecionado', () => {
-    const composicao = montarComposicao([1, 3]);
+  it('unmarks the marker that was already selected', () => {
+    const composition = mountComposition([1, 3]);
 
-    clicarNoPonto(composicao, { id: 3 });
+    clickMarker(composition, { id: 3 });
 
-    expect(composicao.atualizarSelecao).toHaveBeenCalledWith([1]);
+    expect(composition.updateSelection).toHaveBeenCalledWith([1]);
   });
 
-  it('ignora o clique que não traz item, como o do mar aberto', () => {
-    const composicao = montarComposicao([1]);
+  it('ignores a click that brings no item, like one on the open sea', () => {
+    const composition = mountComposition([1]);
 
-    clicarNoPonto(composicao, { id: undefined });
-    clicarNoPonto(composicao, null);
+    clickMarker(composition, { id: undefined });
+    clickMarker(composition, null);
 
-    expect(composicao.atualizarSelecao).not.toHaveBeenCalled();
+    expect(composition.updateSelection).not.toHaveBeenCalled();
   });
 
-  it('o clique na linha leva o mapa até o item pelo fitBounds do Directus, e não pelo cameraOptions', () => {
-    const composicao = montarComposicao();
-    const atualizarCamera = vi.fn();
+  it('the row click takes the map to the item through the Directus fitBounds, not cameraOptions', () => {
+    const composition = mountComposition();
+    const updateCamera = vi.fn();
     const geojson = {
       bbox: [-74, -34, -34, 5],
       features: [
@@ -129,7 +129,7 @@ describe('MapgridLayout — o clique no ponto', () => {
       ],
       type: 'FeatureCollection',
     };
-    const mapa = embutidoFalso('map', {
+    const map = fakeEmbedded('map', {
       featureId: 'id',
       geometryField: 'location',
       geojson,
@@ -137,35 +137,35 @@ describe('MapgridLayout — o clique no ponto', () => {
       selection: [],
       'onUpdate:selection': vi.fn(),
       cameraOptions: { center: [0, 0], zoom: 3 },
-      'onUpdate:cameraOptions': atualizarCamera,
+      'onUpdate:cameraOptions': updateCamera,
     });
-    const grade = embutidoFalso('tabular', { items: [] });
+    const grid = fakeEmbedded('tabular', { items: [] });
 
     mount(MapgridLayout, {
-      props: { grade: grade.embutido, mapa: mapa.embutido },
+      props: { grid: grid.embedded, map: map.embedded },
       global: { components: directusComponentStubs },
     });
 
-    const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+    const onRowClick = grid.received.attrs.onRowClick as (payload: unknown) => void;
     onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
 
-    const [oeste, sul, leste, norte] = geojson.bbox as [number, number, number, number];
-    expect(oeste).toBeLessThanOrEqual(BRASILIA[0]);
-    expect(leste).toBeGreaterThanOrEqual(BRASILIA[0]);
-    expect(sul).toBeLessThanOrEqual(BRASILIA[1]);
-    expect(norte).toBeGreaterThanOrEqual(BRASILIA[1]);
-    expect(mapa.embutido.state.geojsonBounds).toEqual(geojson.bbox);
-    expect(atualizarCamera).not.toHaveBeenCalled();
-    expect(composicao.atributosDaGrade.onRowClick).toBeTypeOf('function');
+    const [west, south, east, north] = geojson.bbox as [number, number, number, number];
+    expect(west).toBeLessThanOrEqual(BRASILIA[0]);
+    expect(east).toBeGreaterThanOrEqual(BRASILIA[0]);
+    expect(south).toBeLessThanOrEqual(BRASILIA[1]);
+    expect(north).toBeGreaterThanOrEqual(BRASILIA[1]);
+    expect(map.embedded.state.geojsonBounds).toEqual(geojson.bbox);
+    expect(updateCamera).not.toHaveBeenCalled();
+    expect(composition.gridAttrs.onRowClick).toBeTypeOf('function');
   });
 
-  it('enquanto o mapa carrega, insiste no bounds até o moveend do Directus gravar a câmera', async () => {
+  it('while the map loads, it retries the bounds until the Directus moveend writes the camera', async () => {
     vi.useFakeTimers();
     try {
-      montarComposicao();
-      const bboxDaColecao = [-74, -34, -34, 5];
+      mountComposition();
+      const collectionBbox = [-74, -34, -34, 5];
       const geojson = {
-        bbox: [...bboxDaColecao],
+        bbox: [...collectionBbox],
         features: [
           {
             geometry: { coordinates: BRASILIA, type: 'Point' },
@@ -175,7 +175,7 @@ describe('MapgridLayout — o clique no ponto', () => {
         ],
         type: 'FeatureCollection',
       };
-      const estado = reactive<Record<string, unknown>>({
+      const state = reactive<Record<string, unknown>>({
         cameraOptions: { center: [0, 0], zoom: 3 },
         geojson,
         geojsonBounds: undefined,
@@ -183,43 +183,43 @@ describe('MapgridLayout — o clique no ponto', () => {
         geometryField: 'location',
         selection: [],
       });
-      const mapa = embutidoFalso('map', estado);
-      const grade = embutidoFalso('tabular', { items: [] });
+      const map = fakeEmbedded('map', state);
+      const grid = fakeEmbedded('tabular', { items: [] });
       mount(MapgridLayout, {
-        props: { grade: grade.embutido, mapa: mapa.embutido },
+        props: { grid: grid.embedded, map: map.embedded },
         global: { components: directusComponentStubs },
       });
 
-      const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+      const onRowClick = grid.received.attrs.onRowClick as (payload: unknown) => void;
       onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
-      const primeiro = estado.geojsonBounds;
+      const first = state.geojsonBounds;
       await vi.advanceTimersByTimeAsync(300);
-      expect(estado.geojsonBounds).not.toBe(primeiro);
+      expect(state.geojsonBounds).not.toBe(first);
 
-      estado.cameraOptions = { bbox: [-49, -17, -46, -14], center: BRASILIA, zoom: 8 };
+      state.cameraOptions = { bbox: [-49, -17, -46, -14], center: BRASILIA, zoom: 8 };
       await nextTick();
-      const ultimo = estado.geojsonBounds;
+      const last = state.geojsonBounds;
       await vi.advanceTimersByTimeAsync(1_000);
-      expect(estado.geojsonBounds).toBe(ultimo);
-      expect(estado.geojson).toMatchObject({ bbox: bboxDaColecao });
+      expect(state.geojsonBounds).toBe(last);
+      expect(state.geojson).toMatchObject({ bbox: collectionBbox });
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('o reenquadrar da toolbar enquadra a coleção, mesmo com um clique na linha ainda pendente', async () => {
+  it('the toolbar reset frames the collection, even with a row click still pending', async () => {
     vi.useFakeTimers();
     try {
-      montarComposicao();
-      const bboxDaColecao = [-74, -34, -34, 5];
-      let bboxLidoPeloDirectus: unknown;
-      const estado = reactive<Record<string, unknown>>({
+      mountComposition();
+      const collectionBbox = [-74, -34, -34, 5];
+      let bboxReadByDirectus: unknown;
+      const state = reactive<Record<string, unknown>>({
         cameraOptions: { center: [0, 0], zoom: 3 },
         fitDataBounds: vi.fn(() => {
-          bboxLidoPeloDirectus = [...(estado.geojson as { bbox: number[] }).bbox];
+          bboxReadByDirectus = [...(state.geojson as { bbox: number[] }).bbox];
         }),
         geojson: {
-          bbox: [...bboxDaColecao],
+          bbox: [...collectionBbox],
           features: [
             {
               geometry: { coordinates: BRASILIA, type: 'Point' },
@@ -233,27 +233,27 @@ describe('MapgridLayout — o clique no ponto', () => {
         geometryField: 'location',
         selection: [],
       });
-      const mapa = embutidoFalso('map', estado);
-      const grade = embutidoFalso('tabular', { items: [] });
+      const map = fakeEmbedded('map', state);
+      const grid = fakeEmbedded('tabular', { items: [] });
       const wrapper = mount(MapgridLayout, {
-        props: { grade: grade.embutido, mapa: mapa.embutido },
+        props: { grid: grid.embedded, map: map.embedded },
         global: { components: directusComponentStubs },
       });
 
-      const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
+      const onRowClick = grid.received.attrs.onRowClick as (payload: unknown) => void;
       onRowClick({ item: { id: 1, location: { type: 'Point', coordinates: BRASILIA } } });
       wrapper.findComponent(MapToolbar).vm.$emit('reset');
 
-      expect(estado.fitDataBounds).toHaveBeenCalledOnce();
-      expect(bboxLidoPeloDirectus).toEqual(bboxDaColecao);
+      expect(state.fitDataBounds).toHaveBeenCalledOnce();
+      expect(bboxReadByDirectus).toEqual(collectionBbox);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('o clique na linha enquadra pela feature do Directus, mesmo com o campo em csv', () => {
-    montarComposicao();
-    const trajeto = {
+  it('the row click frames by the Directus feature, even with the field in csv', () => {
+    mountComposition();
+    const route = {
       coordinates: [
         [-40.1, -20.1],
         [-39.7, -19.8],
@@ -262,94 +262,95 @@ describe('MapgridLayout — o clique no ponto', () => {
     };
     const geojson = {
       bbox: [-74, -34, -34, 5],
-      features: [{ geometry: trajeto, properties: { id: 3 }, type: 'Feature' }],
+      features: [{ geometry: route, properties: { id: 3 }, type: 'Feature' }],
       type: 'FeatureCollection',
     };
-    const mapa = embutidoFalso('map', {
+    const map = fakeEmbedded('map', {
       cameraOptions: { center: [0, 0], zoom: 3 },
       featureId: 'id',
       geojson,
       geojsonBounds: undefined,
-      geometryField: 'local',
+      geometryField: 'place',
       selection: [],
     });
-    const grade = embutidoFalso('tabular', { items: [] });
+    const grid = fakeEmbedded('tabular', { items: [] });
     mount(MapgridLayout, {
-      props: { grade: grade.embutido, mapa: mapa.embutido },
+      props: { grid: grid.embedded, map: map.embedded },
       global: { components: directusComponentStubs },
     });
 
-    const onRowClick = grade.recebidos.atributos.onRowClick as (payload: unknown) => void;
-    onRowClick({ item: { id: 3, local: '-40.1,-20.1' } });
+    const onRowClick = grid.received.attrs.onRowClick as (payload: unknown) => void;
+    onRowClick({ item: { id: 3, place: '-40.1,-20.1' } });
 
     expect(geojson.bbox).toEqual([-40.1, -20.1, -39.7, -19.8]);
   });
 });
 
 /**
- * O `showingCount` do layout de mapa do Directus chama `useI18n()` de dentro do
- * getter de um `computed`. Fora de um render não há instância corrente, e o
- * vue-i18n levanta um `SyntaxError` — é o erro que o e2e registra no console a
- * cada busca filtrada pela área visível.
+ * The Directus map layout's `showingCount` calls `useI18n()` from inside a
+ * `computed` getter. Outside a render there is no current instance, and
+ * vue-i18n throws a `SyntaxError` — the error the e2e logged in the console on
+ * every fetch filtered by the visible area.
  *
- * E o getter é avaliado fora do render: o agendador do Vue, antes de repintar,
- * pergunta ao efeito se ele está sujo, e essa pergunta reavalia os `computed`
- * dos quais ele depende sem instância corrente nenhuma. Se a explosão atravessa
- * a nossa leitura do estado, ela derruba a pergunta inteira — a composição não
- * repinta mais, e o `geojsonBounds` novo nunca chega ao mapa.
+ * And the getter is evaluated outside the render: before repainting, the Vue
+ * scheduler asks the effect whether it is dirty, and that question re-evaluates
+ * the `computed`s it depends on with no current instance at all. If the throw
+ * crosses our state read, it takes the whole question down — the composition
+ * stops repainting, and fresh `geojsonBounds` never reaches the map.
  */
-describe('um getter do estado embutido que explode fora do render', () => {
-  it('não impede a entrega seguinte ao mapa', async () => {
-    const boundsRecebidos: unknown[] = [];
-    const layoutDeMapa = defineComponent({
+describe('an embedded state getter that throws outside the render', () => {
+  it('does not block the next delivery to the map', async () => {
+    const receivedBounds: unknown[] = [];
+    const mapLayout = defineComponent({
       inheritAttrs: false,
       props: { geojsonBounds: { default: undefined, type: null } },
       setup(props) {
         return () => {
-          boundsRecebidos.push(props.geojsonBounds);
+          receivedBounds.push(props.geojsonBounds);
           return h('div');
         };
       },
     });
-    const naTela = ref(2);
+    const onScreen = ref(2);
     /*
-     * Armado só depois da montagem porque o `mount` do @vue/test-utils
-     * vasculha os props em busca de refs e leria o getter fora do render ele
-     * mesmo — a explosão seria do arranjo, e não do que se quer medir.
+     * Armed only after mounting because @vue/test-utils' `mount` scans the
+     * props looking for refs and would read the getter outside the render
+     * itself — the throw would come from the harness, not from what is being
+     * measured.
      */
-    let armado = false;
-    const estado = reactive<Record<string, unknown>>({
+    let armed = false;
+    const state = reactive<Record<string, unknown>>({
       geojsonBounds: ref<unknown>(undefined),
       showingCount: computed(() => {
-        if (armado && getCurrentInstance() === null) {
+        if (armed && getCurrentInstance() === null) {
           throw new SyntaxError('Must be called at the top of a `setup` function');
         }
-        return `1-${naTela.value} of ${naTela.value}`;
+        return `1-${onScreen.value} of ${onScreen.value}`;
       }),
     });
-    const mapa: LayoutEmbutido = {
-      component: layoutDeMapa,
+    const map: EmbeddedLayout = {
+      component: mapLayout,
       id: 'map',
       optionsComponent: null,
-      state: estado,
+      state,
     };
-    const grade = embutidoFalso('tabular', { items: [] });
+    const grid = fakeEmbedded('tabular', { items: [] });
     mount(MapgridLayout, {
-      props: { grade: grade.embutido, mapa },
+      props: { grid: grid.embedded, map },
       global: { components: directusComponentStubs },
     });
 
-    armado = true;
+    armed = true;
 
-    // a busca filtrada pela área visível muda a contagem, e só ela
-    naTela.value = 1;
+    // the fetch filtered by the visible area changes the count, and only it
+    onScreen.value = 1;
     await nextTick();
 
-    // a geometria buscada chega depois, como no clique numa linha fora da tela
-    estado.geojsonBounds = [-60.0255, -3.119, -48.5044, -1.4558];
+    // the fetched geometry arrives later, as in a click on an off-screen row
+    state.geojsonBounds = [-60.0255, -3.119, -48.5044, -1.4558];
     await nextTick();
 
-    expect(boundsRecebidos[boundsRecebidos.length - 1]).toEqual([
+    expect(receivedBounds[receivedBounds.length - 1]).toEqual([
       -60.0255, -3.119, -48.5044, -1.4558,
     ]);
   });

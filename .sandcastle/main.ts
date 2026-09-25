@@ -1,14 +1,14 @@
 import { claudeCode, run } from '@ai-hero/sandcastle';
 
-import { SETUP, sandboxDocker } from './ambiente.ts';
+import { SETUP, sandboxDocker } from './environment.ts';
 
 /**
- * Sandcastle no directus-extension-mapgrid: UMA tarefa.
+ * Sandcastle on directus-extension-mapgrid: ONE task.
  *
- * O ambiente inteiro — imagem, socket do Docker, montagem espelho, setup — está
- * em `ambiente.ts`, compartilhado com o `rodada.ts`.
+ * The whole environment — image, Docker socket, mirror mount, setup — is in
+ * `environment.ts`, shared with `round.ts`.
  *
- * Rodar com: pnpm sandcastle
+ * Run with: pnpm sandcastle
  */
 await run({
   name: 'worker',
@@ -21,14 +21,14 @@ await run({
 
   maxIterations: 1,
 
-  // `merge-to-head` mescla no HEAD que estiver, e **troca a branch do diretório
-  // de trabalho** ao terminar. Rodar sempre a partir de uma branch de trabalho,
-  // nunca do `develop` direto.
+  // `merge-to-head` merges into whatever HEAD is, and **switches the working
+  // directory's branch** when it finishes. Always run from a working branch,
+  // never from `develop` directly.
   branchStrategy: { type: 'merge-to-head' },
 
-  // Sem `copyToWorktree: ['node_modules']`, apesar de o template sugerir: o
-  // node_modules do pnpm é quase todo symlink para o store do host, e copiar
-  // isso produz links pendurados dentro do container.
+  // No `copyToWorktree: ['node_modules']`, despite what the template suggests:
+  // pnpm's node_modules is almost all symlinks into the host store, and copying
+  // that produces dangling links inside the container.
 
   hooks: { sandbox: { onSandboxReady: [SETUP] } },
 });

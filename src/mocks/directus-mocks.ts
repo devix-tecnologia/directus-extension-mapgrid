@@ -28,9 +28,9 @@ export const vTableStub: Component = {
     fixedHeader: { type: Boolean, default: false },
     modelValue: { default: () => [] },
     canDelete: { type: Boolean, default: true },
-    /** Ordenação como o `v-table` a descreve: `{ by, desc }`. */
+    /** Sorting the way `v-table` describes it: `{ by, desc }`. */
     sort: { type: Object, default: () => ({ by: null, desc: false }) },
-    /** Arrastar cabecalho para reordenar coluna, como o layout tabular permite. */
+    /** Dragging a header to reorder a column, as the tabular layout allows. */
     allowHeaderReorder: { type: Boolean, default: false },
   },
   emits: ['click:row', 'update:modelValue', 'update:sort', 'update:headers'],
@@ -251,11 +251,11 @@ const vIconStub: Component = {
 };
 
 /**
- * O `v-detail` do app recebe `label`, e nao `header`. O stub aceitava `header` e
- * renderizava o titulo assim mesmo, o que escondeu por muito tempo que no
- * Directus real as secoes do painel de opcoes apareciam todas rotuladas como
- * "Toggle" — o texto padrao do componente quando `label` nao vem. Espelhar o
- * contrato real e o que impede o stub de mentir de novo.
+ * The app's `v-detail` takes `label`, not `header`. The stub used to accept
+ * `header` and render the title anyway, which hid for a long time that in a
+ * real Directus every options panel section showed up labelled "Toggle" — the
+ * component's default text when `label` is missing. Mirroring the real contract
+ * is what keeps the stub from lying again.
  */
 const vDetailStub: Component = {
   name: 'v-detail',

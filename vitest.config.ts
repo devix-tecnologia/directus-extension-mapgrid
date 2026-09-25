@@ -10,17 +10,17 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['src/test-setup.ts'],
-    exclude: [...configDefaults.exclude, 'src/**/*.vue-do-directus.test.ts'],
+    exclude: [...configDefaults.exclude, 'src/**/*.directus-vue.test.ts'],
     include: [
       'src/**/*.spec.ts',
       'src/**/*.test.ts',
       'scripts/**/*.test.ts',
-      // Um nível de propósito: '.sandcastle/**' desceria em
-      // '.sandcastle/worktrees/<rodada>/' e coletaria o repositório inteiro de
-      // novo — a suíte rodaria sobre uma cópia sua, com o dobro dos testes e
-      // nenhum aviso de que isso aconteceu.
-      '.sandcastle/fila-de-tarefas/*.test.ts',
-      '.sandcastle/credencial/*.test.ts',
+      // One level on purpose: '.sandcastle/**' would descend into
+      // '.sandcastle/worktrees/<round>/' and collect the whole repository
+      // again — the suite would run over a copy of itself, with twice the
+      // tests and no warning that it happened.
+      '.sandcastle/task-queue/*.test.ts',
+      '.sandcastle/credential/*.test.ts',
     ],
     coverage: {
       provider: 'v8',

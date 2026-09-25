@@ -13,16 +13,16 @@ import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 import type { GeoItem } from './contract/index';
 import { useWritableLayoutQuery } from './contract/index';
 import {
-  embutirLayout,
-  LAYOUTS_EMBUTIDOS,
-  type LayoutEmbutido,
+  EMBEDDED_LAYOUTS,
+  type EmbeddedLayout,
+  embedLayout,
 } from './services/embedded-layout/index';
-import { useEscritaOtimista } from './services/optimistic-sync/index';
+import { useOptimisticWrite } from './services/optimistic-sync/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
 /**
- * Campos de controle do Directus. Nenhum serve como geometria, e escolher um
- * como padrão só significaria trocá-lo em toda coleção nova.
+ * Directus control fields. None of them works as a geometry, and picking one as
+ * the default would only mean swapping it out in every new collection.
  */
 const EXCLUDED_FIELDS = [
   'id',
@@ -34,17 +34,17 @@ const EXCLUDED_FIELDS = [
   'date_updated',
 ];
 
-const detectarGeometria = (fields: Field[]): string | undefined => {
-  const campoDeMapa = fields.find((field) => field.meta?.interface === 'map');
-  if (campoDeMapa) return campoDeMapa.field;
+const detectGeometry = (fields: Field[]): string | undefined => {
+  const mapField = fields.find((field) => field.meta?.interface === 'map');
+  if (mapField) return mapField.field;
 
-  const campoJson = fields.find(
+  const jsonField = fields.find(
     (field) => field.type === 'json' && !EXCLUDED_FIELDS.includes(field.field)
   );
-  return campoJson?.field;
+  return jsonField?.field;
 };
 
-type Opcoes = { value: Record<string, unknown> };
+type EmbeddedOptions = { value: Record<string, unknown> };
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
@@ -58,14 +58,14 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
   },
   setup(props, { emit }) {
     /*
-     * Os três estados compartilhados passam pelo espelho do
-     * `useEscritaOtimista`. Sem ele, duas escritas no mesmo tick liam as duas o
-     * prop anterior às duas — e aqui escrever no mesmo tick é rotina, porque os
-     * dois layouts embutidos escrevem nos mesmos três. O porquê está lá.
+     * The three shared states go through the `useOptimisticWrite` mirror.
+     * Without it, two writes in the same tick would both read the prop as it
+     * was before either — and writing in the same tick is routine here, because
+     * both embedded layouts write to the same three. The why is over there.
      */
-    const layoutOptions = useEscritaOtimista(useSync(props, 'layoutOptions', emit));
-    const layoutQuery = useEscritaOtimista(useSync(props, 'layoutQuery', emit));
-    const selection = useEscritaOtimista(useSync(props, 'selection', emit));
+    const layoutOptions = useOptimisticWrite(useSync(props, 'layoutOptions', emit));
+    const layoutQuery = useOptimisticWrite(useSync(props, 'layoutQuery', emit));
+    const selection = useOptimisticWrite(useSync(props, 'selection', emit));
     const api = useApi();
 
     const { collection, filter, search } = toRefs(props);
@@ -73,52 +73,53 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { layouts } = useExtensions();
 
     const writableQuery = useWritableLayoutQuery(layoutQuery);
-    const geometriaDetectada = computed(() => detectarGeometria(fieldsInCollection.value ?? []));
+    const detectedGeometry = computed(() => detectGeometry(fieldsInCollection.value ?? []));
 
     /*
-     * Cada layout embutido guarda a configuração dele numa chave própria do
-     * nosso `layoutOptions`: o mapa o campo de geometria e o mapa base, a grade
-     * o espaçamento e o alinhamento. Numa chave só, um sobrescreveria o outro.
+     * Each embedded layout keeps its configuration under its own key of our
+     * `layoutOptions`: the map the geometry field and the basemap, the grid the
+     * spacing and the alignment. Under a single key, one would overwrite the
+     * other.
      */
-    const opcoesDaGrade = computed<Record<string, unknown>>({
+    const gridOptions = computed<Record<string, unknown>>({
       get: () => ({ ...((layoutOptions.value?.tabular ?? {}) as object) }),
-      set: (valor) => {
-        layoutOptions.value = { ...layoutOptions.value, tabular: valor };
+      set: (value) => {
+        layoutOptions.value = { ...layoutOptions.value, tabular: value };
       },
     });
 
     /*
-     * O campo de geometria detectado entra só na leitura. Gravá-lo fixaria no
-     * preset uma escolha que a composição apenas detectou, e trocar o campo da
-     * coleção deixaria de ter efeito.
+     * The detected geometry field only enters on the read side. Writing it
+     * would pin a choice the composition merely detected into the preset, and
+     * changing the collection's field would stop having any effect.
      */
-    const opcoesDoMapa = computed<Record<string, unknown>>({
+    const mapOptions = computed<Record<string, unknown>>({
       get: () => ({
-        geometryField: geometriaDetectada.value,
+        geometryField: detectedGeometry.value,
         ...((layoutOptions.value?.map ?? {}) as object),
       }),
-      set: (valor) => {
-        layoutOptions.value = { ...layoutOptions.value, map: valor };
+      set: (value) => {
+        layoutOptions.value = { ...layoutOptions.value, map: value };
       },
     });
 
     /*
-     * A consulta é uma só, dividida pelos dois. Sem isto cada layout faz a
-     * própria busca, com campos e ordenação diferentes — medido no spike.
+     * The query is a single one, shared by both. Without this each layout runs
+     * its own fetch, with different fields and sorting — measured in the spike.
      */
-    const consulta = computed<Record<string, unknown>>({
+    const query = computed<Record<string, unknown>>({
       get: () => ({ ...(layoutQuery.value ?? {}) }),
-      set: (valor) => {
-        layoutQuery.value = valor as unknown as LayoutQuery;
+      set: (value) => {
+        layoutQuery.value = value as unknown as LayoutQuery;
       },
     });
 
-    const propsPara = (opcoes: Opcoes): LayoutProps =>
+    const propsFor = (options: EmbeddedOptions): LayoutProps =>
       reactive({
         collection,
         selection,
-        layoutOptions: opcoes,
-        layoutQuery: consulta,
+        layoutOptions: options,
+        layoutQuery: query,
         layoutProps: ref({}),
         filter,
         filterUser: ref(null),
@@ -131,54 +132,54 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         clearFilters: ref(undefined),
       }) as unknown as LayoutProps;
 
-    const emitirPara =
-      (opcoes: Opcoes) =>
-      (evento: string, valor: unknown): void => {
-        if (evento === 'update:layoutQuery') consulta.value = valor as Record<string, unknown>;
-        if (evento === 'update:layoutOptions') opcoes.value = valor as Record<string, unknown>;
-        if (evento === 'update:selection') selection.value = valor as (string | number)[];
+    const emitFor =
+      (options: EmbeddedOptions) =>
+      (event: string, value: unknown): void => {
+        if (event === 'update:layoutQuery') query.value = value as Record<string, unknown>;
+        if (event === 'update:layoutOptions') options.value = value as Record<string, unknown>;
+        if (event === 'update:selection') selection.value = value as (string | number)[];
       };
 
-    const embutir = (id: string, opcoes: Opcoes): LayoutEmbutido | null =>
-      embutirLayout({
+    const embed = (id: string, options: EmbeddedOptions): EmbeddedLayout | null =>
+      embedLayout({
         id,
-        registro: layouts.value,
-        props: propsPara(opcoes),
-        emit: emitirPara(opcoes),
+        registry: layouts.value,
+        props: propsFor(options),
+        emit: emitFor(options),
       });
 
-    const grade = embutir(LAYOUTS_EMBUTIDOS.grade, opcoesDaGrade);
-    const mapa = embutir(LAYOUTS_EMBUTIDOS.mapa, opcoesDoMapa);
+    const grid = embed(EMBEDDED_LAYOUTS.grid, gridOptions);
+    const map = embed(EMBEDDED_LAYOUTS.map, mapOptions);
 
-    /** A única opção que não vem de nenhum dos dois: é da composição. */
+    /** The only option that comes from neither of them: it is the composition's. */
     const zoomOnClick = computed<boolean | undefined>({
       get: () => layoutOptions.value?.zoomOnClick,
-      set: (valor) => {
-        layoutOptions.value = { ...layoutOptions.value, zoomOnClick: valor };
+      set: (value) => {
+        layoutOptions.value = { ...layoutOptions.value, zoomOnClick: value };
       },
     });
 
-    const buscarItens = async (
-      chaves: readonly unknown[],
-      campos: readonly string[]
+    const fetchItems = async (
+      keys: readonly unknown[],
+      fields: readonly string[]
     ): Promise<Record<string, unknown>[]> => {
-      const chave = primaryKeyField.value?.field;
-      if (!chave || chaves.length === 0) return [];
-      const resposta = await api.get(`/items/${collection.value}`, {
+      const key = primaryKeyField.value?.field;
+      if (!key || keys.length === 0) return [];
+      const response = await api.get(`/items/${collection.value}`, {
         params: {
-          fields: [...campos],
-          filter: { [chave]: { _in: [...chaves] } },
-          limit: chaves.length,
+          fields: [...fields],
+          filter: { [key]: { _in: [...keys] } },
+          limit: keys.length,
         },
       });
-      return (resposta.data?.data as Record<string, unknown>[] | undefined) ?? [];
+      return (response.data?.data as Record<string, unknown>[] | undefined) ?? [];
     };
 
-    /** O app lê estes daqui para desenhar paginação e contagem. */
-    const daGrade = <T>(chave: string, vazio: T) =>
-      computed<T>(() => (grade?.state[chave] as T) ?? vazio);
+    /** The app reads these from here to draw pagination and the count. */
+    const fromGrid = <T>(key: string, empty: T) =>
+      computed<T>(() => (grid?.state[key] as T) ?? empty);
 
-    const items = daGrade<GeoItem[]>('items', []);
+    const items = fromGrid<GeoItem[]>('items', []);
 
     const selectedItems = computed<GeoItem[]>(() =>
       items.value.filter((item) => selection.value.includes(item.id))
@@ -189,17 +190,17 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
       await api.delete(`/items/${collection.value}`, { data: [...selection.value] });
       selection.value = [];
-      (grade?.state.refresh as (() => void) | undefined)?.();
-      (mapa?.state.refresh as (() => void) | undefined)?.();
+      (grid?.state.refresh as (() => void) | undefined)?.();
+      (map?.state.refresh as (() => void) | undefined)?.();
     };
 
     return {
       items,
-      loading: daGrade('loading', false),
-      error: daGrade<unknown>('error', null),
-      totalPages: daGrade('totalPages', 1),
-      itemCount: daGrade('itemCount', 0),
-      totalCount: daGrade('totalCount', 0),
+      loading: fromGrid('loading', false),
+      error: fromGrid<unknown>('error', null),
+      totalPages: fromGrid('totalPages', 1),
+      itemCount: fromGrid('itemCount', 0),
+      totalCount: fromGrid('totalCount', 0),
       page: writableQuery.page,
       limit: writableQuery.limit,
       sort: writableQuery.sort,
@@ -209,14 +210,15 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       deleteSelectedItems,
       zoomOnClick,
       /*
-       * O Directus entrega o retorno deste `setup()` ao componente E ao painel
-       * de opções, que são irmãos na árvore. É por isso que os dois embutidos
-       * nascem aqui: a área que desenha e o painel que configura passam a
-       * enxergar o mesmo estado, sem um segundo wrapper e sem busca a mais.
+       * Directus hands the return of this `setup()` to the component AND to the
+       * options panel, which are siblings in the tree. That is why both
+       * embedded layouts are born here: the area that draws and the panel that
+       * configures come to see the same state, with no second wrapper and no
+       * extra fetch.
        */
-      grade,
-      mapa,
-      buscarItens,
+      grid,
+      map,
+      fetchItems,
     };
   },
 });
