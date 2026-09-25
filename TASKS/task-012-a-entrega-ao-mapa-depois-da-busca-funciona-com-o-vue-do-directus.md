@@ -1,6 +1,6 @@
 # 🧩 Task 012 — A entrega ao mapa depois da busca funciona com o Vue do Directus
 
-- Status: in-review
+- Status: done
 - Type: fix
 - Assignee: sidartaveloso
 - Priority: 650
