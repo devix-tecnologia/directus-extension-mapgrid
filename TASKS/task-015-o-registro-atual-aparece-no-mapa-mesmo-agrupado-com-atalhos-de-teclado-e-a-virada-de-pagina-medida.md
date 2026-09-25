@@ -43,11 +43,49 @@ tem oito registros, que provam o comportamento mas não medem nada.
       e textos de ajuda em en-US e pt-BR. `KeyboardNavigation`, com Home/End,
       ←/→ e Espaço; a lista do Directus foi conferida na fonte da 10.13.1 (ver
       "A lista de atalhos do Directus")
-- [ ] Contar as requisições de uma reprodução sobre um trajeto sintético de mil
-      pontos no ambiente do e2e, com a consulta compartilhada
-- [ ] Registrar a medição como linha de base da task-016, que explora antecipar
+- [x] Contar as requisições de uma reprodução sobre um trajeto sintético de mil
+      pontos no ambiente do e2e, com a consulta compartilhada. Feito em
+      `tests/e2e/mapgrid-page-turn-cost.spec.ts` — ver "A medição"
+- [x] Registrar a medição como linha de base da task-016, que explora antecipar
       a busca da próxima página
 - [ ] Evidência de tela: a reprodução visível no mapa com o agrupamento ligado
+
+## A medição
+
+Feita em 2026-09-25, no ambiente do e2e (Directus 10.13.1 em docker, banco na
+mesma rede, um worker). O cenário é reproduzível e está no repositório:
+`tests/helpers/track-collection.ts` semeia `test_mapgrid_track`, mil pontos de
+um trajeto sintético com um campo `sequence` para a ordem, e
+`tests/e2e/mapgrid-page-turn-cost.spec.ts` faz a conta. A geometria é `json`, e
+não a nativa: com a nativa o mapa deles acrescenta o filtro pela área visível e
+a conta passa a ser outra — isso não foi medido.
+
+```
+route: 1000 points, 25 per page, 40 pages
+steps inside a page: 0 fetches for 3 steps
+page turn: 2, 2, 2 record fetches, 0, 0, 0 count queries — 92, 107, 86 ms
+a whole playback: 2 × 39 turns = 78 fetches
+```
+
+O que ela diz, e que a task supunha sem saber:
+
+- **Passo dentro da página não busca nada.** A lista já está na mão; andar nela
+  é memória.
+- **A virada custa duas buscas, e não uma.** É o dobro que a task-006 levantou,
+  e a causa é a consulta compartilhada ser compartilhada só nos *parâmetros*:
+  cada layout embutido tem o seu `useItems`, e os dois refazem a busca quando a
+  `page` muda. Duas buscas por virada, sempre — as três medições deram o mesmo
+  número.
+- **A contagem não se repete.** Zero `aggregate` por virada: o total de páginas
+  é buscado uma vez, no carregamento.
+- **Uma reprodução inteira do trajeto são 78 buscas**, e não as quarenta que a
+  task estimava — 2 × 39 viradas.
+- **Cada virada custa de 86 a 107 ms** entre o clique e o registro novo virar o
+  atual, nesta máquina e com o banco ao lado. É o tempo que a task-016 tem a
+  ganhar, e numa instalação com rede no meio ele é maior.
+
+O spec deixa a linha de base como guarda: se a virada passar a custar mais de
+duas buscas, ele reprova.
 
 ## A lista de atalhos do Directus
 
