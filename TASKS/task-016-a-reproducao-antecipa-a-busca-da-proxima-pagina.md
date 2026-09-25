@@ -1,6 +1,6 @@
 # 🧩 Task 016 — A reproducao antecipa a busca da proxima pagina
 
-- Status: in-review
+- Status: done
 - Type: feat
 - Assignee: sidartaveloso
 - Priority: 760
