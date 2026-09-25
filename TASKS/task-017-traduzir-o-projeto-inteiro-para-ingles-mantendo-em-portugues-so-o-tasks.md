@@ -1,6 +1,6 @@
 # 🧩 Task 017 — Traduzir o projeto inteiro para inglês, mantendo em português só o TASKS/
 
-- Status: pending
+- Status: in-progress
 - Type: refactor
 - Assignee: Sidarta Veloso
 - Priority: 810
