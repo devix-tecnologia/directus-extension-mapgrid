@@ -685,3 +685,76 @@ describe('MapgridLayout — a query that became another one', () => {
     }
   });
 });
+
+/** Gives the map pane a size, which happy-dom leaves at zero and the projection needs. */
+const givePaneSize = (wrapper: VueWrapper, width = 800, height = 400): void => {
+  const pane = wrapper.find('.mapgrid-pane--map').element as HTMLElement;
+  Object.defineProperty(pane, 'clientWidth', { configurable: true, value: width });
+  Object.defineProperty(pane, 'clientHeight', { configurable: true, value: height });
+};
+
+/** Where the mark of the current record sits in the pane, in pixels. */
+const currentPointAt = (wrapper: VueWrapper): { x: number; y: number } | null => {
+  const mark = wrapper.find('[data-current-point]');
+  if (!mark.exists()) return null;
+  const style = (mark.element as HTMLElement).style;
+  return { x: Number.parseFloat(style.left), y: Number.parseFloat(style.top) };
+};
+
+describe('MapgridLayout — the current record on the map', () => {
+  it('draws the record as a point of its own, which the cluster would have swallowed', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    walk.mapState.clusterData = true;
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+
+    // camera at [0, 0] and zoom 3: 512px of world per tile, so a degree is 4096/360 px
+    expect(currentPointAt(walk.wrapper)?.x).toBeCloseTo(400 + (4096 * 10) / 360, 6);
+    expect(walk.mapState.clusterData).toBe(true);
+  });
+
+  it('follows every step, instead of standing on the record it started at', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    walk.mapState.clusterData = true;
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    const first = currentPointAt(walk.wrapper);
+    await walk.press('next');
+
+    expect(currentPointAt(walk.wrapper)?.x).toBeCloseTo((first?.x ?? 0) + (4096 * 10) / 360, 6);
+  });
+
+  it('waits for the camera to land before drawing, or it would mark the place it left', async () => {
+    const walk = mountWalk({ cameraTracking: 'center' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    expect(currentPointAt(walk.wrapper)).toBeNull();
+
+    // the Directus map only publishes the camera on `moveend`
+    walk.mapState.cameraOptions = { bbox: [0, -10, 20, 10], center: [10, 0], zoom: 3 };
+    await nextTick();
+    await nextTick();
+
+    expect(currentPointAt(walk.wrapper)?.x).toBeCloseTo(400, 6);
+  });
+
+  it('takes the mark off the map when the query became another one', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    expect(currentPointAt(walk.wrapper)).not.toBeNull();
+
+    await walk.wrapper.setProps({ queryKey: 'filtered-by-city' });
+    await nextTick();
+
+    expect(currentPointAt(walk.wrapper)).toBeNull();
+  });
+});

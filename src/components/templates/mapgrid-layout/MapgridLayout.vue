@@ -7,6 +7,12 @@
     <div v-else class="mapgrid-container">
       <div ref="mapPane" class="mapgrid-pane mapgrid-pane--map">
         <component :is="map?.component" v-if="map?.component" v-bind="mapProps" />
+        <div
+          v-if="currentPoint"
+          class="mapgrid-current-point"
+          data-current-point
+          :style="{ left: `${currentPoint.x}px`, top: `${currentPoint.y}px` }"
+        />
         <MapToolbar
           class="mapgrid-toolbar"
           :at-start="atStart"
@@ -33,10 +39,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
 import { CameraTrackingPolicy } from '../../../services/camera-tracking/index';
+import { DirectusCurrentPoint, type ScreenPoint } from '../../../services/current-point/index';
 import { EmbeddedStateReader } from '../../../services/embedded-state-reader/index';
 import { DirectusMapCenterer } from '../../../services/map-centerer/index';
 import {
@@ -60,15 +67,17 @@ const missingLayout = computed(() => !props.grid?.component || !props.map?.compo
 const mapPane = ref<HTMLElement | null>(null);
 const gridPane = ref<HTMLElement | null>(null);
 
+const paneSize = (): { height: number; width: number } | null => {
+  const pane = mapPane.value;
+  return pane ? { height: pane.clientHeight, width: pane.clientWidth } : null;
+};
+
 const centerer = computed<DirectusMapCenterer | null>(() => {
   const state = props.map?.state;
   if (!state) return null;
   return new DirectusMapCenterer(
     state,
-    () => {
-      const pane = mapPane.value;
-      return pane ? { height: pane.clientHeight, width: pane.clientWidth } : null;
-    },
+    paneSize,
     {
       afterUpdate: (task) => {
         void nextTick(task);
@@ -87,7 +96,10 @@ const centerer = computed<DirectusMapCenterer | null>(() => {
 
 watch(
   () => props.map?.state?.cameraOptions,
-  () => centerer.value?.onCameraMove()
+  () => {
+    centerer.value?.onCameraMove();
+    cameraLanded();
+  }
 );
 
 const resetView = (): void => {
@@ -129,8 +141,62 @@ const focus = (id: RecordId | null, item?: GeoItem): void => {
   if (id === null) return;
   const record = item ?? gridItems.value[index] ?? ({ id } as GeoItem);
   const framing = trackingPolicy.framing(tracking.value, { zoomIn: props.zoomOnClick === true });
-  if (framing) centerer.value?.centerItem(record, framing);
+  if (framing && centerer.value?.centerItem(record, framing) === true) awaitCamera();
 };
+
+/**
+ * The mark of the current record, drawn beside the map because the cluster
+ * swallows the record's own point — see `DirectusCurrentPoint`.
+ */
+const currentPointer = computed<DirectusCurrentPoint | null>(() => {
+  const state = props.map?.state;
+  return state ? new DirectusCurrentPoint(state, paneSize) : null;
+});
+
+/** The pane's size is not reactive: a resize is what makes the projection read it again. */
+const paneResizes = ref(0);
+/** The Directus map only publishes its camera on `moveend`; until then the projection is the old one. */
+const cameraSettled = ref(true);
+/** Long enough for a camera flight, short enough not to lose the mark if `moveend` never comes. */
+const CAMERA_LANDING_DEADLINE_MS = 2_000;
+let landing: ReturnType<typeof setTimeout> | null = null;
+
+const cameraLanded = (): void => {
+  if (landing !== null) clearTimeout(landing);
+  landing = null;
+  cameraSettled.value = true;
+};
+
+const awaitCamera = (): void => {
+  cameraSettled.value = false;
+  if (landing !== null) clearTimeout(landing);
+  landing = setTimeout(cameraLanded, CAMERA_LANDING_DEADLINE_MS);
+};
+
+const currentPoint = computed<ScreenPoint | null>(() => {
+  void paneResizes.value;
+  const id = currentId.value;
+  if (!cameraSettled.value || id === null) return null;
+
+  const index = ids.value.indexOf(id);
+  const item = (gridItems.value[index] ?? { id }) as Record<string, unknown>;
+  return currentPointer.value?.screenPointOf(item) ?? null;
+});
+
+let paneObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined' || !mapPane.value) return;
+  paneObserver = new ResizeObserver(() => {
+    paneResizes.value += 1;
+  });
+  paneObserver.observe(mapPane.value);
+});
+
+onBeforeUnmount(() => {
+  paneObserver?.disconnect();
+  if (landing !== null) clearTimeout(landing);
+});
 
 /** Overridden, or the Directus grid navigates to the item screen. */
 const frameItem = (payload: unknown): void => {
@@ -303,6 +369,24 @@ const mapProps = computed(() => ({
 
 .mapgrid-pane--grid :deep(thead.table-header tr.fixed) {
   top: 0;
+}
+
+/*
+ * The current record over the map: a ring of its own, because with the
+ * clustering on the record's point is inside the cluster. It is not the map's
+ * marker — it is drawn on top of the canvas, so nothing on it is clickable.
+ */
+.mapgrid-current-point {
+  position: absolute;
+  z-index: 1;
+  inline-size: 22px;
+  block-size: 22px;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--theme--primary);
+  border-radius: 50%;
+  background-color: var(--theme--primary-background);
+  box-shadow: 0 0 0 2px var(--white), var(--theme--elevation-2xl);
+  pointer-events: none;
 }
 
 /* the current record; the inline-start bar tells it apart from `selection` */

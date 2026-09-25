@@ -1,6 +1,6 @@
 # 🧩 Task 015 — O registro atual aparece no mapa mesmo agrupado, com atalhos de teclado e a virada de pagina medida
 
-- Status: pending
+- Status: in-progress
 - Type: feat
 - Assignee: sidartaveloso
 - Priority: 750
@@ -33,10 +33,12 @@ tem oito registros, que provam o comportamento mas não medem nada.
 
 ## Tasks
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
-- [ ] Teste vermelho: com agrupamento ligado, o registro atual aparece no mapa
-      como ponto próprio, fora do cluster, e acompanha cada passo
-- [ ] O ponto do registro atual, atrás de um método próprio documentado como
-      limitação; o `clusterData` do preset não muda
+- [x] Teste vermelho: com agrupamento ligado, o registro atual aparece no mapa
+      como ponto próprio, fora do cluster, e acompanha cada passo. Feito nos
+      unitários do `DirectusCurrentPoint` e do `MapgridLayout`
+- [x] O ponto do registro atual, atrás de um método próprio documentado como
+      limitação: `DirectusCurrentPoint.screenPointOf()`,
+      `src/services/current-point/`. O `clusterData` do preset não muda
 - [ ] Atalhos de teclado com o layout em foco, sem colidir com os do Directus,
       e textos de ajuda em en-US e pt-BR
 - [ ] Contar as requisições de uma reprodução sobre um trajeto sintético de mil
