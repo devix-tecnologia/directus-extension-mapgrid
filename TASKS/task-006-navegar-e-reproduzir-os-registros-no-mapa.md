@@ -182,63 +182,64 @@ que cicla entre os três estados, na `MapToolbar`.
       inteira, item ausente da lista, lista vazia, e uma página só
 
 ### Fase 2: o registro atual sobe para o template
-- [ ] Um lugar só para "qual é o registro atual", no template
-- [ ] Clicar no ponto define o registro atual. O `handleClick` do mapa já foi
-      trocado na task-010 e deixou de navegar para a tela do item, mas hoje
-      marca a `selection` — que arma as ações em lote
-- [ ] Clicar na linha e clicar no ponto passam a ser duas formas de definir o
-      mesmo estado, e não dois caminhos separados
-- [ ] A grade destaca e rola até a linha do registro atual, pela forma decidida
-      nos pré-requisitos, sem usar `selection`
-- [ ] O mapa enquadra o registro atual pelo `IMapCenterer`,
+- [x] Um lugar só para "qual é o registro atual", no template: o `currentId` e o
+      `focus()` em `MapgridLayout.vue`
+- [x] Clicar no ponto define o registro atual. Deixou de escrever na `selection`
+- [x] Clicar na linha e clicar no ponto passam a ser duas formas de definir o
+      mesmo estado, e não dois caminhos separados: os dois chamam `focus()`
+- [x] A grade destaca e rola até a linha do registro atual, sem usar `selection`:
+      `TableRowHighlighter`, classe `.mapgrid-current-row`
+- [x] O mapa enquadra o registro atual pelo `IMapCenterer`,
       respeitando o acompanhamento de câmera da Fase 6
 
 ### Fase 3: navegação manual
-- [ ] Os quatro controles de passo na `MapToolbar`, com a borda de cada um
+- [x] Os quatro controles de passo na `MapToolbar`, com a borda de cada um
       conforme a tabela
-- [ ] Desabilitar primeiro/anterior na primeira posição e próximo/último na
-      última, em vez de deixá-los clicáveis sem efeito
-- [ ] Atalhos de teclado, ativos só quando o layout tem foco, conferindo que não
-      colidem com os atalhos do próprio Directus
+- [x] Desabilitar primeiro/anterior na primeira posição e próximo/último na
+      última, em vez de deixá-los clicáveis sem efeito. Também desabilitados
+      enquanto a página carrega
+- [ ] **Não feito.** Atalhos de teclado, ativos só quando o layout tem foco,
+      conferindo que não colidem com os atalhos do próprio Directus. Ficou de
+      fora porque "não colide com os atalhos do Directus" só se confere contra a
+      lista deles, e essa verificação não cabia na rodada junto do resto
 
 ### Fase 4: reprodução automática
-- [ ] Play e stop, e intervalo entre passos configurável nas opções do layout
-      (na nossa seção do painel, junto do `zoomOnClick`, e não dentro das seções
-      deles)
-- [ ] A câmera acompanha o item em reprodução sem reenquadrar a coleção inteira
-- [ ] Parar sozinho no último registro da última página
-- [ ] Avaliar o agrupamento durante a reprodução: um ponto dentro de um cluster
-      não aparece sozinho, e a reprodução ficaria invisível. O `clusterData` é
-      opção do mapa deles, gravada no preset — desligá-lo só durante a
-      reprodução não pode gravar a mudança
+- [x] Play e stop, e intervalo entre passos configurável nas opções do layout,
+      na nossa seção `.mapgrid-option--playback`. Play e stop são um botão só,
+      que mostra o que dá para fazer agora
+- [x] A câmera acompanha o item em reprodução sem reenquadrar a coleção inteira:
+      cada passo chama `centerItem`, e `fitAll` só sai do botão de reenquadrar
+- [x] Parar sozinho no último registro da última página
+- [ ] **Não feito.** Avaliar o agrupamento durante a reprodução: um ponto dentro
+      de um cluster não aparece sozinho, e a reprodução ficaria invisível. O
+      `clusterData` é opção do mapa deles, gravada no preset — desligá-lo só
+      durante a reprodução não pode gravar a mudança
 
 ### Fase 5: virar a página
-- [ ] Virar a página pelo mesmo caminho do rodapé do tabular (`page` na consulta
-      ou `toPage`), sem controle de paginação novo
-- [ ] Próximo no fim da página avança e cai no primeiro item da próxima;
+- [x] Virar a página pelo mesmo caminho do rodapé do tabular: o `goToPage` do
+      `src/index.ts` escreve `page` na consulta compartilhada. Nenhum controle
+      de paginação novo
+- [x] Próximo no fim da página avança e cai no primeiro item da próxima;
       anterior no começo recua e cai no **último** item da anterior
-- [ ] Cobrir a espera pela busca: a navegação pausa enquanto a página carrega, em
+- [x] Cobrir a espera pela busca: a navegação pausa enquanto a página carrega, em
       vez de pular registros
-- [ ] Medir com uma coleção de rastreamento de verdade. Com 25 por página, um
-      trajeto de mil pontos são quarenta requisições durante a reprodução — e,
-      com a consulta compartilhada, possivelmente o dobro (a task-010 registrou
-      uma busca por layout). Avaliar um tamanho de página maior durante a
-      reprodução, ou buscar a próxima página antes de precisar dela
+- [ ] **Não feito.** Medir com uma coleção de rastreamento de verdade. Com 25 por
+      página, um trajeto de mil pontos são quarenta requisições durante a
+      reprodução — e, com a consulta compartilhada, possivelmente o dobro.
+      Avaliar um tamanho de página maior durante a reprodução, ou buscar a
+      próxima página antes de precisar dela. O seed do e2e tem oito registros,
+      que provam o comportamento mas não medem nada
 
 ### Fase 6: acompanhamento da câmera
-- [ ] Traduzir o estado para o centralizador: `off` não chama, `follow` chama
-      `centerItem(item)` (o `onlyIfOutside: true` padrão, que já compara com o
-      `cameraOptions.bbox`), `center` chama com `onlyIfOutside: false`. O
-      cálculo de "fora da área visível" já existe e está testado no
-      centralizador; o `isOutsideBounds` que esta fase citava saiu com
-      `src/services/geo/`
+- [x] Traduzir o estado para o centralizador: feito no `CameraTrackingPolicy`,
+      que devolve `null` em `off` e as `CenteringOptions` nos outros dois
 - [x] Para item que não é ponto, "onde está o item" é o bbox da geometria, e não o
       primeiro vértice. Já feito: o centralizador enquadra linha, polígono e
       `Multi*` pelo bbox (task-010)
-- [ ] Controle único ciclando entre os três estados, com ícone e rótulo por estado
-- [ ] Persistir o estado nas opções do layout, com `follow` como padrão
-- [ ] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
-- [ ] Textos em en-US e pt-BR
+- [x] Controle único ciclando entre os três estados, com ícone e rótulo por estado
+- [x] Persistir o estado nas opções do layout, com `follow` como padrão
+- [x] Reduzir `zoomOnClick` a "aproximar ao focar", sem decidir movimento
+- [x] Textos em en-US e pt-BR
 
 ### Fase 6b: onde ficam os controles
 

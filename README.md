@@ -19,10 +19,17 @@ A Layout-type extension for Directus that displays a collection in map and grid 
 - **Map and grid together**: the Directus map layout and the Directus table layout side by side,
   over the same query and the same selection
 - **Click a row, the map goes there**: the map flies to the item, keeping the current zoom — or
-  zooming in, with *Zoom on table click*
-- **Click a marker, the row is selected**: instead of leaving the layout for the item page
+  zooming in, with *Zoom on focus*
+- **Click a marker, the row is marked**: instead of leaving the layout for the item page. The mark
+  is not the selection, so it does not arm the bulk actions
+- **Walk the records**: first, previous, next and last, in the query's order. When the record is on
+  another page, the page turns first
+- **Play them back**: the camera walks the records on its own, at a configurable interval. With a
+  vehicle tracking collection sorted by date, it drives the route in the order it happened
+- **Camera tracking**: *free* leaves the map where you left it, *follow* moves only when the record
+  leaves the visible area, *keep centred* keeps it in the middle at every step
 - **What the Directus layouts already do**: basemap, clustering and display template from the map
-  layout; columns, sorting and spacing from the table layout
+  layout; columns, sorting, pagination and spacing from the table layout
 - **Reset view**: re-fit the map to the current result set at any time
 - **Bulk delete**: select rows and delete them from the layout header
 - **Bilingual interface**: follows the Directus app locale (en-US, pt-BR)
@@ -37,13 +44,36 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Make sure your collection has a field of type **Map** (geolocation).
 2. In the layout dropdown on the right, select **MapGrid**.
-3. The layout options have three sections:
+3. The layout options have four sections:
    - **Map**: the Directus map layout's own options — basemap, geospatial field, display template
      and clustering
    - **Grid**: the Directus table layout's own options
-   - **Zoom on table click**: zoom in on the clicked item instead of keeping the current zoom
+   - **Zoom on focus**: zoom in on the focused record instead of keeping the current zoom. It says
+     nothing about *whether* the camera moves — that is the camera tracking's call
+   - **Playback**: how many seconds to wait between records while playing back. One second is the
+     floor, because each step asks the map for a camera animation
 
 The geospatial field is detected from the collection, so the layout works before anything is set.
+
+#### Walking the records
+
+The controls sit on the map, in the MapGrid's own toolbar:
+
+| Control | What it does |
+| --- | --- |
+| ⏮ First / ⏭ Last | The ends of the **query**, not of the page: they turn the page when they have to |
+| ◀ Previous / ▶ Next | One record. At the edge of a page, the page turns and the record is the one at the other end of it |
+| ▶ Play / ⏹ Stop | Walks forward on its own, and stops by itself at the last record |
+| GPS | Cycles the camera tracking: free → follow → keep centred |
+
+The order that defines "next" is the query's `sort`, which is the one showing in the grid header.
+Sorting by a date/time field is what makes playback drive a route in the order it happened; with
+any other sort, it walks that order instead. While a page is being fetched the controls wait, so no
+record is skipped.
+
+The current record is marked on its grid row and scrolled into view. It is deliberately **not** the
+selection: that one also arms the bulk actions, and "I am looking at this" should not read as "I
+marked this to be deleted".
 
 The basemaps offered are the ones in **Project Settings → Map**, as in every map of the app. The
 chosen basemap is the app's choice, not the MapGrid's: it is shared with the other map layouts and
@@ -195,10 +225,17 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
 - **Mapa e grade juntos**: o layout de mapa e o layout de tabela do Directus lado a lado, sobre a
   mesma consulta e a mesma seleção
 - **Clicar na linha leva o mapa até o item**: o mapa voa até ele mantendo o zoom de agora — ou
-  aproximando, com *Zoom ao clicar na linha*
-- **Clicar no marcador seleciona a linha**: em vez de sair do layout para a página do item
+  aproximando, com *Zoom ao focar*
+- **Clicar no marcador marca a linha**: em vez de sair do layout para a página do item. A marca não
+  é a seleção, então não arma as ações em lote
+- **Percorrer os registros**: primeiro, anterior, próximo e último, na ordem da consulta. Se o
+  registro está em outra página, a página é trocada antes
+- **Reproduzir**: a câmera percorre os registros sozinha, num intervalo configurável. Numa coleção
+  de rastreamento veicular ordenada por data, ela refaz o trajeto na ordem em que ele aconteceu
+- **Acompanhamento da câmera**: *livre* deixa o mapa onde você deixou, *seguir* move só quando o
+  registro sai da área visível, *centralizar* mantém o registro sempre no meio
 - **O que os layouts do Directus já fazem**: mapa base, agrupamento e template de exibição vêm do
-  layout de mapa; colunas, ordenação e espaçamento vêm do layout de tabela
+  layout de mapa; colunas, ordenação, paginação e espaçamento vêm do layout de tabela
 - **Reenquadrar**: reajustar o mapa ao resultado atual a qualquer momento
 - **Exclusão em lote**: selecionar linhas e excluí-las pelo cabeçalho do layout
 - **Interface bilíngue**: acompanha o idioma do app do Directus (en-US, pt-BR)
@@ -213,14 +250,37 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Garanta que a coleção possua um campo do tipo **Map** (geolocalização).
 2. No menu de layouts à direita, selecione **MapGrid**.
-3. As opções do layout têm três seções:
+3. As opções do layout têm quatro seções:
    - **Mapa**: as opções do próprio layout de mapa do Directus — mapa base, campo geoespacial,
      template de exibição e agrupamento
    - **Grade**: as opções do próprio layout de tabela do Directus
-   - **Zoom ao clicar na linha**: aproximar do item clicado em vez de manter o zoom de agora
+   - **Zoom ao focar**: aproximar do registro focado em vez de manter o zoom de agora. Não diz nada
+     sobre *se* a câmera se move — isso é do acompanhamento da câmera
+   - **Reprodução**: quantos segundos esperar entre um registro e o próximo durante a reprodução. O
+     piso é um segundo, porque cada passo pede uma animação de câmera ao mapa
 
 O campo geoespacial é detectado a partir da coleção, então o layout funciona antes de qualquer
 opção ser preenchida.
+
+#### Percorrendo os registros
+
+Os controles ficam sobre o mapa, na barra do próprio MapGrid:
+
+| Controle | O que faz |
+| --- | --- |
+| ⏮ Primeiro / ⏭ Último | As pontas da **consulta**, não da página: trocam de página quando precisam |
+| ◀ Anterior / ▶ Próximo | Um registro. Na borda da página, a página vira e o registro é o da outra ponta dela |
+| ▶ Play / ⏹ Stop | Avança sozinho, e para no último registro por conta própria |
+| GPS | Cicla o acompanhamento da câmera: livre → seguir → centralizar |
+
+A ordem que define "próximo" é o `sort` da consulta, que é o que está à vista no cabeçalho da
+grade. Ordenar por um campo de data/hora é o que faz a reprodução refazer um trajeto na ordem em
+que ele aconteceu; com qualquer outra ordem, ela percorre essa outra ordem. Enquanto uma página
+está sendo buscada, os controles esperam — nenhum registro é pulado.
+
+O registro atual é marcado na linha da grade e rolado até a vista. Ele deliberadamente **não** é a
+seleção: ela também arma as ações em lote, e "estou vendo este" não pode aparecer como "marquei
+este para apagar".
 
 Os mapas base oferecidos são os de **Project Settings → Map**, como em todo mapa do app. O mapa base
 escolhido é uma escolha do app, e não do MapGrid: vale também para os outros layouts de mapa e não
