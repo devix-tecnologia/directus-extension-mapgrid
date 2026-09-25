@@ -326,6 +326,14 @@ A captura do README (`docs/tela.jpg`) foi refeita na mesma execução: mostra a
 barra nova e o painel lateral com as quatro seções, incluindo *Zoom on focus* e
 *Playback*.
 
+A evidência de clique no ponto saiu da mesma execução com 319 KB e não entrou:
+o `scripts/tamanho-de-evidencia` reprova qualquer arquivo de `TASKS/assets`
+acima de 300 KB. O que ela mostrava — o ponto clicado virando registro atual —
+está na captura da composição e no e2e `clicking a marker sets it, and does not
+leave the MapGrid`. Fica o aviso para quem reexecutar: o
+`evidence-marker-click` grava PNG, e o PNG desta tela nasce perto do teto (o da
+task-010 ficou em 276 KB).
+
 ## Notes
 
 A task-010 está integrada (`develop` em `c513b29`), e o enquadramento por bbox
