@@ -1,40 +1,40 @@
 /**
- * As âncoras de DOM do MapGrid, num lugar só.
+ * The MapGrid's DOM anchors, in one place.
  *
- * Depois da task-010 quem desenha são os layouts do Directus, e não os nossos
- * componentes: `.map-container`, `.v-table`, `[data-sort-desc]` e
- * `[data-remove-field]` deixaram de existir. Três specs repetiam esses
- * seletores, e os três passaram a esperar por uma tela que não existe mais.
+ * After task-010 what draws are the Directus layouts, not our components:
+ * `.map-container`, `.v-table`, `[data-sort-desc]` and `[data-remove-field]`
+ * no longer exist. Three specs repeated those selectors, and all three went on
+ * waiting for a screen that is gone.
  *
- * O que continua nosso são os dois painéis da composição — `.mapgrid-pane--map`
- * e `.mapgrid-pane--grid` — e é por eles que tudo aqui começa. Dentro deles, o
- * que se procura é a classe do layout do Directus (`.layout-map`,
- * `.layout-tabular`), nunca um detalhe interno do `v-table`.
+ * What is still ours are the composition's two panes — `.mapgrid-pane--map`
+ * and `.mapgrid-pane--grid` — and everything here starts from them. Inside
+ * them, what is looked up is the Directus layout class (`.layout-map`,
+ * `.layout-tabular`), never an internal detail of `v-table`.
  */
 import { expect, type Page } from '@playwright/test';
 import { COLLECTION_NAME } from '../../helper-collection';
 import { testEnv } from '../../test-env';
 
-/** O painel de cada layout embutido. Nossos, e os únicos que são. */
-export const PAINEL_MAPA = '.mapgrid-pane--map';
-export const PAINEL_GRADE = '.mapgrid-pane--grid';
+/** Each embedded layout's pane. Ours, and the only ones that are. */
+export const MAP_PANE = '.mapgrid-pane--map';
+export const GRID_PANE = '.mapgrid-pane--grid';
 
-/** O layout do Directus dentro de cada painel. */
-export const MAPA = `${PAINEL_MAPA} .layout-map`;
-export const GRADE = `${PAINEL_GRADE} .layout-tabular`;
+/** The Directus layout inside each pane. */
+export const MAP = `${MAP_PANE} .layout-map`;
+export const GRID = `${GRID_PANE} .layout-tabular`;
 
-/** A tabela desenhada pela grade, e as partes dela que os specs consultam. */
-export const TABELA = `${PAINEL_GRADE} table`;
-export const CABECALHOS = `${PAINEL_GRADE} thead th`;
-export const LINHAS = `${PAINEL_GRADE} tbody tr`;
+/** The table the grid draws, and the parts of it the specs look at. */
+export const TABLE = `${GRID_PANE} table`;
+export const HEADERS = `${GRID_PANE} thead th`;
+export const ROWS = `${GRID_PANE} tbody tr`;
 
-/** O `+` que abre o seletor de campos, no cabeçalho do layout tabular deles. */
-export const ADICIONAR_CAMPO = `${PAINEL_GRADE} thead .add-field`;
+/** The `+` that opens the field picker, in their tabular layout's header. */
+export const ADD_FIELD = `${GRID_PANE} thead .add-field`;
 
-/** O canvas do MapLibre, que é onde os marcadores são desenhados. */
-export const CANVAS_DO_MAPA = `${PAINEL_MAPA} .maplibregl-canvas`;
+/** The MapLibre canvas, which is where the markers are drawn. */
+export const MAP_CANVAS = `${MAP_PANE} .maplibregl-canvas`;
 
-const CARREGAMENTO = 60_000;
+const LOADING = 60_000;
 
 export async function login(page: Page): Promise<void> {
   await page.goto('/admin/login');
@@ -51,70 +51,67 @@ export async function login(page: Page): Promise<void> {
 }
 
 /**
- * Espera a composição estar de pé. Esperar só pelo mapa não basta: ele aparece
- * antes da grade, e um spec de coluna mediria o cabeçalho antes de ele existir.
+ * Waits for the composition to be up. Waiting only for the map is not enough:
+ * it shows up before the grid, and a column spec would measure the header
+ * before it exists.
  */
-export async function esperarOMapGrid(page: Page): Promise<void> {
-  await expect(page.locator(MAPA)).toBeVisible({ timeout: CARREGAMENTO });
-  await expect(page.locator(TABELA)).toBeVisible({ timeout: CARREGAMENTO });
+export async function waitForMapGrid(page: Page): Promise<void> {
+  await expect(page.locator(MAP)).toBeVisible({ timeout: LOADING });
+  await expect(page.locator(TABLE)).toBeVisible({ timeout: LOADING });
 }
 
 export async function openCollection(page: Page, collection = COLLECTION_NAME): Promise<void> {
   await page.goto(`/admin/content/${collection}`);
-  await esperarOMapGrid(page);
+  await waitForMapGrid(page);
 }
 
 /**
- * As colunas de dados que a grade mostra, na ordem.
+ * The data columns the grid shows, in order.
  *
- * Os rótulos vêm do `name` do campo, que o Directus deriva da chave: o campo
- * `name` aparece como "Name". Por isso a comparação é em minúsculas — o que o
- * teste afirma é qual campo está na tela, não como ele foi capitalizado. As
- * células vazias são a da caixa de marcação e a do `+`, que não são campos.
+ * The labels come from the field's `name`, which Directus derives from the key:
+ * the `name` field shows up as "Name". That is why the comparison is
+ * lowercased — what the test states is which field is on screen, not how it was
+ * capitalised. The empty cells are the checkbox one and the `+` one, which are
+ * not fields.
  */
-export async function colunasVisiveis(page: Page): Promise<string[]> {
-  const cabecalhos = page.locator(CABECALHOS);
-  await expect(cabecalhos.first()).toBeVisible({ timeout: 30_000 });
+export async function visibleColumns(page: Page): Promise<string[]> {
+  const headers = page.locator(HEADERS);
+  await expect(headers.first()).toBeVisible({ timeout: 30_000 });
 
-  const rotulos = await cabecalhos.allInnerTexts();
-  return rotulos.map((rotulo) => rotulo.trim().toLowerCase()).filter((rotulo) => rotulo !== '');
+  const labels = await headers.allInnerTexts();
+  return labels.map((label) => label.trim().toLowerCase()).filter((label) => label !== '');
 }
 
 /**
- * A célula da primeira linha sob uma coluna, achada pela posição do cabeçalho.
+ * The first row's cell under a column, found by the header's position.
  *
- * Contar colunas na mão não serve: a tabela deles começa com a caixa de
- * marcação e pode ganhar a alça de ordenação manual quando a coleção tem campo
- * de `sort`. Como essas colunas aparecem no `thead` também, a posição do
- * rótulo é a posição da célula.
+ * Counting columns by hand does not work: their table starts with the checkbox
+ * and may gain the manual sort handle when the collection has a `sort` field.
+ * Since those columns also show up in the `thead`, the label's position is the
+ * cell's position.
  */
-export async function celulaDaColuna(page: Page, campo: string) {
-  const rotulos = await page.locator(CABECALHOS).allInnerTexts();
-  const indice = rotulos.findIndex((rotulo) => rotulo.trim().toLowerCase() === campo.toLowerCase());
-  if (indice === -1)
-    throw new Error(`A coluna "${campo}" não está na grade: ${rotulos.join(', ')}`);
+export async function columnCell(page: Page, field: string) {
+  const labels = await page.locator(HEADERS).allInnerTexts();
+  const index = labels.findIndex((label) => label.trim().toLowerCase() === field.toLowerCase());
+  if (index === -1) throw new Error(`Column "${field}" is not in the grid: ${labels.join(', ')}`);
 
-  return page.locator(LINHAS).first().locator('td').nth(indice);
+  return page.locator(ROWS).first().locator('td').nth(index);
 }
 
 /**
- * Ordena por uma coluna pelo caminho que o layout tabular do Directus oferece:
- * o clique no cabeçalho abre o menu de contexto, e ordenar está dentro dele.
- * Não é escolha nossa — o `v-table` troca o clique que ordena por abrir o menu
- * assim que o slot `header-context-menu` existe, e eles usam esse slot.
+ * Sorts by a column through the path the Directus tabular layout offers: the
+ * header click opens the context menu, and sorting lives inside it. Not our
+ * choice — `v-table` swaps the sorting click for opening the menu as soon as
+ * the `header-context-menu` slot exists, and they use that slot.
  */
-export async function ordenarPor(
-  page: Page,
-  campo: string,
-  direcao: 'asc' | 'desc'
-): Promise<void> {
+export async function sortBy(page: Page, field: string, direction: 'asc' | 'desc'): Promise<void> {
   await page
-    .locator(CABECALHOS, { hasText: new RegExp(`^${campo}$`, 'i') })
+    .locator(HEADERS, { hasText: new RegExp(`^${field}$`, 'i') })
     .first()
     .click();
 
   const item =
-    direcao === 'desc'
+    direction === 'desc'
       ? page.getByText(/sort descending|ordem decrescente/i).first()
       : page.getByText(/sort ascending|ordem crescente/i).first();
 
@@ -122,42 +119,43 @@ export async function ordenarPor(
   await item.click();
 }
 
-/** A linha da grade que fala de um item, achada pelo texto de uma célula. */
-export function linhaDe(page: Page, texto: string) {
-  return page.locator(LINHAS, { hasText: texto }).first();
+/** The grid row that talks about an item, found by a cell's text. */
+export function rowOf(page: Page, text: string) {
+  return page.locator(ROWS, { hasText: text }).first();
 }
 
 /**
- * Clica no marcador que está no centro do canvas do mapa.
+ * Clicks the marker at the centre of the map canvas.
  *
- * Duas coisas, e as duas precisam ser assim. Achar um marcador numa tela de
- * MapLibre exige saber onde a câmera está, e a instância do mapa é do layout do
- * Directus — de fora não se alcança; quem diz de onde a câmera parte é o preset
- * semeado, e aí o ponto semeado nasce no centro.
+ * Two things, and both have to be this way. Finding a marker on a MapLibre
+ * screen requires knowing where the camera is, and the map instance belongs to
+ * the Directus layout — unreachable from outside; what says where the camera
+ * starts is the seeded preset, and then the seeded point is born at the centre.
  *
- * E esperar o canvas aparecer não basta: a camada de pontos desenha depois, e
- * um clique antes disso cai no vazio — foi o que fez este spec falhar com o
- * marcador na tela da captura. O sinal de que há ponto sob o mouse é o cursor
- * do canvas virar `pointer`, que o próprio MapLibre troca ao entrar numa
- * camada interativa. Medido: leva ~2s depois de a grade aparecer.
+ * And waiting for the canvas to show up is not enough: the point layer draws
+ * later, and a click before that falls on nothing — that is what made this spec
+ * fail with the marker visible in the screenshot. The signal that there is a
+ * point under the mouse is the canvas cursor turning into `pointer`, which
+ * MapLibre itself sets when entering an interactive layer. Measured: it takes
+ * ~2s after the grid shows up.
  */
-export async function clicarNoPontoCentral(page: Page): Promise<void> {
-  const canvas = page.locator(CANVAS_DO_MAPA);
-  await expect(canvas).toBeVisible({ timeout: CARREGAMENTO });
+export async function clickCenterMarker(page: Page): Promise<void> {
+  const canvas = page.locator(MAP_CANVAS);
+  await expect(canvas).toBeVisible({ timeout: LOADING });
 
-  const caixa = await canvas.boundingBox();
-  if (!caixa) throw new Error('O canvas do mapa não tem caixa delimitadora');
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('The map canvas has no bounding box');
 
-  const x = caixa.x + caixa.width / 2;
-  const y = caixa.y + caixa.height / 2;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
 
   await expect
     .poll(
       async () => {
-        // o cursor so muda com movimento: dois pontos, para haver `mousemove`
+        // the cursor only changes on movement: two points, so there is a `mousemove`
         await page.mouse.move(x + 1, y);
         await page.mouse.move(x, y);
-        return canvas.evaluate((elemento) => getComputedStyle(elemento).cursor);
+        return canvas.evaluate((element) => getComputedStyle(element).cursor);
       },
       { timeout: 30_000 }
     )
@@ -167,54 +165,55 @@ export async function clicarNoPontoCentral(page: Page): Promise<void> {
 }
 
 /**
- * As seções do painel de opções. As classes são nossas, postas em
- * `MapgridOptions.vue`: dentro de cada seção quem desenha é o painel do
- * Directus, e os rótulos dele mudam de idioma e de versão.
+ * The options panel's sections. The classes are ours, set in
+ * `MapgridOptions.vue`: inside each section what draws is the Directus panel,
+ * and its labels change with locale and version.
  */
-export const OPCOES_DO_MAPA = '.mapgrid-option--map';
-export const OPCOES_DA_GRADE = '.mapgrid-option--grid';
-export const OPCOES_DO_ZOOM = '.mapgrid-option--zoom';
+export const MAP_OPTIONS = '.mapgrid-option--map';
+export const GRID_OPTIONS = '.mapgrid-option--grid';
+export const ZOOM_OPTIONS = '.mapgrid-option--zoom';
 
 /**
- * Abre a gaveta de opções do layout na barra lateral. Ela vem recolhida, e as
- * opções só existem no DOM depois — procurar por elas antes disto acha nada.
+ * Opens the layout options drawer in the sidebar. It comes collapsed, and the
+ * options only exist in the DOM afterwards — looking for them before this finds
+ * nothing.
  */
-export async function abrirOpcoesDoLayout(page: Page): Promise<void> {
-  const cabecalho = page.getByRole('button', { name: /^layers/ });
-  await expect(cabecalho).toBeVisible({ timeout: 30_000 });
-  if ((await cabecalho.getAttribute('aria-expanded')) !== 'true') await cabecalho.click();
+export async function openLayoutOptions(page: Page): Promise<void> {
+  const header = page.getByRole('button', { name: /^layers/ });
+  await expect(header).toBeVisible({ timeout: 30_000 });
+  if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
 
-  await expect(page.locator(OPCOES_DO_ZOOM)).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(ZOOM_OPTIONS)).toBeVisible({ timeout: 30_000 });
 }
 
 /**
- * Expande uma seção do painel. O `v-detail` do Directus só põe o conteúdo no
- * DOM quando está aberto, então a prova de que abriu é o `.content` existir —
- * e não a classe do cabeçalho, que não muda.
+ * Expands a panel section. The Directus `v-detail` only puts the content in the
+ * DOM when open, so the proof that it opened is `.content` existing — and not
+ * the header class, which does not change.
  *
- * `> .content` de propósito, e não `.content`: dentro da seção do mapa o
- * template de exibição deles tem um `span.content` próprio, o contenteditável,
- * e um seletor descendente casa com os dois.
+ * `> .content` on purpose, and not `.content`: inside the map section their
+ * display template has a `span.content` of its own, the contenteditable, and a
+ * descendant selector matches both.
  */
-export async function abrirSecaoDasOpcoes(page: Page, secao: string): Promise<void> {
-  const detalhe = page.locator(secao);
-  await expect(detalhe).toBeVisible({ timeout: 30_000 });
+export async function openOptionsSection(page: Page, section: string): Promise<void> {
+  const detail = page.locator(section);
+  await expect(detail).toBeVisible({ timeout: 30_000 });
 
-  const conteudo = page.locator(`${secao} > .content`);
-  if ((await conteudo.count()) === 0) await detalhe.locator('.v-divider').first().click();
+  const content = page.locator(`${section} > .content`);
+  if ((await content.count()) === 0) await detail.locator('.v-divider').first().click();
 
-  await expect(conteudo).toBeVisible({ timeout: 30_000 });
+  await expect(content).toBeVisible({ timeout: 30_000 });
 }
 
 /**
- * Escolhe um item num `v-select` de dentro de uma seção. A lista do menu deles
- * é desenhada num portal, fora da seção, então o clique no item não pode ser
- * procurado dentro dela.
+ * Picks an item in a `v-select` inside a section. Their menu list is drawn in a
+ * portal, outside the section, so the click on the item cannot be looked for
+ * inside it.
  */
-export async function escolherNoSeletor(page: Page, secao: string, item: RegExp): Promise<void> {
-  await page.locator(`${secao} .v-select`).first().click();
+export async function pickInSelect(page: Page, section: string, item: RegExp): Promise<void> {
+  await page.locator(`${section} .v-select`).first().click();
 
-  const opcao = page.getByRole('listitem').filter({ hasText: item }).first();
-  await expect(opcao).toBeVisible({ timeout: 20_000 });
-  await opcao.click();
+  const option = page.getByRole('listitem').filter({ hasText: item }).first();
+  await expect(option).toBeVisible({ timeout: 20_000 });
+  await option.click();
 }

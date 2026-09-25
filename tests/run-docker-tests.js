@@ -17,19 +17,19 @@ const SUITES = {
     services: 'directus',
     testCommand: 'npx playwright test',
     /*
-     * O e2e roda DENTRO da rede do docker, no servico `tests` do perfil
-     * `runner`, e nao na maquina.
+     * The e2e runs INSIDE the docker network, in the `runner` profile's
+     * `tests` service, and not on the machine.
      *
-     * O caminho pela maquina depende de alcancar a porta que o docker publicou
-     * — e ha maquina que nao alcanca: com rota de saida do Tailscale anunciada,
-     * a conexao para a porta publicada expira sem erro, e a suite inteira cai
-     * por um motivo que nao e o dela. De dentro da rede o Directus atende pelo
-     * nome do servico, `http://directus:8055`, e a porta sorteada deixa de
-     * importar.
+     * The path through the machine depends on reaching the port docker
+     * published — and there are machines that cannot: with a Tailscale exit
+     * route advertised, the connection to the published port times out with no
+     * error, and the whole suite falls for a reason that is not its own. From
+     * inside the network Directus answers by service name,
+     * `http://directus:8055`, and the drawn port stops mattering.
      *
-     * Quem precisa do Playwright interativo (`--ui`, `--debug`, a gravacao)
-     * passa `--host` e volta ao caminho antigo, que e o unico onde a janela do
-     * navegador aparece.
+     * Whoever needs interactive Playwright (`--ui`, `--debug`, the recording)
+     * passes `--host` and goes back to the old path, which is the only one
+     * where the browser window shows up.
      */
     runnerService: 'tests',
   },
@@ -72,11 +72,12 @@ function logError(message) {
 }
 
 /*
- * O compose monta `./dist/index.js` como arquivo. Se o build ainda nao existe,
- * o Docker nao reclama: cria no host um DIRETORIO vazio com esse nome, do root.
- * O Directus sobe sem a extensao, a suite falha por um motivo que nao e o dela,
- * e o `pnpm build` seguinte passa a morrer com EISDIR ate alguem apagar o
- * diretorio com privilegio de root. Por isso a checagem vem antes de subir.
+ * Compose mounts `./dist/index.js` as a file. If the build does not exist yet,
+ * Docker does not complain: it creates an empty DIRECTORY with that name on the
+ * host, owned by root. Directus comes up without the extension, the suite fails
+ * for a reason that is not its own, and the next `pnpm build` starts dying with
+ * EISDIR until somebody removes the directory with root privileges. That is why
+ * the check comes before bringing the stack up.
  */
 const BUILT_EXTENSION = 'dist/index.js';
 
@@ -154,9 +155,9 @@ async function waitForHealthyContainer(maxWaitSeconds = HEALTH_CHECK_TIMEOUT_SEC
 async function stopContainers(composeCommand) {
   log('Stopping existing containers...');
   /*
-   * `--volumes` so no caminho da maquina. No do runner, os volumes nomeados sao
-   * o node_modules e o store do pnpm do container: apaga-los faz cada execucao
-   * reinstalar os 919 pacotes do zero, o que domina o tempo total.
+   * `--volumes` only on the machine path. On the runner path, the named volumes
+   * are the container's node_modules and pnpm store: dropping them makes every
+   * run reinstall the 919 packages from scratch, which dominates the total time.
    */
   const volumeFlag = useRunnerService ? '' : ' --volumes';
   try {
@@ -219,11 +220,11 @@ async function runTests(directusUrl) {
 }
 
 /**
- * Roda a suite no servico `tests`, dentro da rede do docker.
+ * Runs the suite in the `tests` service, inside the docker network.
  *
- * `spawn` com `stdio: 'inherit'`, e nao `exec`: a instalacao mais a saida do
- * Playwright passam do buffer padrao de 1MB do `exec`, que mataria o processo
- * no meio da suite e reportaria uma falha que nao aconteceu.
+ * `spawn` with `stdio: 'inherit'`, and not `exec`: the install plus Playwright's
+ * output exceed `exec`'s default 1MB buffer, which would kill the process in
+ * the middle of the suite and report a failure that never happened.
  */
 async function runTestsInRunner(composeCommand) {
   log(`Running ${suiteName} tests inside the "${suite.runnerService}" service...`);

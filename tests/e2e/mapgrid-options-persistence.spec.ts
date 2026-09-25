@@ -1,171 +1,173 @@
 /**
- * O painel de opções grava no preset?
+ * Does the options panel write to the preset?
  *
- * A task-009 concluiu que não, mas a medição que sustentava essa conclusão lia a
- * primeira linha de `/presets` da coleção — que é a global, escrita pela
- * semente. O Directus não edita a global quando alguém muda uma opção pela
- * interface: ele cria um preset só daquela pessoa. O ajudante foi corrigido em
- * `tests/helpers/mapgrid-preset.ts` para aplicar a mesma precedência do Directus
- * (pessoa > papel > global), e esta é a medição refeita.
+ * Task-009 concluded it does not, but the measurement behind that conclusion
+ * read the collection's first `/presets` row — the global one, written by the
+ * seed. Directus does not edit the global one when somebody changes an option
+ * through the interface: it creates a preset of that person's own. The helper
+ * was fixed in `tests/helpers/mapgrid-preset.ts` to apply the same precedence
+ * Directus does (person > role > global), and this is the measurement redone.
  *
- * Se passar, o defeito da task-009 era erro de medição.
+ * If it passes, task-009's defect was a measurement error.
  */
 import { expect, type Page, test } from '@playwright/test';
 import { ensureMapGridPreset, readMapGridPresetOptions } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
-  abrirOpcoesDoLayout,
-  abrirSecaoDasOpcoes,
-  escolherNoSeletor,
+  GRID_OPTIONS,
   login,
-  OPCOES_DA_GRADE,
-  OPCOES_DO_MAPA,
-  OPCOES_DO_ZOOM,
+  MAP_OPTIONS,
   openCollection,
+  openLayoutOptions,
+  openOptionsSection,
+  pickInSelect,
+  ZOOM_OPTIONS,
 } from './helpers/mapgrid-page';
 
-/** A barra lateral vem recolhida, e as opções do layout só existem no DOM depois. */
-async function openLayoutOptions(page: Page): Promise<void> {
-  await abrirOpcoesDoLayout(page);
-  await abrirSecaoDasOpcoes(page, OPCOES_DO_ZOOM);
+/** The sidebar comes collapsed, and the layout options only exist in the DOM afterwards. */
+async function openZoomOptions(page: Page): Promise<void> {
+  await openLayoutOptions(page);
+  await openOptionsSection(page, ZOOM_OPTIONS);
 }
 
-/** As seções do preset que cada layout embutido escreve. */
-const secao = (opcoes: Record<string, unknown>, nome: 'map' | 'tabular') =>
-  (opcoes[nome] ?? {}) as Record<string, unknown>;
+/** The preset sections each embedded layout writes. */
+const section = (options: Record<string, unknown>, name: 'map' | 'tabular') =>
+  (options[name] ?? {}) as Record<string, unknown>;
 
 test.beforeAll(async () => {
   await setupTestEnvironment();
 });
 
-// dois carregamentos completos, e o mapa e lento: o padrao de 180s nao cobre
+// two full loads, and the map is slow: the 180s default does not cover it
 test.setTimeout(300_000);
 
-test('uma opção mudada no painel sobrevive ao reload', async ({ page }) => {
+test('an option changed in the panel survives the reload', async ({ page }) => {
   await ensureMapGridPreset();
   await login(page);
 
   await openCollection(page);
 
-  const antes = await readMapGridPresetOptions();
-  console.log(`[antes] layout_options efetivo: ${JSON.stringify(antes)}`);
+  const before = await readMapGridPresetOptions();
+  console.log(`[before] effective layout_options: ${JSON.stringify(before)}`);
 
-  await openLayoutOptions(page);
+  await openZoomOptions(page);
 
   const checkbox = page.getByText(/zoom when clicking|aproximar ao clicar/i).first();
   await expect(checkbox).toBeVisible({ timeout: 30_000 });
-  const alvo = !(antes.zoomOnClick ?? false);
+  const target = !(before.zoomOnClick ?? false);
   await checkbox.click();
 
   /*
-   * A gravação do Directus é debounced: ler logo após o clique chega antes de
-   * ela acontecer, e o teste acusaria perda do que só ainda não foi gravado.
+   * The Directus write is debounced: reading right after the click gets there
+   * before it happens, and the test would report as lost what had merely not
+   * been stored yet.
    */
   await expect
     .poll(async () => (await readMapGridPresetOptions()).zoomOnClick, { timeout: 20_000 })
-    .toBe(alvo);
+    .toBe(target);
 
-  const depois = await readMapGridPresetOptions();
-  console.log(`[depois] layout_options efetivo: ${JSON.stringify(depois)}`);
+  const after = await readMapGridPresetOptions();
+  console.log(`[after] effective layout_options: ${JSON.stringify(after)}`);
 
   /*
-   * O reload nao e para reler a tela — o valor ja esta no banco. E para provar
-   * que montar o layout de novo nao sobrescreve a escolha com o padrao
-   * detectado, que e o risco real neste caminho.
+   * The reload is not for re-reading the screen — the value is already in the
+   * database. It is to prove that mounting the layout again does not overwrite
+   * the choice with the detected default, which is the real risk on this path.
    */
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(15_000);
 
-  const apos = await readMapGridPresetOptions();
-  console.log(`[apos reload] layout_options efetivo: ${JSON.stringify(apos)}`);
-  expect(apos.zoomOnClick).toBe(alvo);
+  const afterReload = await readMapGridPresetOptions();
+  console.log(`[after reload] effective layout_options: ${JSON.stringify(afterReload)}`);
+  expect(afterReload.zoomOnClick).toBe(target);
 });
 
 /**
- * A regressão que a task-010 pede: uma opção de CADA layout embutido, gravada
- * pelo painel, presente no preset efetivo depois de um reload.
+ * The regression task-010 asks for: one option from EACH embedded layout,
+ * written by the panel, present in the effective preset after a reload.
  *
- * O que ela alcança e a do `zoomOnClick` não: `layoutOptions.map` e
- * `layoutOptions.tabular` são duas seções do mesmo objeto, e cada layout
- * escreve o objeto inteiro para trocar uma chave. Mexer numa opção só nunca
- * provaria que a outra seção sobreviveu — ela nem existia no preset.
+ * What it reaches and `zoomOnClick` does not: `layoutOptions.map` and
+ * `layoutOptions.tabular` are two sections of the same object, and each layout
+ * writes the whole object to change one key. Touching a single option would
+ * never prove the other section survived — it did not even exist in the preset.
  *
- * **O que ela não distingue, e está medido**: este spec passa igual com e sem
- * o `useEscritaOtimista`. Foi rodado nos dois estados, e o preset final é o
- * mesmo. Ou seja, ele prova que as duas seções coexistem, e não prova o defeito
- * de escrita no mesmo tick — esse mora em `src/index.test.ts`, onde o duplo de
- * teste atrasa o prop como o Vue atrasa. Entre dois cliques de uma pessoa o
- * prop sempre voltou.
+ * **What it does not distinguish, and it is measured**: this spec passes the
+ * same with and without `useOptimisticWrite`. It was run both ways, and the
+ * final preset is the same. That is, it proves the two sections coexist, and
+ * does not prove the same-tick write defect — that one lives in
+ * `src/index.test.ts`, where the test double delays the prop the way Vue does.
+ * Between two clicks of a person the prop always came back.
  *
- * Os dois controles não foram escolhidos por gosto, e sim por serem os únicos
- * dos dois painéis que gravam e dão para mudar aqui:
+ * The two controls were not picked by taste, but for being the only ones in
+ * both panels that store and can be changed here:
  *
- * - da grade, "Spacing" é o painel inteiro deles, e `cozy` é o padrão, então
- *   `comfortable` é mudança de verdade;
- * - do mapa, "Basemap" mora no store do app e não no preset; "Geospatial Field"
- *   só tem um item nesta coleção, que já é o escolhido; e "Cluster Nearby Data"
- *   nasce desabilitada, porque o campo `location` da semente é `json` sem
- *   `geometryType` e eles desabilitam a caixa quando o tipo não é `Point`.
- *   Sobra o template de exibição, preenchido pelo menu de campos deles.
+ * - from the grid, "Spacing" is their whole panel, and `cozy` is the default,
+ *   so `comfortable` is a real change;
+ * - from the map, "Basemap" lives in the app store and not in the preset;
+ *   "Geospatial Field" has a single item in this collection, already the chosen
+ *   one; and "Cluster Nearby Data" starts disabled, because the seed's
+ *   `location` field is `json` with no `geometryType` and they disable the box
+ *   when the type is not `Point`. What is left is the display template, filled
+ *   in by their field menu.
  */
-async function escolherCampoNoTemplate(page: Page, campo: RegExp): Promise<void> {
+async function pickFieldInTemplate(page: Page, field: RegExp): Promise<void> {
   /*
-   * Pelo papel, e não pela classe: o `add_box` é o botão que abre o menu de
-   * campos do controle de template deles, e a classe `.system-display-template`
-   * que o pacote declara não chega ao DOM que o Playwright vê.
+   * By role, and not by class: `add_box` is the button that opens the field
+   * menu of their template control, and the `.system-display-template` class
+   * the package declares does not reach the DOM Playwright sees.
    */
-  const abrirCampos = page.locator(OPCOES_DO_MAPA).getByRole('button', { name: 'add_box' });
-  await expect(abrirCampos).toBeVisible({ timeout: 30_000 });
-  await abrirCampos.click();
+  const openFields = page.locator(MAP_OPTIONS).getByRole('button', { name: 'add_box' });
+  await expect(openFields).toBeVisible({ timeout: 30_000 });
+  await openFields.click();
 
-  const item = page.getByRole('listitem').filter({ hasText: campo }).first();
+  const item = page.getByRole('listitem').filter({ hasText: field }).first();
   await expect(item).toBeVisible({ timeout: 30_000 });
   await item.click();
 }
 
-test('as opções dos dois layouts embutidos sobrevivem juntas ao reload', async ({ page }) => {
+test('both embedded layouts options survive the reload together', async ({ page }) => {
   await ensureMapGridPreset();
   await login(page);
   await openCollection(page);
 
-  await abrirOpcoesDoLayout(page);
+  await openLayoutOptions(page);
 
-  await abrirSecaoDasOpcoes(page, OPCOES_DA_GRADE);
-  await escolherNoSeletor(page, OPCOES_DA_GRADE, /comfortable|confortável/i);
+  await openOptionsSection(page, GRID_OPTIONS);
+  await pickInSelect(page, GRID_OPTIONS, /comfortable|confortável/i);
 
-  await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
-  await escolherCampoNoTemplate(page, /^\s*name\s*$/i);
+  await openOptionsSection(page, MAP_OPTIONS);
+  await pickFieldInTemplate(page, /^\s*name\s*$/i);
 
-  /* A gravação do Directus é debounced: ler logo depois do clique chega antes. */
+  /* The Directus write is debounced: reading right after the click gets there first. */
   await expect
-    .poll(async () => secao(await readMapGridPresetOptions(), 'tabular').spacing, {
+    .poll(async () => section(await readMapGridPresetOptions(), 'tabular').spacing, {
       timeout: 30_000,
     })
     .toBe('comfortable');
 
   await expect
-    .poll(async () => secao(await readMapGridPresetOptions(), 'map').displayTemplate, {
+    .poll(async () => section(await readMapGridPresetOptions(), 'map').displayTemplate, {
       timeout: 30_000,
     })
     .toBeTruthy();
 
-  const antes = await readMapGridPresetOptions();
-  console.log(`[antes do reload] layout_options efetivo: ${JSON.stringify(antes)}`);
+  const before = await readMapGridPresetOptions();
+  console.log(`[before reload] effective layout_options: ${JSON.stringify(before)}`);
 
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(15_000);
 
-  const apos = await readMapGridPresetOptions();
-  console.log(`[apos reload] layout_options efetivo: ${JSON.stringify(apos)}`);
+  const after = await readMapGridPresetOptions();
+  console.log(`[after reload] effective layout_options: ${JSON.stringify(after)}`);
 
   /*
-   * As três juntas, e é a soma que importa: a da grade, a do mapa e a da
-   * composição. Se qualquer escrita apagar o objeto inteiro em vez de trocar a
-   * própria seção, uma destas some.
+   * The three together, and it is the sum that matters: the grid's, the map's
+   * and the composition's. If any write erases the whole object instead of
+   * replacing its own section, one of these disappears.
    */
-  expect(secao(apos, 'tabular').spacing).toBe('comfortable');
-  expect(secao(apos, 'map').displayTemplate).toBe(secao(antes, 'map').displayTemplate);
-  expect(apos.zoomOnClick).toBe(true);
+  expect(section(after, 'tabular').spacing).toBe('comfortable');
+  expect(section(after, 'map').displayTemplate).toBe(section(before, 'map').displayTemplate);
+  expect(after.zoomOnClick).toBe(true);
 });

@@ -1,72 +1,73 @@
 /**
- * O MapGrid compõe os dois layouts do Directus.
+ * The MapGrid composes the two Directus layouts.
  *
- * Este é o teste que prova o desenho da task-010, e só o e2e pode: o Storybook
- * não alcança os layouts do Directus, porque lá o SDK é um mock nosso e o
- * registro de layouts não existe.
+ * This is the test that proves task-010's design, and only the e2e can:
+ * Storybook does not reach the Directus layouts, because there the SDK is a
+ * mock of ours and the layout registry does not exist.
  */
 import { expect, test } from '@playwright/test';
 import { COLLECTION_NAME } from '../helper-collection';
 import {
   ensureMapGridPreset,
-  ensureMapGridPresetCentradoEm,
+  ensureMapGridPresetCenteredOn,
   readMapGridPresetQuery,
 } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';
 import {
-  abrirOpcoesDoLayout,
-  abrirSecaoDasOpcoes,
-  clicarNoPontoCentral,
-  GRADE,
-  linhaDe,
+  clickCenterMarker,
+  GRID,
+  GRID_PANE,
   login,
-  MAPA,
-  OPCOES_DO_MAPA,
+  MAP,
+  MAP_OPTIONS,
   openCollection,
-  ordenarPor,
-  PAINEL_GRADE,
-  TABELA,
+  openLayoutOptions,
+  openOptionsSection,
+  rowOf,
+  sortBy,
+  TABLE,
 } from './helpers/mapgrid-page';
 
 /**
- * A cidade mais isolada da semente, e a câmera que a põe no centro do canvas.
+ * The most isolated city in the seed, and the camera that puts it at the centre
+ * of the canvas.
  *
- * Achar um marcador numa tela de MapLibre exige saber onde a câmera está, e a
- * instância do mapa é do layout do Directus. O preset resolve isso pelo outro
- * lado: ele diz de onde a câmera parte, e aí o ponto semeado nasce no centro.
- * Manaus porque é a mais isolada — no zoom 12 nenhum outro ponto da semente
- * aparece, então o clique não tem como cair noutro marcador nem num
- * agrupamento.
+ * Finding a marker on a MapLibre screen requires knowing where the camera is,
+ * and the map instance belongs to the Directus layout. The preset solves it
+ * from the other side: it says where the camera starts, and then the seeded
+ * point is born at the centre. Manaus because it is the most isolated one — at
+ * zoom 12 no other seeded point shows up, so the click cannot land on another
+ * marker or on a cluster.
  */
-const CIDADE_ISOLADA = 'Manaus';
+const ISOLATED_CITY = 'Manaus';
 const MANAUS: [number, number] = [-60.0255, -3.119];
-const ZOOM_DE_CIDADE = 12;
+const CITY_ZOOM = 12;
 
-/** O contrário: uma câmera de onde nenhum ponto da semente está no centro. */
-const ATLANTICO: [number, number] = [0, 0];
-const ZOOM_DE_MUNDO = 1;
+/** The opposite: a camera from which no seeded point is at the centre. */
+const ATLANTIC: [number, number] = [0, 0];
+const WORLD_ZOOM = 1;
 
 test.beforeAll(async () => {
   await setupTestEnvironment();
 });
 
-test.describe('MapGrid — a composição', () => {
-  test('desenha o mapa e a grade do Directus, não os nossos', async ({ page }) => {
+test.describe('MapGrid — the composition', () => {
+  test('draws the Directus map and grid, not ours', async ({ page }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
 
-    await expect(page.locator(MAPA)).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator(GRADE)).toBeVisible({ timeout: 60_000 });
-    await expect(page.locator(TABELA)).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(MAP)).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(GRID)).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(TABLE)).toBeVisible({ timeout: 60_000 });
   });
 
-  test('uma consulta só alimenta os dois, e não uma por layout', async ({ page }) => {
-    const buscas: string[] = [];
+  test('a single query feeds both, and not one per layout', async ({ page }) => {
+    const fetches: string[] = [];
     page.on('request', (request) => {
       const url = request.url();
       if (url.includes(`/items/${COLLECTION_NAME}?`) && !url.includes('aggregate')) {
-        buscas.push(url);
+        fetches.push(url);
       }
     });
 
@@ -75,20 +76,20 @@ test.describe('MapGrid — a composição', () => {
     await openCollection(page);
     await page.waitForTimeout(8_000);
 
-    const distintas = [...new Set(buscas.map((url) => url.split('/items/')[1] ?? url))];
-    console.log(`\n[buscas] ${buscas.length} no total, ${distintas.length} distintas`);
-    for (const busca of distintas) console.log(`   ${decodeURIComponent(busca)}`);
+    const distinct = [...new Set(fetches.map((url) => url.split('/items/')[1] ?? url))];
+    console.log(`\n[fetches] ${fetches.length} in total, ${distinct.length} distinct`);
+    for (const fetch of distinct) console.log(`   ${decodeURIComponent(fetch)}`);
 
-    // uma por layout e o esperado; repetida e duplicacao
-    expect(distintas.length).toBeLessThanOrEqual(2);
+    // one per layout is expected; repeated is duplication
+    expect(distinct.length).toBeLessThanOrEqual(2);
   });
 
-  test('ordenar pelo cabeçalho da grade deles grava no preset', async ({ page }) => {
+  test('sorting by their grid header writes to the preset', async ({ page }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
 
-    await ordenarPor(page, 'name', 'desc');
+    await sortBy(page, 'name', 'desc');
 
     await expect
       .poll(async () => (await readMapGridPresetQuery()).sort, { timeout: 20_000 })
@@ -96,100 +97,102 @@ test.describe('MapGrid — a composição', () => {
   });
 
   /*
-   * A regressão que a reescrita do spec perdeu, e que o desenho novo precisa
-   * devolver: o `handleClick` do layout de mapa do Directus faz `router.push`
-   * para a tela do item, então um marcador clicado levava a pessoa para fora do
-   * MapGrid — o oposto de sincronizar as duas metades.
+   * The regression the spec rewrite lost, and which the new design has to give
+   * back: the Directus map layout's `handleClick` does a `router.push` to the
+   * item screen, so a clicked marker took the person out of the MapGrid — the
+   * opposite of syncing the two halves.
    */
-  test('clicar num ponto marca a linha dele na grade, e não sai do MapGrid', async ({ page }) => {
-    await ensureMapGridPresetCentradoEm(MANAUS, ZOOM_DE_CIDADE);
+  test('clicking a marker marks its row in the grid, and does not leave the MapGrid', async ({
+    page,
+  }) => {
+    await ensureMapGridPresetCenteredOn(MANAUS, CITY_ZOOM);
     await login(page);
     await openCollection(page);
 
-    const linha = linhaDe(page, CIDADE_ISOLADA);
-    await expect(linha).toBeVisible({ timeout: 60_000 });
-    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
+    const row = rowOf(page, ISOLATED_CITY);
+    await expect(row).toBeVisible({ timeout: 60_000 });
+    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'false');
 
-    await clicarNoPontoCentral(page);
+    await clickCenterMarker(page);
 
-    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
+    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
       timeout: 15_000,
     });
     await expect(page).toHaveURL(new RegExp(`/admin/content/${COLLECTION_NAME}(\\?|$)`));
   });
 
-  test('clicar na linha enquadra o item no mapa', async ({ page }) => {
-    await ensureMapGridPresetCentradoEm(ATLANTICO, ZOOM_DE_MUNDO);
+  test('clicking the row frames the item on the map', async ({ page }) => {
+    await ensureMapGridPresetCenteredOn(ATLANTIC, WORLD_ZOOM);
     await login(page);
     await openCollection(page);
 
-    const linha = linhaDe(page, CIDADE_ISOLADA);
-    await expect(linha).toBeVisible({ timeout: 60_000 });
-    await linha.click();
+    const row = rowOf(page, ISOLATED_CITY);
+    await expect(row).toBeVisible({ timeout: 60_000 });
+    await row.click();
 
-    await clicarNoPontoCentral(page);
+    await clickCenterMarker(page);
 
-    await expect(linha.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
+    await expect(row.getByRole('checkbox')).toHaveAttribute('aria-pressed', 'true', {
       timeout: 15_000,
     });
   });
 
-  test('o espaço em branco dos layouts de página inteira não aparece', async ({ page }) => {
+  test('the full-page layouts white space does not show up', async ({ page }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
     await page.waitForTimeout(5_000);
 
-    const folga = await page.evaluate((seletor) => {
-      const painel = document.querySelector(seletor);
-      const cabecalho = document.querySelector(`${seletor} thead tr`);
-      if (!painel || !cabecalho) return -1;
-      return Math.round(cabecalho.getBoundingClientRect().top - painel.getBoundingClientRect().top);
-    }, PAINEL_GRADE);
+    const gap = await page.evaluate((selector) => {
+      const pane = document.querySelector(selector);
+      const header = document.querySelector(`${selector} thead tr`);
+      if (!pane || !header) return -1;
+      return Math.round(header.getBoundingClientRect().top - pane.getBoundingClientRect().top);
+    }, GRID_PANE);
 
-    // o cabecalho comeca no topo do painel; media 60px antes do acerto de CSS
-    expect(folga).toBeGreaterThanOrEqual(0);
-    expect(folga).toBeLessThan(12);
+    // the header starts at the top of the pane; it measured 60px before the CSS fix
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThan(12);
   });
 
-  test('o cartão do MapGrid vai até o pé da tela', async ({ page }) => {
+  test('the MapGrid card reaches the bottom of the screen', async ({ page }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
     await page.waitForTimeout(3_000);
 
-    const sobra = await page.evaluate(() => {
-      const cartao = document.querySelector('.mapgrid-container');
-      if (!cartao) return -1;
-      return Math.round(window.innerHeight - cartao.getBoundingClientRect().bottom);
+    const leftover = await page.evaluate(() => {
+      const card = document.querySelector('.mapgrid-container');
+      if (!card) return -1;
+      return Math.round(window.innerHeight - card.getBoundingClientRect().bottom);
     });
 
-    // a folga de paginação de página inteira do Directus deixava 142px em branco
-    expect(sobra).toBeGreaterThanOrEqual(0);
-    expect(sobra).toBeLessThan(48);
+    // the Directus full-page pagination gap left 142px blank
+    expect(leftover).toBeGreaterThanOrEqual(0);
+    expect(leftover).toBeLessThan(48);
   });
 
-  test('as seções do painel de opções ocupam a largura do painel', async ({ page }) => {
+  test('the options panel sections take up the panel width', async ({ page }) => {
     await ensureMapGridPreset();
     await login(page);
     await openCollection(page);
-    await abrirOpcoesDoLayout(page);
-    await abrirSecaoDasOpcoes(page, OPCOES_DO_MAPA);
+    await openLayoutOptions(page);
+    await openOptionsSection(page, MAP_OPTIONS);
 
-    const proporcoes = await page.evaluate((secao) => {
-      const painel = document.querySelector('.layout-options');
-      const detalhe = document.querySelector(secao);
-      const campo = document.querySelector(`${secao} .field`);
-      if (!painel || !detalhe || !campo) return null;
-      const largura = painel.getBoundingClientRect().width;
+    const ratios = await page.evaluate((section) => {
+      const panel = document.querySelector('.layout-options');
+      const detail = document.querySelector(section);
+      const field = document.querySelector(`${section} .field`);
+      if (!panel || !detail || !field) return null;
+      const width = panel.getBoundingClientRect().width;
       return {
-        secao: detalhe.getBoundingClientRect().width / largura,
-        campo: campo.getBoundingClientRect().width / largura,
+        section: detail.getBoundingClientRect().width / width,
+        field: field.getBoundingClientRect().width / width,
       };
-    }, OPCOES_DO_MAPA);
+    }, MAP_OPTIONS);
 
-    expect(proporcoes).not.toBeNull();
-    expect(proporcoes?.secao).toBeGreaterThan(0.95);
-    expect(proporcoes?.campo).toBeGreaterThan(0.9);
+    expect(ratios).not.toBeNull();
+    expect(ratios?.section).toBeGreaterThan(0.95);
+    expect(ratios?.field).toBeGreaterThan(0.9);
   });
 });
