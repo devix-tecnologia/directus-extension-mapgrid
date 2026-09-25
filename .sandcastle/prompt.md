@@ -105,6 +105,15 @@ EVIDENCE_TASK=010 EVIDENCE_LABEL=composicao EVIDENCE_MOMENT=depois \
   .sandcastle/on-mirror.sh pnpm screenshot
 ```
 
+Todo spec de evidência lê o `EVIDENCE_TASK`, então a linha acima captura a
+evidência de *todos* eles com o seu número. Para mirar um só, `RUNNER_ARGS`:
+
+```
+EVIDENCE_TASK=015 EVIDENCE_MOMENT=depois \
+  RUNNER_ARGS=tests/screenshot/evidence-clustering.spec.ts \
+  .sandcastle/on-mirror.sh pnpm screenshot
+```
+
 As imagens vão para `TASKS/assets/`, no formato `task-NNN-<rotulo>-<momento>.png`.
 **Confira a imagem antes de anexar** — duas capturas byte-idênticas entre antes e
 depois não são evidência, são a mesma tela fotografada duas vezes. Compare o
