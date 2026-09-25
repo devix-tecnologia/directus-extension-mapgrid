@@ -212,7 +212,7 @@ que cicla entre os três estados, na `MapToolbar`.
 - [ ] **Não feito.** Atalhos de teclado, ativos só quando o layout tem foco,
       conferindo que não colidem com os atalhos do próprio Directus. Ficou de
       fora porque "não colide com os atalhos do Directus" só se confere contra a
-      lista deles, e essa verificação não cabia na rodada junto do resto
+      lista deles, e essa verificação não cabia na rodada junto do resto — adiado: movido para a task-015
 
 ### Fase 4: reprodução automática
 - [x] Play e stop, e intervalo entre passos configurável nas opções do layout,
@@ -224,7 +224,7 @@ que cicla entre os três estados, na `MapToolbar`.
 - [ ] **Não feito.** Avaliar o agrupamento durante a reprodução: um ponto dentro
       de um cluster não aparece sozinho, e a reprodução ficaria invisível. O
       `clusterData` é opção do mapa deles, gravada no preset — desligá-lo só
-      durante a reprodução não pode gravar a mudança
+      durante a reprodução não pode gravar a mudança — adiado: movido para a task-015
 
 ### Fase 5: virar a página
 - [x] Virar a página pelo mesmo caminho do rodapé do tabular: o `goToPage` do
@@ -239,7 +239,7 @@ que cicla entre os três estados, na `MapToolbar`.
       reprodução — e, com a consulta compartilhada, possivelmente o dobro.
       Avaliar um tamanho de página maior durante a reprodução, ou buscar a
       próxima página antes de precisar dela. O seed do e2e tem oito registros,
-      que provam o comportamento mas não medem nada
+      que provam o comportamento mas não medem nada — adiado: movido para a task-015
 
 ### Fase 6: acompanhamento da câmera
 - [x] Traduzir o estado para o centralizador: feito no `CameraTrackingPolicy`,
