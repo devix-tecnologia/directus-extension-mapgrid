@@ -268,23 +268,52 @@ Os ganchos `data-center` e `data-zoom` e o `getCameraState()` eram do
 `MapComponent` e saíram com ele. A câmera se lê agora pelo `cameraOptions` do
 estado do mapa, ou pelo que ele grava em `layoutOptions.map` do preset.
 
-- [ ] Unitários dos módulos puros (sequência e acompanhamento de câmera)
-- [ ] Stories com `play` da `MapToolbar`: cada controle emite o que deve, e os de
+- [x] Unitários dos módulos puros (sequência e acompanhamento de câmera), e
+      também do `TableRowHighlighter` e da `MapToolbar`
+- [x] Stories com `play` da `MapToolbar`: cada controle emite o que deve, e os de
       borda aparecem desabilitados
-- [ ] `pnpm check:stories` limpo
-- [ ] e2e de navegação: próximo avança um registro, a linha destacada acompanha e
+- [ ] **Não rodou.** `pnpm check:stories` limpo: não há binário do Chromium neste
+      sandbox (`~/.cache/ms-playwright` vazio) e a orientação da rodada é não
+      mexer no ambiente. As stories passam no typecheck e no lint; o `play` de
+      cada uma está por verificar
+- [x] e2e de navegação: próximo avança um registro, a linha destacada acompanha e
       a câmera vai ao item; anterior desfaz o passo
-- [ ] e2e de primeiro e último, caindo nas pontas da consulta e não da página
-- [ ] e2e de clique no ponto: define o registro atual e **não** sai do MapGrid
-- [ ] e2e de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
+- [x] e2e de primeiro e último, caindo nas pontas da consulta e não da página
+- [x] e2e de clique no ponto: define o registro atual e **não** sai do MapGrid
+- [x] e2e de reprodução: dar play, aguardar alguns passos, dar stop, e conferir
       que parou onde deveria
-- [ ] e2e de virada de página nos dois sentidos, com uma coleção maior que uma
-      página
-- [ ] e2e por estado da câmera: em `off` o `cameraOptions` não muda; em `follow`
-      só muda quando o item sai do `bbox`; em `center` muda a cada passo
-- [ ] Refazer a captura do README com os controles novos visíveis
-- [ ] Descrever os controles novos nas duas versões do README, que são dois
+- [x] e2e de virada de página nos dois sentidos. A página é sedada em três
+      registros contra as oito cidades do seed — a consulta fica com três
+      páginas, sem coleção nova
+- [x] e2e por estado da câmera: em `off` o `cameraOptions` não muda; em `center`
+      muda a cada passo. O caso `follow` ficou nos unitários do template: no e2e
+      ele depende de onde a câmera parou depois do primeiro `moveend`, e um
+      teste que às vezes afirma "moveu" e às vezes "não moveu" não afirma nada
+- [x] Refazer a captura do README com os controles novos visíveis
+- [x] Descrever os controles novos nas duas versões do README, que são dois
       documentos completos e não um com trechos traduzidos
+
+### Evidência
+
+Capturada em 2026-09-25, com `EVIDENCE_TASK=006 EVIDENCE_MOMENT=depois
+.sandcastle/on-mirror.sh pnpm screenshot`.
+
+![A composição com os controles novos](assets/task-006-composicao-depois.jpg)
+
+A barra do MapGrid no alto à direita do mapa, com os sete controles; a linha de
+Curitiba com a marca de registro atual — o fundo e a barra da borda inicial, que
+não são os da caixa de seleção, que segue desmarcada; e o mapa enquadrado nela.
+O rodapé mostra as três páginas de três registros que o e2e usa.
+
+![A câmera a cada passo](assets/task-006-percurso-depois.jpg)
+
+Um quadro do painel do mapa por passo, com `cameraTracking: center`: a câmera
+anda a cada "próximo". Voo de câmera não cabe num quadro só, e os quadros foram
+conferidos como diferentes entre si dentro do próprio teste.
+
+A captura do README (`docs/tela.jpg`) foi refeita na mesma execução: mostra a
+barra nova e o painel lateral com as quatro seções, incluindo *Zoom on focus* e
+*Playback*.
 
 ## Notes
 
