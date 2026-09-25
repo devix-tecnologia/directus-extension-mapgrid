@@ -24,7 +24,7 @@ A rodada do Sandcastle integrava a branch no develop local do host sem push, e s
 - [x] O Biome passa a lintar `.sandcastle/` e `scripts/`, que o `files.includes`
       não casava; gate provado com um arquivo que viola a regra (saída 1) e com
       os worktrees da rodada fora da varredura
-- [ ] Primeira rodada real publicando por este caminho
+- [ ] Primeira rodada real publicando por este caminho — adiado: só a próxima rodada (task-006) exercita o caminho; se ela não publicar, a 014 se reabre
 
 ## Notes
 O push no fim da rodada é provisório: quando o taskin publicar a mudança de status em autopilot (task-135 do taskin), a publicação volta a ser dele e o `RoundPublisher` fica só com rebase, gates e merge.
