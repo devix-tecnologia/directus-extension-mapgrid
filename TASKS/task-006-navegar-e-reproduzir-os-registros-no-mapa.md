@@ -1,6 +1,6 @@
 # Task 006 — Navegar e reproduzir os registros no mapa
 
-Status: pending
+Status: in-progress
 Type: feat
 Assignee: sidartaveloso
 Difficulty: 3
@@ -100,6 +100,31 @@ o controle de três estados, `zoomOnClick` deve deixar de decidir
 movimento e passar a significar apenas "aproximar ao focar", que é uma escolha
 ortogonal.
 
+### Decisões tomadas (2026-09-25)
+
+**A ordem é a da consulta, e a interface não avisa nada.** Aceitar o `sort` que
+estiver. Um aviso de "este sort não é temporal" erraria nos casos legítimos que
+não são data/hora — um campo `sort` manual, um número de sequência do trajeto,
+uma ordem por quilometragem —, e a ordem já está visível na própria grade, que é
+onde a pessoa a troca. O `RecordSequence` não sabe o que é o `sort`: ele percorre
+a lista na ordem em que a consulta a devolveu, e é só isso que "próximo"
+significa.
+
+**A linha atual é marcada por classe no DOM, não pela `selection`.** O
+`TableRowHighlighter` põe `.mapgrid-current-row` no `tbody tr` do índice atual e
+rola com `scrollIntoView({ block: 'nearest' })`. Custou uma suposição — a de que
+a tabela deles desenha as linhas como `tbody tr`, a mesma que os e2e já fazem em
+`ROWS` — e em troca não toca em estado nenhum do Directus: nada mais no layout
+reage à marca, e as ações em lote continuam falando só da `selection`. Propor o
+recurso ao Directus continua valendo, mas não bloqueia esta task.
+
+**`zoomOnClick` passa a significar só "aproximar ao focar".** Quem decide se a
+câmera se move é o `cameraTracking`; o `zoomOnClick` entra no
+`CameraTrackingPolicy.framing()` como o `zoomIn`, ortogonal ao `onlyIfOutside`.
+Em `off` o `framing()` devolve `null` e a câmera não se mexe, com `zoomOnClick`
+ligado ou não.
+
+
 ## Os seis controles
 
 | Controle | O que faz | Na borda |
@@ -146,12 +171,14 @@ que cicla entre os três estados, na `MapToolbar`.
 ## Tasks
 
 ### Fase 1: a sequência
-- [ ] Módulo puro em `src/services/` que, dada a lista da página, o id atual e a
+- [x] Módulo puro em `src/services/` que, dada a lista da página, o id atual e a
       posição da página no total, responde o que é primeiro, anterior, próximo e
       último — e quando a resposta exige trocar de página, diz qual página e se o
-      alvo é o primeiro ou o último item dela
-- [ ] Decidir e documentar o que fazer quando o `sort` não é temporal
-- [ ] Testes cobrindo: primeiro e último da página, primeiro e último da consulta
+      alvo é o primeiro ou o último item dela. Feito:
+      `src/services/record-sequence/`, `RecordSequence implements IRecordSequence`
+- [x] Decidir e documentar o que fazer quando o `sort` não é temporal. Decidido:
+      aceitar a ordem que estiver, sem aviso — ver "Decisões tomadas"
+- [x] Testes cobrindo: primeiro e último da página, primeiro e último da consulta
       inteira, item ausente da lista, lista vazia, e uma página só
 
 ### Fase 2: o registro atual sobe para o template
