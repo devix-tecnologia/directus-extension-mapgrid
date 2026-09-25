@@ -110,6 +110,11 @@ services:
       EVIDENCE_TASK: ${EVIDENCE_TASK:-}
       EVIDENCE_LABEL: ${EVIDENCE_LABEL:-}
       EVIDENCE_MOMENT: ${EVIDENCE_MOMENT:-}
+      # Extra Playwright arguments, to capture one evidence spec instead of all
+      # of them: every evidence spec reads EVIDENCE_TASK, so a plain run writes
+      # a file for each of them under the same task number. The e2e takes them
+      # too, to run the one spec a measurement is about.
+      RUNNER_ARGS: ${RUNNER_ARGS:-}
     depends_on:
       directus:
         condition: service_healthy
@@ -139,9 +144,9 @@ services:
         npm i -g pnpm@10.15.0 && \
         pnpm install --frozen-lockfile && \
         if [ "$$RUNNER_CMD" = "screenshot" ]; then
-          pnpm exec playwright test --config=playwright.screenshot.config.ts
+          pnpm exec playwright test --config=playwright.screenshot.config.ts $$RUNNER_ARGS
         else
-          pnpm exec playwright test --config=playwright.config.ts
+          pnpm exec playwright test --config=playwright.config.ts $$RUNNER_ARGS
         fi
 
 volumes:

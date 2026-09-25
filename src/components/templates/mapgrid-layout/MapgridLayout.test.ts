@@ -625,6 +625,138 @@ describe('MapgridLayout — playback', () => {
   });
 });
 
+/**
+ * The playback and the page it will need next.
+ *
+ * `mountWalk`'s grid never reports itself loading, which is on purpose here:
+ * what keeps a step from asking for the same page twice is the turn already in
+ * flight, and a fake that flips `loading` would hide that.
+ */
+describe('MapgridLayout — anticipating the page turn', () => {
+  /** The page the layout asked for, arriving. */
+  const arrive = async (
+    walk: ReturnType<typeof mountWalk>,
+    ids: (string | number)[],
+    page: number
+  ): Promise<void> => {
+    walk.gridState.items = ids.map((id) => ({
+      id,
+      location: { coordinates: [Number(id) * 10, 0], type: 'Point' },
+    }));
+    await walk.wrapper.setProps({ page });
+    await nextTick();
+  };
+
+  const onTheLastRecordOfPageOne = async (totalPages = 2) => {
+    const walk = mountWalk({ ids: [1, 2, 3], page: 1, playbackInterval: 1, totalPages });
+    await walk.click(3);
+    await walk.press('play');
+    return walk;
+  };
+
+  it('asks for the next page before the beat, by what a fetch is expected to take', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne();
+
+      // the default guess is 250ms of fetch, so the turn is fired 750ms into the step
+      await vi.advanceTimersByTimeAsync(700);
+      expect(walk.goToPage).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(walk.goToPage).toHaveBeenCalledWith(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not anticipate the page after the last one', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne(1);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      expect(walk.goToPage).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('drops the turn it had armed when the playback stops', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne();
+
+      await walk.press('stop');
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      expect(walk.goToPage).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('asks for the page once, and not again at every beat while it is on its way', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne();
+
+      await vi.advanceTimersByTimeAsync(4_000);
+
+      expect(walk.goToPage).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives the record the page brought a whole step, counted from where the page landed', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne(3);
+
+      // the fetch took 650ms, and not the 250ms guessed: the page lands late
+      await vi.advanceTimersByTimeAsync(1_400);
+      expect(walk.current()).toEqual(['3']);
+
+      await arrive(walk, [4, 5, 6], 2);
+      expect(walk.current()).toEqual(['4']);
+
+      await vi.advanceTimersByTimeAsync(999);
+      expect(walk.current()).toEqual(['4']);
+
+      await vi.advanceTimersByTimeAsync(2);
+      expect(walk.current()).toEqual(['5']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('sizes the next anticipation by the fetch it measured, not by the guess', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne(3);
+
+      await vi.advanceTimersByTimeAsync(1_400);
+      await arrive(walk, [4, 5, 6], 2);
+      expect(walk.current()).toEqual(['4']);
+
+      // 5 and then 6, the last record of the page: the turn is armed again there
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(walk.current()).toEqual(['6']);
+
+      // 650ms measured against a 1s beat: 350ms into the step, and not 750ms
+      await vi.advanceTimersByTimeAsync(300);
+      expect(walk.goToPage).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(walk.goToPage).toHaveBeenLastCalledWith(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('MapgridLayout — the camera tracking', () => {
   it('leaves the camera alone when tracking is off', async () => {
     const walk = mountWalk({ cameraTracking: 'off' });
@@ -683,5 +815,157 @@ describe('MapgridLayout — a query that became another one', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+/** Gives the map pane a size, which happy-dom leaves at zero and the projection needs. */
+const givePaneSize = (wrapper: VueWrapper, width = 800, height = 400): void => {
+  const pane = wrapper.find('.mapgrid-pane--map').element as HTMLElement;
+  Object.defineProperty(pane, 'clientWidth', { configurable: true, value: width });
+  Object.defineProperty(pane, 'clientHeight', { configurable: true, value: height });
+};
+
+/** Where the mark of the current record sits in the pane, in pixels. */
+const currentPointAt = (wrapper: VueWrapper): { x: number; y: number } | null => {
+  const mark = wrapper.find('[data-current-point]');
+  if (!mark.exists()) return null;
+  const style = (mark.element as HTMLElement).style;
+  return { x: Number.parseFloat(style.left), y: Number.parseFloat(style.top) };
+};
+
+describe('MapgridLayout — the current record on the map', () => {
+  it('draws the record as a point of its own, which the cluster would have swallowed', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    walk.mapState.clusterData = true;
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+
+    // camera at [0, 0] and zoom 3: 512px of world per tile, so a degree is 4096/360 px
+    expect(currentPointAt(walk.wrapper)?.x).toBeCloseTo(400 + (4096 * 10) / 360, 6);
+    expect(walk.mapState.clusterData).toBe(true);
+  });
+
+  it('follows every step, instead of standing on the record it started at', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    walk.mapState.clusterData = true;
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    const first = currentPointAt(walk.wrapper);
+    await walk.press('next');
+
+    expect(currentPointAt(walk.wrapper)?.x).toBeCloseTo((first?.x ?? 0) + (4096 * 10) / 360, 6);
+  });
+
+  it('waits for the camera to land before drawing, or it would mark the place it left', async () => {
+    const walk = mountWalk({ cameraTracking: 'center' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    expect(currentPointAt(walk.wrapper)).toBeNull();
+
+    // the Directus map only publishes the camera on `moveend`
+    walk.mapState.cameraOptions = { bbox: [0, -10, 20, 10], center: [10, 0], zoom: 3 };
+    await nextTick();
+    await nextTick();
+
+    expect(currentPointAt(walk.wrapper)?.x).toBeCloseTo(400, 6);
+  });
+
+  it('takes the mark off the map when the query became another one', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    expect(currentPointAt(walk.wrapper)).not.toBeNull();
+
+    await walk.wrapper.setProps({ queryKey: 'filtered-by-city' });
+    await nextTick();
+
+    expect(currentPointAt(walk.wrapper)).toBeNull();
+  });
+});
+
+/** A key pressed on the page, as the browser delivers it: bubbling up to the document. */
+const press = async (key: string, target: Element = document.body): Promise<KeyboardEvent> => {
+  const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key });
+  target.dispatchEvent(event);
+  await nextTick();
+  await nextTick();
+  return event;
+};
+
+describe('MapgridLayout — the keyboard', () => {
+  it('walks the records with the arrows and the ends with Home and End', async () => {
+    const walk = mountWalk();
+
+    await press('ArrowRight');
+    expect(walk.current()).toEqual(['1']);
+
+    await press('ArrowRight');
+    expect(walk.current()).toEqual(['2']);
+
+    await press('ArrowLeft');
+    expect(walk.current()).toEqual(['1']);
+
+    await press('End');
+    expect(walk.current()).toEqual(['3']);
+
+    await press('Home');
+    expect(walk.current()).toEqual(['1']);
+  });
+
+  it('keeps the key from scrolling the page, which is what it would do by default', async () => {
+    mountWalk();
+
+    expect((await press('End')).defaultPrevented).toBe(true);
+    expect((await press('ArrowUp')).defaultPrevented).toBe(false);
+  });
+
+  it('starts and stops the playback with Space', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = mountWalk({ ids: [1, 2, 3, 4], playbackInterval: 1 });
+
+      await press(' ');
+      expect(walk.toolbar.props('playing')).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await nextTick();
+      expect(walk.current()).toEqual(['1']);
+
+      await press(' ');
+      expect(walk.toolbar.props('playing')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps quiet while the person types, so a space in a filter stays a space', async () => {
+    const walk = mountWalk();
+    const field = document.createElement('input');
+    document.body.append(field);
+
+    await press('ArrowRight', field);
+
+    expect(walk.current()).toEqual([]);
+    field.remove();
+  });
+
+  it('keeps quiet while the focus is elsewhere — a dialog, the sidebar', async () => {
+    const walk = mountWalk();
+    const elsewhere = document.createElement('button');
+    document.body.append(elsewhere);
+    elsewhere.focus();
+
+    await press('ArrowRight', elsewhere);
+
+    expect(walk.current()).toEqual([]);
+    elsewhere.remove();
   });
 });
