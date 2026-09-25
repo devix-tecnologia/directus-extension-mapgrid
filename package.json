@@ -75,7 +75,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "check:stories": "playwright test --config=playwright.stories.config.ts",
-    "test": "vitest run && vitest run --config vitest.vue-do-directus.config.ts",
+    "test": "vitest run && vitest run --config vitest.directus-vue.config.ts",
     "test:watch": "vitest",
     "test:integration": "VERBOSE=true node tests/run-docker-tests.js integration",
     "test:e2e": "pnpm build && VERBOSE=true node tests/run-docker-tests.js e2e",
@@ -95,7 +95,7 @@
     "sandcastle:image": "docker build -t sandcastle:$(basename \"$PWD\" | tr '[:upper:]' '[:lower:]') --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) -f .sandcastle/Dockerfile .sandcastle",
     "sandcastle:clean": "node .sandcastle/clean-worktrees.mjs",
     "typecheck:sandcastle": "tsc --noEmit -p .sandcastle/tsconfig.json",
-    "test:vue-do-directus": "vitest run --config vitest.vue-do-directus.config.ts",
+    "test:directus-vue": "vitest run --config vitest.directus-vue.config.ts",
     "sandcastle:round:authenticated": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/authenticated-round.ts"
   },
   "devDependencies": {
@@ -127,7 +127,7 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "vue": "^3.5.22",
-    "vue-do-directus": "npm:vue@3.4.27",
+    "directus-vue": "npm:vue@3.4.27",
     "vue-i18n": "^11.4.10",
     "vue-router": "4.5.1",
     "vue-tsc": "^3.3.11"

@@ -9,12 +9,12 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: [
-      { find: /^vue$/, replacement: 'vue-do-directus' },
+      { find: /^vue$/, replacement: 'directus-vue' },
       /*
        * @vue/test-utils' `exports` has a `node` condition, and vitest runs in
        * node: without this the CommonJS build's `require('vue')` escapes the
        * alias above and `mount` uses a second Vue. The guard is in
-       * MapgridLayout.vue-do-directus.test.ts.
+       * MapgridLayout.directus-vue.test.ts.
        */
       {
         find: /^@vue\/test-utils$/,
@@ -27,7 +27,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/**/*.vue-do-directus.test.ts'],
+    include: ['src/**/*.directus-vue.test.ts'],
     server: { deps: { inline: ['@vue/test-utils', 'vue-i18n'] } },
     setupFiles: ['src/test-setup.ts'],
   },

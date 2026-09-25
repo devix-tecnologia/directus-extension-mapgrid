@@ -35,7 +35,7 @@ if (!Number.isInteger(ITERATIONS) || ITERATIONS < 1) {
   throw new Error(`ITERATIONS must be an integer >= 1; it came as ${process.env.ITERATIONS}`);
 }
 
-const BRANCH = `sandcastle/rodada-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+const BRANCH = `sandcastle/round-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
 
 function git(...args: readonly string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();

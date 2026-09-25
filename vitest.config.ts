@@ -10,7 +10,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['src/test-setup.ts'],
-    exclude: [...configDefaults.exclude, 'src/**/*.vue-do-directus.test.ts'],
+    exclude: [...configDefaults.exclude, 'src/**/*.directus-vue.test.ts'],
     include: [
       'src/**/*.spec.ts',
       'src/**/*.test.ts',
