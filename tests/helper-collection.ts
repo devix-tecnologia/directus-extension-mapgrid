@@ -130,7 +130,7 @@ const existingPublicPermissionActions = async (
   return new Set(unwrapItems(response).map((permission) => permission.action));
 };
 
-const grantMissingPublicPermissions = async (collection: string): Promise<void> => {
+export const grantMissingPublicPermissions = async (collection: string): Promise<void> => {
   const grantedActions = await existingPublicPermissionActions(collection);
   const missingActions = CRUD_ACTIONS.filter((action) => !grantedActions.has(action));
 

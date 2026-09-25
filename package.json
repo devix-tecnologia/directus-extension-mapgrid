@@ -88,6 +88,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
+    "test:collection": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/test-collection.ts",
     "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
     "sandcastle": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/main.ts",
     "sandcastle:round": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/round.ts",
