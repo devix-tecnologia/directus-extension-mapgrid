@@ -1,11 +1,6 @@
 import type { IPageTurnAnticipation } from './page-turn-anticipation.types';
 
-/**
- * What a page fetch is assumed to take before any has been measured. Short on
- * purpose: over-guessing turns the page ahead of time, and a playback that
- * crosses a single boundary would pay for the guess with no chance to correct
- * it.
- */
+/** The fetch time assumed before any is measured; short, because over-guessing turns the page early. */
 export const DEFAULT_PAGE_FETCH_MS = 250;
 
 /** How many of the recent fetches the estimate looks at. */

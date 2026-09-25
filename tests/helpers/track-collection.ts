@@ -1,10 +1,4 @@
-/**
- * A synthetic tracking route: a thousand points in the order they happened.
- *
- * The seeded eight cities prove the behaviour and measure nothing — a thousand
- * points at 25 per page are 40 pages, which is the size the cost of turning a
- * page only shows at.
- */
+/** A synthetic tracking route of a thousand points, in the order they happened. */
 import {
   apiRequest,
   type DirectusCollectionResponse,
@@ -74,13 +68,7 @@ export async function ensureTrackCollection(): Promise<void> {
   }
 }
 
-/**
- * The MapGrid over the route, sorted by the sequence — the order the trip
- * happened in.
- *
- * `query` overrides the shared query: a measurement that needs the page to turn
- * often shortens the `limit` instead of playing through a whole page of 25.
- */
+/** The MapGrid over the route, sorted by sequence; `query` overrides the shared query. */
 export async function ensureTrackMapGrid(
   options: Record<string, unknown> = {},
   query: Record<string, unknown> = {}

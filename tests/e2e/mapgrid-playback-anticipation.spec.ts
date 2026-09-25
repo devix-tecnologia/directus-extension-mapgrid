@@ -1,18 +1,4 @@
-/**
- * How late the page turn lands during the playback, and how much the
- * anticipation of task-016 takes off it.
- *
- * The latency is injected on purpose. With the database next door the fetch
- * costs under a tenth of a second (task-015 measured 86 to 107 ms), which is
- * inside this environment's own noise; an installation with a network in
- * between is where the stall shows, and a fixed delay on the collection's
- * requests is that installation, reproducible.
- *
- * What is measured is the gap between one record becoming current and the next
- * one — inside a page it is the playback interval, at a page turn it is the
- * interval plus whatever the fetch took. The anticipation's whole claim is that
- * the two become the same number.
- */
+/** The gap between consecutive current records, with a fixed latency injected on the collection. */
 import { expect, type Page, test } from '@playwright/test';
 import {
   ensureTrackCollection,
@@ -122,11 +108,7 @@ test.describe('MapGrid — the playback and the next page', () => {
 
     expect(turns.length, 'the playback crossed more than one page').toBeGreaterThan(1);
 
-    /*
-     * The last turn, and not the first: the anticipation sizes itself by what
-     * the previous fetch took, so the first turn of a playback is the one
-     * running on the default guess.
-     */
+    // the last turn: the first one runs on the default guess
     const last = turns[turns.length - 1];
     expect(
       Math.abs((last?.ms ?? 0) - beat),

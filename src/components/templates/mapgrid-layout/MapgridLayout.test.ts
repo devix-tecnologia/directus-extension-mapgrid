@@ -625,13 +625,7 @@ describe('MapgridLayout — playback', () => {
   });
 });
 
-/**
- * The playback and the page it will need next.
- *
- * `mountWalk`'s grid never reports itself loading, which is on purpose here:
- * what keeps a step from asking for the same page twice is the turn already in
- * flight, and a fake that flips `loading` would hide that.
- */
+// `mountWalk`'s grid never reports loading: only the turn in flight may stop a second request
 describe('MapgridLayout — anticipating the page turn', () => {
   /** The page the layout asked for, arriving. */
   const arrive = async (

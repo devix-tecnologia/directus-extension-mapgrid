@@ -1,16 +1,4 @@
-/**
- * Task-015's evidence: the current record visible on the map with the
- * clustering on.
- *
- * The camera is seeded wide on purpose. Fitting the collection spreads the
- * eight cities across the pane and no cluster forms — the very thing the
- * evidence is about would not be on screen. At zoom 3 the southeast cities
- * fall inside the 50px the MapLibre clustering groups by.
- *
- * The camera tracking is `off` for the same reason: the cluster has to stay
- * where it is between frames, so what moves in the strip is the mark and not
- * the map.
- */
+/** Evidence: the current record visible with clustering on; wide camera and tracking `off`, so the cluster stays put. */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { expect, test } from '@playwright/test';

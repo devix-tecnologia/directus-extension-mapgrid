@@ -1,11 +1,4 @@
-/**
- * The current record on the map with `clusterData` on.
- *
- * The camera is seeded wide on purpose: fitting the eight cities spreads them
- * across the pane and no cluster forms. At zoom 3 the southeast ones fall
- * inside the 50px MapLibre groups by, which is the case this spec is about —
- * the record's own point is inside the cluster, and the mark is what shows it.
- */
+/** Zoom 3 puts the southeast cities inside one cluster. */
 import { expect, type Page, test } from '@playwright/test';
 import { ensureMapGridPreset, readMapGridPresetOptions } from '../helpers/mapgrid-preset';
 import { setupTestEnvironment } from '../setup';

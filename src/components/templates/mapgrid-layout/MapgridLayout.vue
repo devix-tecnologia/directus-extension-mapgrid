@@ -150,10 +150,7 @@ const focus = (id: RecordId | null, item?: GeoItem): void => {
   if (framing && centerer.value?.centerItem(record, framing) === true) awaitCamera();
 };
 
-/**
- * The mark of the current record, drawn beside the map because the cluster
- * swallows the record's own point — see `DirectusCurrentPoint`.
- */
+/** The current record's mark, drawn beside the map — see `DirectusCurrentPoint`. */
 const currentPointer = computed<DirectusCurrentPoint | null>(() => {
   const state = props.map?.state;
   return state ? new DirectusCurrentPoint(state, paneSize) : null;
@@ -265,11 +262,7 @@ const beatMs = (): number =>
   Math.max(MINIMUM_PLAYBACK_MS, (props.playbackInterval ?? DEFAULT_PLAYBACK_SECONDS) * 1_000);
 
 const onBeat = (): void => {
-  /*
-   * `pendingEdge` and not only `loading`: an anticipated turn is asked for
-   * first and the embedded layout reports itself loading afterwards, and a beat
-   * landing in between would ask for the same page all over again.
-   */
+  // `pendingEdge` too: an anticipated turn is asked for before the layout reports loading
   if (loading.value || pendingEdge.value !== null) return;
   if (atEnd.value) {
     stopPlayback();
@@ -284,11 +277,7 @@ const restartBeat = (): void => {
   ticker = setInterval(onBeat, beatMs());
 };
 
-/**
- * Asks for the next page before the step that needs it, so the fetch happens
- * inside the step that precedes it instead of on top of it — the measurement is
- * in the task-016 document.
- */
+/** Asks for the next page inside the step that precedes it. */
 const anticipatePageTurn = (): void => {
   stopAnticipating();
   if (!playing.value) return;
@@ -330,11 +319,7 @@ watch([ids, loading], () => {
   }
   focus(sequence.atEdge(ids.value, edge));
 
-  /*
-   * An anticipated page lands on its own clock and not on the beat's: the
-   * record it brings would otherwise keep whatever is left of the step, and be
-   * gone from the screen before it was read.
-   */
+  // the beat restarts where the page lands, or its record keeps only what is left of the step
   if (!turnAnticipated) return;
   turnAnticipated = false;
   if (playing.value) restartBeat();
@@ -471,11 +456,7 @@ const mapProps = computed(() => ({
   top: 0;
 }
 
-/*
- * The current record over the map: a ring of its own, because with the
- * clustering on the record's point is inside the cluster. It is not the map's
- * marker — it is drawn on top of the canvas, so nothing on it is clickable.
- */
+/* the current record over the map; drawn on the canvas, so not clickable */
 .mapgrid-current-point {
   position: absolute;
   z-index: 1;

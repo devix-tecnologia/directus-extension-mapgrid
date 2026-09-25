@@ -1,10 +1,4 @@
-/**
- * What a page turn costs during the playback, measured over a thousand-point
- * route — the baseline the task-016 explores anticipating.
- *
- * The seeded eight cities prove the behaviour and measure nothing: the cost
- * only shows up over a route long enough to have pages to turn.
- */
+/** Fetches per page turn during playback, over a thousand-point route. */
 import { expect, type Page, test } from '@playwright/test';
 import {
   ensureTrackCollection,
