@@ -50,6 +50,7 @@ import {
   type NavigationAction,
 } from '../../../services/keyboard-navigation/index';
 import { DirectusMapCenterer } from '../../../services/map-centerer/index';
+import { PageTurnAnticipation } from '../../../services/page-turn-anticipation/index';
 import {
   type PageEdge,
   type RecordId,
@@ -211,8 +212,27 @@ const frameItem = (payload: unknown): void => {
   focus(item.id, item);
 };
 
+const anticipation = new PageTurnAnticipation();
+/** When the page in flight was asked for, to measure what the fetch cost. */
+let turnAskedAt: number | null = null;
+/** The turn in flight was fired ahead of the beat, so the beat restarts where the page lands. */
+let turnAnticipated = false;
+let anticipating: ReturnType<typeof setTimeout> | null = null;
+
+const stopAnticipating = (): void => {
+  if (anticipating !== null) clearTimeout(anticipating);
+  anticipating = null;
+};
+
+const turnTo = (target: Extract<SequenceStep, { kind: 'page' }>): void => {
+  pendingEdge.value = target.edge;
+  turnAskedAt = Date.now();
+  props.goToPage?.(target.page);
+};
+
 /** Waits while a page is being fetched, instead of stepping over the old list. */
 const step = (resolve: (position: SequencePosition) => SequenceStep | null): void => {
+  stopAnticipating();
   if (loading.value) return;
 
   const target = resolve(position.value);
@@ -223,18 +243,8 @@ const step = (resolve: (position: SequencePosition) => SequenceStep | null): voi
     return;
   }
 
-  pendingEdge.value = target.edge;
-  props.goToPage?.(target.page);
+  turnTo(target);
 };
-
-/** The page asked for has arrived: the record waiting at its edge becomes current. */
-watch([ids, loading], () => {
-  if (loading.value || pendingEdge.value === null) return;
-
-  const edge = pendingEdge.value;
-  pendingEdge.value = null;
-  focus(sequence.atEdge(ids.value, edge));
-});
 
 /** The page changed under us — the mark is on a row that is now another record. */
 watch(gridItems, () => {
@@ -251,7 +261,50 @@ const DEFAULT_PLAYBACK_SECONDS = 2;
 /** One second at least: each step starts a camera animation. */
 const MINIMUM_PLAYBACK_MS = 1_000;
 
+const beatMs = (): number =>
+  Math.max(MINIMUM_PLAYBACK_MS, (props.playbackInterval ?? DEFAULT_PLAYBACK_SECONDS) * 1_000);
+
+const onBeat = (): void => {
+  /*
+   * `pendingEdge` and not only `loading`: an anticipated turn is asked for
+   * first and the embedded layout reports itself loading afterwards, and a beat
+   * landing in between would ask for the same page all over again.
+   */
+  if (loading.value || pendingEdge.value !== null) return;
+  if (atEnd.value) {
+    stopPlayback();
+    return;
+  }
+  step((position) => sequence.next(position));
+  anticipatePageTurn();
+};
+
+const restartBeat = (): void => {
+  if (ticker !== null) clearInterval(ticker);
+  ticker = setInterval(onBeat, beatMs());
+};
+
+/**
+ * Asks for the next page before the step that needs it, so the fetch happens
+ * inside the step that precedes it instead of on top of it — the measurement is
+ * in the task-016 document.
+ */
+const anticipatePageTurn = (): void => {
+  stopAnticipating();
+  if (!playing.value) return;
+
+  const target = sequence.next(position.value);
+  if (target?.kind !== 'page') return;
+
+  anticipating = setTimeout(() => {
+    anticipating = null;
+    turnAnticipated = true;
+    turnTo(target);
+  }, anticipation.delayMs(beatMs()));
+};
+
 const stopPlayback = (): void => {
+  stopAnticipating();
   if (ticker !== null) clearInterval(ticker);
   ticker = null;
   playing.value = false;
@@ -261,19 +314,31 @@ const startPlayback = (): void => {
   if (playing.value) return;
 
   playing.value = true;
-  const seconds = props.playbackInterval ?? DEFAULT_PLAYBACK_SECONDS;
-  ticker = setInterval(
-    () => {
-      if (loading.value) return;
-      if (atEnd.value) {
-        stopPlayback();
-        return;
-      }
-      step((position) => sequence.next(position));
-    },
-    Math.max(MINIMUM_PLAYBACK_MS, seconds * 1_000)
-  );
+  restartBeat();
+  anticipatePageTurn();
 };
+
+/** The page asked for has arrived: the record waiting at its edge becomes current. */
+watch([ids, loading], () => {
+  if (loading.value || pendingEdge.value === null) return;
+
+  const edge = pendingEdge.value;
+  pendingEdge.value = null;
+  if (turnAskedAt !== null) {
+    anticipation.measure(Date.now() - turnAskedAt);
+    turnAskedAt = null;
+  }
+  focus(sequence.atEdge(ids.value, edge));
+
+  /*
+   * An anticipated page lands on its own clock and not on the beat's: the
+   * record it brings would otherwise keep whatever is left of the step, and be
+   * gone from the screen before it was read.
+   */
+  if (!turnAnticipated) return;
+  turnAnticipated = false;
+  if (playing.value) restartBeat();
+});
 
 onBeforeUnmount(stopPlayback);
 
@@ -310,6 +375,9 @@ watch(
   () => {
     stopPlayback();
     pendingEdge.value = null;
+    turnAskedAt = null;
+    turnAnticipated = false;
+    anticipation.reset();
     focus(null);
   }
 );

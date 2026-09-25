@@ -625,6 +625,138 @@ describe('MapgridLayout — playback', () => {
   });
 });
 
+/**
+ * The playback and the page it will need next.
+ *
+ * `mountWalk`'s grid never reports itself loading, which is on purpose here:
+ * what keeps a step from asking for the same page twice is the turn already in
+ * flight, and a fake that flips `loading` would hide that.
+ */
+describe('MapgridLayout — anticipating the page turn', () => {
+  /** The page the layout asked for, arriving. */
+  const arrive = async (
+    walk: ReturnType<typeof mountWalk>,
+    ids: (string | number)[],
+    page: number
+  ): Promise<void> => {
+    walk.gridState.items = ids.map((id) => ({
+      id,
+      location: { coordinates: [Number(id) * 10, 0], type: 'Point' },
+    }));
+    await walk.wrapper.setProps({ page });
+    await nextTick();
+  };
+
+  const onTheLastRecordOfPageOne = async (totalPages = 2) => {
+    const walk = mountWalk({ ids: [1, 2, 3], page: 1, playbackInterval: 1, totalPages });
+    await walk.click(3);
+    await walk.press('play');
+    return walk;
+  };
+
+  it('asks for the next page before the beat, by what a fetch is expected to take', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne();
+
+      // the default guess is 250ms of fetch, so the turn is fired 750ms into the step
+      await vi.advanceTimersByTimeAsync(700);
+      expect(walk.goToPage).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(walk.goToPage).toHaveBeenCalledWith(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not anticipate the page after the last one', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne(1);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      expect(walk.goToPage).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('drops the turn it had armed when the playback stops', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne();
+
+      await walk.press('stop');
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      expect(walk.goToPage).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('asks for the page once, and not again at every beat while it is on its way', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne();
+
+      await vi.advanceTimersByTimeAsync(4_000);
+
+      expect(walk.goToPage).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives the record the page brought a whole step, counted from where the page landed', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne(3);
+
+      // the fetch took 650ms, and not the 250ms guessed: the page lands late
+      await vi.advanceTimersByTimeAsync(1_400);
+      expect(walk.current()).toEqual(['3']);
+
+      await arrive(walk, [4, 5, 6], 2);
+      expect(walk.current()).toEqual(['4']);
+
+      await vi.advanceTimersByTimeAsync(999);
+      expect(walk.current()).toEqual(['4']);
+
+      await vi.advanceTimersByTimeAsync(2);
+      expect(walk.current()).toEqual(['5']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('sizes the next anticipation by the fetch it measured, not by the guess', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = await onTheLastRecordOfPageOne(3);
+
+      await vi.advanceTimersByTimeAsync(1_400);
+      await arrive(walk, [4, 5, 6], 2);
+      expect(walk.current()).toEqual(['4']);
+
+      // 5 and then 6, the last record of the page: the turn is armed again there
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(walk.current()).toEqual(['6']);
+
+      // 650ms measured against a 1s beat: 350ms into the step, and not 750ms
+      await vi.advanceTimersByTimeAsync(300);
+      expect(walk.goToPage).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(walk.goToPage).toHaveBeenLastCalledWith(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('MapgridLayout — the camera tracking', () => {
   it('leaves the camera alone when tracking is off', async () => {
     const walk = mountWalk({ cameraTracking: 'off' });

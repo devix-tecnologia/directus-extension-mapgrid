@@ -74,8 +74,17 @@ export async function ensureTrackCollection(): Promise<void> {
   }
 }
 
-/** The MapGrid over the route, sorted by the sequence — the order the trip happened in. */
-export async function ensureTrackMapGrid(options: Record<string, unknown> = {}): Promise<void> {
+/**
+ * The MapGrid over the route, sorted by the sequence — the order the trip
+ * happened in.
+ *
+ * `query` overrides the shared query: a measurement that needs the page to turn
+ * often shortens the `limit` instead of playing through a whole page of 25.
+ */
+export async function ensureTrackMapGrid(
+  options: Record<string, unknown> = {},
+  query: Record<string, unknown> = {}
+): Promise<void> {
   await deleteAllPresetsFor(TRACK_COLLECTION);
   await apiRequest('POST', '/presets', {
     collection: TRACK_COLLECTION,
@@ -94,6 +103,7 @@ export async function ensureTrackMapGrid(options: Record<string, unknown> = {}):
         limit: TRACK_PAGE_SIZE,
         page: 1,
         sort: ['sequence'],
+        ...query,
       },
     },
   });

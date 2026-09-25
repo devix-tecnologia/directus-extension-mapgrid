@@ -178,6 +178,9 @@ The `contract/` layer is also published as a subpath (`@devix-tecnologia/directu
 | `pnpm test:integration` | yes | Extension logic against a real Directus instance |
 | `pnpm test:e2e` | yes | The whole UI in a browser, with Playwright |
 
+`RUNNER_ARGS` narrows a Docker run to one spec, which is what a measurement
+usually wants: `RUNNER_ARGS=tests/e2e/mapgrid-playback-anticipation.spec.ts pnpm test:e2e`.
+
 ```
 tests/
 ├── stories/                      # Storybook console check (Playwright, no Docker)
@@ -393,6 +396,9 @@ A camada `contract/` também é publicada como subcaminho (`@devix-tecnologia/di
 | `pnpm check:stories` | não | Cada story aberta no Chromium; falha a qualquer mensagem de console |
 | `pnpm test:integration` | sim | Lógica da extensão contra um Directus real |
 | `pnpm test:e2e` | sim | A interface inteira num navegador, com Playwright |
+
+O `RUNNER_ARGS` restringe uma execução no Docker a um spec só, que é o que uma
+medição costuma querer: `RUNNER_ARGS=tests/e2e/mapgrid-playback-anticipation.spec.ts pnpm test:e2e`.
 
 ```
 tests/
