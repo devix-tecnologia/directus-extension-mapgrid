@@ -758,3 +758,82 @@ describe('MapgridLayout — the current record on the map', () => {
     expect(currentPointAt(walk.wrapper)).toBeNull();
   });
 });
+
+/** A key pressed on the page, as the browser delivers it: bubbling up to the document. */
+const press = async (key: string, target: Element = document.body): Promise<KeyboardEvent> => {
+  const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key });
+  target.dispatchEvent(event);
+  await nextTick();
+  await nextTick();
+  return event;
+};
+
+describe('MapgridLayout — the keyboard', () => {
+  it('walks the records with the arrows and the ends with Home and End', async () => {
+    const walk = mountWalk();
+
+    await press('ArrowRight');
+    expect(walk.current()).toEqual(['1']);
+
+    await press('ArrowRight');
+    expect(walk.current()).toEqual(['2']);
+
+    await press('ArrowLeft');
+    expect(walk.current()).toEqual(['1']);
+
+    await press('End');
+    expect(walk.current()).toEqual(['3']);
+
+    await press('Home');
+    expect(walk.current()).toEqual(['1']);
+  });
+
+  it('keeps the key from scrolling the page, which is what it would do by default', async () => {
+    mountWalk();
+
+    expect((await press('End')).defaultPrevented).toBe(true);
+    expect((await press('ArrowUp')).defaultPrevented).toBe(false);
+  });
+
+  it('starts and stops the playback with Space', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = mountWalk({ ids: [1, 2, 3, 4], playbackInterval: 1 });
+
+      await press(' ');
+      expect(walk.toolbar.props('playing')).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await nextTick();
+      expect(walk.current()).toEqual(['1']);
+
+      await press(' ');
+      expect(walk.toolbar.props('playing')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps quiet while the person types, so a space in a filter stays a space', async () => {
+    const walk = mountWalk();
+    const field = document.createElement('input');
+    document.body.append(field);
+
+    await press('ArrowRight', field);
+
+    expect(walk.current()).toEqual([]);
+    field.remove();
+  });
+
+  it('keeps quiet while the focus is elsewhere — a dialog, the sidebar', async () => {
+    const walk = mountWalk();
+    const elsewhere = document.createElement('button');
+    document.body.append(elsewhere);
+    elsewhere.focus();
+
+    await press('ArrowRight', elsewhere);
+
+    expect(walk.current()).toEqual([]);
+    elsewhere.remove();
+  });
+});

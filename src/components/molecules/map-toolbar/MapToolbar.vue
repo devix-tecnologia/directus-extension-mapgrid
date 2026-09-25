@@ -1,7 +1,7 @@
 <template>
   <div class="map-toolbar">
     <v-button
-      v-tooltip="t('navFirst')"
+      v-tooltip="withKey('navFirst', 'first')"
       class="map-toolbar__button"
       data-control="first"
       icon
@@ -15,7 +15,7 @@
     </v-button>
 
     <v-button
-      v-tooltip="t('navPrevious')"
+      v-tooltip="withKey('navPrevious', 'previous')"
       class="map-toolbar__button"
       data-control="previous"
       icon
@@ -29,7 +29,7 @@
     </v-button>
 
     <v-button
-      v-tooltip="t(props.playing === true ? 'playbackStop' : 'playbackPlay')"
+      v-tooltip="withKey(props.playing === true ? 'playbackStop' : 'playbackPlay', 'playback')"
       class="map-toolbar__button"
       data-control="playback"
       icon
@@ -43,7 +43,7 @@
     </v-button>
 
     <v-button
-      v-tooltip="t('navNext')"
+      v-tooltip="withKey('navNext', 'next')"
       class="map-toolbar__button"
       data-control="next"
       icon
@@ -57,7 +57,7 @@
     </v-button>
 
     <v-button
-      v-tooltip="t('navLast')"
+      v-tooltip="withKey('navLast', 'last')"
       class="map-toolbar__button"
       data-control="last"
       icon
@@ -102,6 +102,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { type CameraTracking, CameraTrackingPolicy } from '../../../services/camera-tracking/index';
+import type { NavigationAction } from '../../../services/keyboard-navigation/index';
 import { MESSAGES } from '../../../shared/messages';
 import type { MapToolbarEmits, MapToolbarProps } from './MapToolbar.types';
 
@@ -126,6 +127,18 @@ const TRACKING_LABEL: Record<CameraTracking, 'trackingOff' | 'trackingFollow' | 
   };
 
 const tracking = computed<CameraTracking>(() => policy.from(props.tracking));
+
+/** The keyboard help, by control — the keys themselves live in `KeyboardNavigation`. */
+const SHORTCUT_LABEL: Record<NavigationAction, string> = {
+  first: 'shortcutFirst',
+  last: 'shortcutLast',
+  next: 'shortcutNext',
+  playback: 'shortcutPlayback',
+  previous: 'shortcutPrevious',
+};
+
+const withKey = (label: string, control: NavigationAction): string =>
+  `${t(label)} (${t(SHORTCUT_LABEL[control])})`;
 
 /** One button for the two controls: it shows, and asks for, whichever is possible now. */
 const togglePlayback = (): void => {

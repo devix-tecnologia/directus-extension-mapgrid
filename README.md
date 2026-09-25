@@ -66,6 +66,12 @@ The controls sit on the map, in the MapGrid's own toolbar:
 | ▶ Play / ⏹ Stop | Walks forward on its own, and stops by itself at the last record |
 | GPS | Cycles the camera tracking: free → follow → keep centred |
 
+The same steps answer to the keyboard while the layout has the focus: **Home** and **End** for the
+ends of the query, **←** and **→** for one record, and **Space** for play/stop. Every Directus
+shortcut carries the meta key — `meta+s`, and the `meta+a` of the table below — so holding any
+modifier hands the key back to them, and so does typing in a field. Each toolbar control shows its
+key in the tooltip.
+
 The order that defines "next" is the query's `sort`, which is the one showing in the grid header.
 Sorting by a date/time field is what makes playback drive a route in the order it happened; with
 any other sort, it walks that order instead. While a page is being fetched the controls wait, so no
@@ -73,7 +79,10 @@ record is skipped.
 
 The current record is marked on its grid row and scrolled into view. It is deliberately **not** the
 selection: that one also arms the bulk actions, and "I am looking at this" should not read as "I
-marked this to be deleted".
+marked this to be deleted". On the map it gets a ring of its own, drawn over the canvas: with
+**Cluster data** on, the record's point would otherwise be inside a cluster and the playback would
+be invisible. The ring is placed by projecting the geometry with the camera the map publishes,
+which it only does when a movement ends — so it appears once the camera lands.
 
 The basemaps offered are the ones in **Project Settings → Map**, as in every map of the app. The
 chosen basemap is the app's choice, not the MapGrid's: it is shared with the other map layouts and
@@ -273,6 +282,12 @@ Os controles ficam sobre o mapa, na barra do próprio MapGrid:
 | ▶ Play / ⏹ Stop | Avança sozinho, e para no último registro por conta própria |
 | GPS | Cicla o acompanhamento da câmera: livre → seguir → centralizar |
 
+Os mesmos passos atendem ao teclado enquanto o layout está em foco: **Home** e **End** para as
+pontas da consulta, **←** e **→** para um registro, e **Espaço** para play/stop. Todo atalho do
+Directus leva a tecla meta — `meta+s`, e o `meta+a` da tabela abaixo —, então segurar qualquer
+modificador devolve a tecla para eles, e digitar num campo também. Cada controle da barra mostra a
+sua tecla na dica.
+
 A ordem que define "próximo" é o `sort` da consulta, que é o que está à vista no cabeçalho da
 grade. Ordenar por um campo de data/hora é o que faz a reprodução refazer um trajeto na ordem em
 que ele aconteceu; com qualquer outra ordem, ela percorre essa outra ordem. Enquanto uma página
@@ -280,7 +295,10 @@ está sendo buscada, os controles esperam — nenhum registro é pulado.
 
 O registro atual é marcado na linha da grade e rolado até a vista. Ele deliberadamente **não** é a
 seleção: ela também arma as ações em lote, e "estou vendo este" não pode aparecer como "marquei
-este para apagar".
+este para apagar". No mapa ele ganha um anel próprio, desenhado sobre a tela: com o **Cluster
+data** ligado, o ponto do registro estaria dentro do agrupamento e a reprodução ficaria invisível.
+O anel é posicionado projetando a geometria com a câmera que o mapa publica, e ele só a publica
+quando um movimento termina — por isso a marca aparece quando a câmera pousa.
 
 Os mapas base oferecidos são os de **Project Settings → Map**, como em todo mapa do app. O mapa base
 escolhido é uma escolha do app, e não do MapGrid: vale também para os outros layouts de mapa e não

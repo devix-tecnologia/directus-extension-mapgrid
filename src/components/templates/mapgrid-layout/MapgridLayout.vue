@@ -1,5 +1,5 @@
 <template>
-  <div class="mapgrid-layout">
+  <div ref="layoutRoot" class="mapgrid-layout">
     <v-info v-if="missingLayout" icon="warning" :title="t('missingLayout')" center>
       {{ t('missingLayoutHint') }}
     </v-info>
@@ -45,6 +45,10 @@ import type { GeoItem } from '../../../contract/index';
 import { CameraTrackingPolicy } from '../../../services/camera-tracking/index';
 import { DirectusCurrentPoint, type ScreenPoint } from '../../../services/current-point/index';
 import { EmbeddedStateReader } from '../../../services/embedded-state-reader/index';
+import {
+  KeyboardNavigation,
+  type NavigationAction,
+} from '../../../services/keyboard-navigation/index';
 import { DirectusMapCenterer } from '../../../services/map-centerer/index';
 import {
   type PageEdge,
@@ -64,6 +68,7 @@ const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
 
 const missingLayout = computed(() => !props.grid?.component || !props.map?.component);
 
+const layoutRoot = ref<HTMLElement | null>(null);
 const mapPane = ref<HTMLElement | null>(null);
 const gridPane = ref<HTMLElement | null>(null);
 
@@ -271,6 +276,33 @@ const startPlayback = (): void => {
 };
 
 onBeforeUnmount(stopPlayback);
+
+const keyboard = new KeyboardNavigation();
+
+const KEYBOARD_ACTIONS: Record<NavigationAction, () => void> = {
+  first: () => step((position) => sequence.first(position)),
+  last: () => step((position) => sequence.last(position)),
+  next: () => step((position) => sequence.next(position)),
+  playback: () => {
+    if (playing.value) stopPlayback();
+    else if (!atEnd.value) startPlayback();
+  },
+  previous: () => step((position) => sequence.previous(position)),
+};
+
+/** On the document, not on the pane: the page starts with the focus nowhere, and the keys still answer. */
+const onKeyDown = (event: KeyboardEvent): void => {
+  if (!keyboard.inScope(layoutRoot.value, document.activeElement)) return;
+
+  const action = keyboard.actionFor(event);
+  if (!action) return;
+
+  event.preventDefault();
+  KEYBOARD_ACTIONS[action]();
+};
+
+onMounted(() => document.addEventListener('keydown', onKeyDown));
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeyDown));
 
 /** Filter, search, sort or limit changed: the sequence is another one, so it restarts. */
 watch(

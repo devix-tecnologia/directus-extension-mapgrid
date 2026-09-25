@@ -39,13 +39,39 @@ tem oito registros, que provam o comportamento mas não medem nada.
 - [x] O ponto do registro atual, atrás de um método próprio documentado como
       limitação: `DirectusCurrentPoint.screenPointOf()`,
       `src/services/current-point/`. O `clusterData` do preset não muda
-- [ ] Atalhos de teclado com o layout em foco, sem colidir com os do Directus,
-      e textos de ajuda em en-US e pt-BR
+- [x] Atalhos de teclado com o layout em foco, sem colidir com os do Directus,
+      e textos de ajuda em en-US e pt-BR. `KeyboardNavigation`, com Home/End,
+      ←/→ e Espaço; a lista do Directus foi conferida na fonte da 10.13.1 (ver
+      "A lista de atalhos do Directus")
 - [ ] Contar as requisições de uma reprodução sobre um trajeto sintético de mil
       pontos no ambiente do e2e, com a consulta compartilhada
 - [ ] Registrar a medição como linha de base da task-016, que explora antecipar
       a busca da próxima página
 - [ ] Evidência de tela: a reprodução visível no mapa com o agrupamento ligado
+
+## A lista de atalhos do Directus
+
+Conferida na fonte da 10.13.1, que é a versão que o e2e roda
+(`grep -r "useShortcut(" app/src`):
+
+| Atalho | Onde |
+| --- | --- |
+| `meta+s` | Salvar, em toda tela de item — conteúdo, arquivos, usuários, papéis, traduções, presets, flows, painéis, modelo de dados, aparência, projeto |
+| `meta+shift+s` | Salvar e criar outro, em item de conteúdo, usuários e traduções |
+| `meta+a` | **Selecionar tudo, no layout tabular** — o que o MapGrid embute |
+| `meta+enter` | Publicar comentário |
+| `meta+b`, `meta+i`, `meta+k`, `meta+alt+…` | Editor markdown |
+| `escape` | Fechar o `v-dialog` |
+
+Todos levam `meta`, com a única exceção do `escape`. Por isso os atalhos daqui
+são teclas puras — Home, End, ←, → e Espaço —, e qualquer modificador segurado
+devolve o evento para eles: é o `meta+a` da grade embutida que continua
+funcionando. Digitar num campo (`input`, `textarea`, `select`,
+`contenteditable`) também devolve.
+
+O escopo repete a regra do `useShortcut` deles: atende quando o foco está
+dentro do layout **ou** quando não está em lugar nenhum (`document.body`), que
+é como a página começa.
 
 ## Notes
 Veio dos critérios não feitos da task-006 (Fases 3, 4 e 5).
