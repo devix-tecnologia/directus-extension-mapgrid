@@ -15,11 +15,10 @@ const MAX_MERCATOR_LATITUDE = 85.05112878;
  * pane by the same Web Mercator the map uses, from the camera the layout
  * publishes, and the composition draws a mark of its own at that position.
  *
- * Two consequences, both of the camera being read and not watched: the Directus
- * map only publishes `cameraOptions` on `moveend`, so between asking for a move
- * and the camera landing the projection is the old one — the composition hides
- * the mark while it waits; and a rotated or tilted map is not accounted for,
- * because the published camera carries neither bearing nor pitch.
+ * One consequence of the camera being read and not watched: the Directus map
+ * only publishes `cameraOptions` on `moveend`, so between asking for a move and
+ * the camera landing the projection is still the old one — the composition
+ * hides the mark while it waits.
  *
  * Once the map component draws the current record natively, or the map contract
  * of task-011 owns a real marker, this class is the only place to change.
@@ -44,9 +43,12 @@ export class DirectusCurrentPoint implements ICurrentPoint {
 
     const [longitude, latitude] = this.centreOf(points);
     const world = MAPLIBRE_WORLD_WIDTH_AT_ZOOM_0 * 2 ** camera.zoom;
+    const east = (this.worldX(longitude) - this.worldX(camera.center[0])) * world;
+    const south = (this.worldY(latitude) - this.worldY(camera.center[1])) * world;
+    const bearing = (camera.bearing * Math.PI) / 180;
     return {
-      x: (this.worldX(longitude) - this.worldX(camera.center[0])) * world + viewport.width / 2,
-      y: (this.worldY(latitude) - this.worldY(camera.center[1])) * world + viewport.height / 2,
+      x: east * Math.cos(bearing) + south * Math.sin(bearing) + viewport.width / 2,
+      y: -east * Math.sin(bearing) + south * Math.cos(bearing) + viewport.height / 2,
     };
   }
 
@@ -68,23 +70,41 @@ export class DirectusCurrentPoint implements ICurrentPoint {
     return item[field] ?? null;
   }
 
-  private camera(): { center: [number, number]; zoom: number } | null {
+  /**
+   * The camera the map published, in either of the two shapes it comes in: the
+   * pair a seeded preset carries, and the MapLibre `LngLat` of the `moveend`,
+   * which is what ends up written to the preset afterwards.
+   *
+   * A tilted map has no answer here — the perspective is not a rotation — so
+   * it gives up rather than drawing the mark somewhere else.
+   */
+  private camera(): { bearing: number; center: [number, number]; zoom: number } | null {
     const camera = this.state.cameraOptions as
-      | { center?: unknown; zoom?: unknown }
+      | { bearing?: unknown; center?: unknown; pitch?: unknown; zoom?: unknown }
       | null
       | undefined;
-    const center = camera?.center;
     const zoom = camera?.zoom;
-    if (
-      !Array.isArray(center) ||
-      typeof center[0] !== 'number' ||
-      typeof center[1] !== 'number' ||
-      typeof zoom !== 'number' ||
-      !Number.isFinite(zoom)
-    ) {
-      return null;
+    if (typeof zoom !== 'number' || !Number.isFinite(zoom)) return null;
+    if (typeof camera?.pitch === 'number' && camera.pitch !== 0) return null;
+
+    const center = this.longitudeLatitudeOf(camera?.center);
+    if (!center) return null;
+
+    const bearing = camera?.bearing;
+    return {
+      bearing: typeof bearing === 'number' && Number.isFinite(bearing) ? bearing : 0,
+      center,
+      zoom,
+    };
+  }
+
+  private longitudeLatitudeOf(center: unknown): [number, number] | null {
+    if (Array.isArray(center) && typeof center[0] === 'number' && typeof center[1] === 'number') {
+      return [center[0], center[1]];
     }
-    return { center: [center[0], center[1]], zoom };
+    const pair = center as { lat?: unknown; lng?: unknown } | null | undefined;
+    if (typeof pair?.lng === 'number' && typeof pair.lat === 'number') return [pair.lng, pair.lat];
+    return null;
   }
 
   /** The centre of the geometry's bounding box, so a line lands on its middle and not on a vertex. */

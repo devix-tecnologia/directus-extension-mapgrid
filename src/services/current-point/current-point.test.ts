@@ -96,6 +96,51 @@ describe('DirectusCurrentPoint', () => {
     expect(point?.y).toBeCloseTo(200, 6);
   });
 
+  it('reads the camera the map publishes, whose centre is a LngLat and not a pair', () => {
+    // what `moveend` hands over, and what ends up written to the preset
+    const state = mapState({
+      cameraOptions: {
+        bearing: 0,
+        center: { lat: BRASILIA[1], lng: BRASILIA[0] },
+        pitch: 0,
+        zoom: 4,
+      },
+    });
+
+    const point = currentPoint(state).screenPointOf({ id: 1 });
+
+    expect(point?.x).toBeCloseTo(400, 6);
+    expect(point?.y).toBeCloseTo(200, 6);
+  });
+
+  it('turns with the map when it is rotated, so the mark stays on the record', () => {
+    const state = mapState({
+      cameraOptions: { bearing: 90, center: BRASILIA, zoom: 4 },
+      geojson: {
+        features: [
+          {
+            geometry: { coordinates: [BRASILIA[0] + 1, BRASILIA[1]], type: 'Point' },
+            properties: { id: 1 },
+            type: 'Feature',
+          },
+        ],
+        type: 'FeatureCollection',
+      },
+    });
+
+    const point = currentPoint(state).screenPointOf({ id: 1 });
+
+    // with east up, the record east of the camera is above the centre
+    expect(point?.x).toBeCloseTo(400, 6);
+    expect(point?.y).toBeCloseTo(200 - 8192 / 360, 6);
+  });
+
+  it('gives up on a tilted map, where a flat projection would place the mark elsewhere', () => {
+    const state = mapState({ cameraOptions: { center: BRASILIA, pitch: 30, zoom: 4 } });
+
+    expect(currentPoint(state).screenPointOf({ id: 1 })).toBeNull();
+  });
+
   it('gives up when the item has no geometry anywhere', () => {
     const state = mapState({ geojson: { features: [], type: 'FeatureCollection' } });
 
