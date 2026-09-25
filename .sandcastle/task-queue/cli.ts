@@ -13,9 +13,8 @@
  * it.
  */
 import { join } from 'node:path';
-
-import { TaskQueue } from './task-queue.ts';
 import { RESERVED_TASKS } from './reserved.ts';
+import { TaskQueue } from './task-queue.ts';
 
 const root = process.argv[2] ?? join(import.meta.dirname, '..', '..', 'TASKS');
 const queue = new TaskQueue(root, RESERVED_TASKS);

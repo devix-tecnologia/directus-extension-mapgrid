@@ -1,9 +1,9 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  OPEN_STATUSES,
   type ITaskQueue,
+  OPEN_STATUSES,
   type QueuedTask,
   type ReservedTasks,
   type ScannedQueue,

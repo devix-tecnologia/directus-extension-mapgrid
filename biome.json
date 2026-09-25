@@ -40,6 +40,12 @@
       "tests/**/*.ts",
       "tests/**/*.js",
       ".storybook/**/*.ts",
+      "scripts/**/*.ts",
+      "scripts/**/*.mjs",
+      ".sandcastle/**/*.ts",
+      ".sandcastle/**/*.mjs",
+      "!.sandcastle/worktrees",
+      "!.sandcastle/logs",
       "*.ts"
     ]
   },

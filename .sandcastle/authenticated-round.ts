@@ -98,7 +98,9 @@ class AuthenticatedRound {
     return [
       `starts with "${clean.slice(0, 13)}"`,
       `${clean.length} characters`,
-      strange ? `with unexpected characters: ${JSON.stringify(strange)}` : 'no unexpected characters',
+      strange
+        ? `with unexpected characters: ${JSON.stringify(strange)}`
+        : 'no unexpected characters',
     ].join(', ');
   }
 
