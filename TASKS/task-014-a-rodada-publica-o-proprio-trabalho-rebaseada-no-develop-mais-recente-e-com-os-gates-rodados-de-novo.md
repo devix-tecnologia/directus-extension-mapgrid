@@ -1,6 +1,6 @@
 # 🧩 Task 014 — A rodada publica o proprio trabalho, rebaseada no develop mais recente e com os gates rodados de novo
 
-- Status: pending
+- Status: in-review
 - Type: feat
 - Assignee: sidartaveloso
 
