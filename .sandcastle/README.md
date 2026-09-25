@@ -7,8 +7,8 @@ configuração.
 ```sh
 pnpm sandcastle:image   # uma vez, e a cada mudança no Dockerfile
 pnpm sandcastle         # uma tarefa
-pnpm sandcastle:rodada  # várias tarefas, um setup só (ITERACOES=3 por padrão)
-pnpm sandcastle:fila    # só imprime a fila que o agente vai ler
+pnpm sandcastle:round   # várias tarefas, um setup só (ITERATIONS=3 por padrão)
+pnpm sandcastle:queue   # só imprime a fila que o agente vai ler
 ```
 
 ## Antes da primeira rodada: a credencial
@@ -43,12 +43,12 @@ justamente para a ordem refletir dependência — "010 vai a 10, 007 a 40 e 006 
 para o menor, a fila entregaria primeiro exatamente a que não pode vir antes.
 
 Por isso também **não há corte de prioridade** aqui: um corte inferior
-esconderia o topo da fila. Quem não é do agente vai para `reservadas.ts`, com o
+esconderia o topo da fila. Quem não é do agente vai para `reserved.ts`, com o
 motivo escrito por extenso.
 
-`fila-de-tarefas/` lê `TASKS/*.md` direto, e não o `taskin list`, porque o
+`task-queue/` lê `TASKS/*.md` direto, e não o `taskin list`, porque o
 `taskin list` **não imprime a prioridade** — ele ordena por ID. O teste
-`fila-de-tarefas.test.ts` amarra a ordem que o código aplica à ordem que o
+`task-queue.test.ts` amarra a ordem que o código aplica à ordem que o
 `prompt.md` descreve, para os dois não divergirem; ele roda no `pnpm test`.
 
 ## O e2e roda aqui dentro, e é o que muda o que o agente consegue provar
@@ -66,13 +66,13 @@ O que isso exige, e é a parte não óbvia:
 
 O Directus sobe sem a extensão, o runner monta um `/workspace` vazio, e a suíte
 reprova por um motivo que não é o dela, longe da causa. A saída é a **paridade
-de caminho**: o `ambiente.ts` monta `<repo>/.sandcastle/worktrees` no container
-no mesmo caminho absoluto, e o `no-espelho.sh` troca para ele antes de chamar o
+de caminho**: o `environment.ts` monta `<repo>/.sandcastle/worktrees` no container
+no mesmo caminho absoluto, e o `on-mirror.sh` troca para ele antes de chamar o
 compose — conferindo, pelo inode do `package.json`, que é a mesma árvore e não
 um diretório de mesmo nome.
 
 ```sh
-.sandcastle/no-espelho.sh pnpm test:e2e
+.sandcastle/on-mirror.sh pnpm test:e2e
 ```
 
 **Não rode a suíte no host enquanto uma rodada estiver de pé.** A sub-rede do
@@ -113,10 +113,10 @@ os três tentados, e o erro vem antes dos três. A saída é o diretório não
 existir:
 
 ```sh
-pnpm sandcastle:limpar   # remove só o que o git já não registra
+pnpm sandcastle:clean    # remove só o que o git já não registra
 ```
 
-O `rodada.ts` chama isso sozinho ao terminar, **exceto** quando o Sandcastle
+O `round.ts` chama isso sozinho ao terminar, **exceto** quando o Sandcastle
 preservou a worktree por ter trabalho não commitado — aí ela fica, e o lint
 quebrado é o preço de não perder o trabalho.
 
@@ -132,7 +132,7 @@ um caminho pelo `docker run --rm alpine rm -rf` em vez de pedir `sudo`.
 ## O que cobre esta pasta
 
 ```sh
-pnpm test                  # inclui fila-de-tarefas/*.test.ts
+pnpm test                  # inclui task-queue/*.test.ts
 pnpm typecheck:sandcastle  # strict + noUncheckedIndexedAccess
 ```
 
@@ -140,7 +140,7 @@ O `biome.json` **não alcança** esta pasta: o `files.includes` dele lista
 `src/`, `tests/`, `.storybook/` e os `*.ts` da raiz. Está escrito aqui para
 ninguém ler o silêncio do lint como aprovação.
 
-⚠️ O glob do vitest para cá é `.sandcastle/fila-de-tarefas/*.test.ts` — um
+⚠️ O glob do vitest para cá é `.sandcastle/task-queue/*.test.ts` — um
 nível, de propósito. Com `**` ele desce em `.sandcastle/worktrees/<rodada>/` e
 coleta o repositório inteiro de novo. Vale para qualquer ferramenta que varra
 por padrão, e reaparece toda vez que alguém acrescenta uma.

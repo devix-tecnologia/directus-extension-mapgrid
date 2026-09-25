@@ -90,13 +90,13 @@
     "test:e2e:report": "playwright show-report",
     "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
     "sandcastle": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/main.ts",
-    "sandcastle:rodada": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/rodada.ts",
-    "sandcastle:fila": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/fila-de-tarefas/cli.ts",
+    "sandcastle:round": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/round.ts",
+    "sandcastle:queue": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/task-queue/cli.ts",
     "sandcastle:image": "docker build -t sandcastle:$(basename \"$PWD\" | tr '[:upper:]' '[:lower:]') --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) -f .sandcastle/Dockerfile .sandcastle",
-    "sandcastle:limpar": "node .sandcastle/limpa-worktrees.mjs",
+    "sandcastle:clean": "node .sandcastle/clean-worktrees.mjs",
     "typecheck:sandcastle": "tsc --noEmit -p .sandcastle/tsconfig.json",
     "test:vue-do-directus": "vitest run --config vitest.vue-do-directus.config.ts",
-    "sandcastle:rodada:autenticada": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/rodada-autenticada.ts"
+    "sandcastle:round:authenticated": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/authenticated-round.ts"
   },
   "devDependencies": {
     "@ai-hero/sandcastle": "^0.12.0",
