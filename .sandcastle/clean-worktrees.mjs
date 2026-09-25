@@ -69,7 +69,16 @@ for (const entry of entries) {
     console.log(`  ${entry.name}: root-owned files left over (${error.code}); removing via docker`);
     execFileSync(
       'docker',
-      ['run', '--rm', '-v', `${directory}:/target`, 'alpine:3', 'rm', '-rf', `/target/${entry.name}`],
+      [
+        'run',
+        '--rm',
+        '-v',
+        `${directory}:/target`,
+        'alpine:3',
+        'rm',
+        '-rf',
+        `/target/${entry.name}`,
+      ],
       { stdio: 'inherit' }
     );
   }
@@ -77,4 +86,6 @@ for (const entry of entries) {
   removed += 1;
 }
 
-console.log(removed === 0 ? 'nothing orphaned to remove.' : `${removed} orphaned worktree(s) removed.`);
+console.log(
+  removed === 0 ? 'nothing orphaned to remove.' : `${removed} orphaned worktree(s) removed.`
+);

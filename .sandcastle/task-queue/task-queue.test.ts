@@ -8,7 +8,9 @@ import { TaskQueue } from './task-queue.ts';
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
 
 const disposable: string[] = [];
-afterAll(() => disposable.forEach((d) => rmSync(d, { recursive: true, force: true })));
+afterAll(() => {
+  for (const d of disposable) rmSync(d, { recursive: true, force: true });
+});
 
 function withTasks(files: Record<string, string>): string {
   const dir = mkdtempSync(join(tmpdir(), 'queue-'));

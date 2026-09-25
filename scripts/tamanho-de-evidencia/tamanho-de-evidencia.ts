@@ -39,7 +39,15 @@ export class EvidenciasDoRepositorio implements IEvidenciasDoRepositorio {
   listar(): ArquivoDeEvidencia[] {
     const saida = execFileSync(
       'git',
-      ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', DIRETORIO_DE_EVIDENCIAS],
+      [
+        'ls-files',
+        '--cached',
+        '--others',
+        '--exclude-standard',
+        '-z',
+        '--',
+        DIRETORIO_DE_EVIDENCIAS,
+      ],
       { cwd: this.raiz, encoding: 'utf8' }
     );
     return saida

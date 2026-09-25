@@ -66,8 +66,10 @@ try {
   execFileSync('bash', [join(root, '.sandcastle', 'on-mirror.sh'), 'true'], { stdio: 'pipe' });
 } catch (error) {
   problems.push(
-    `on-mirror.sh failed (${String(error.stderr ?? error.message).trim().split('\n').pop()}) — ` +
-      'Docker would see empty paths, and the suite would run on nothing'
+    `on-mirror.sh failed (${String(error.stderr ?? error.message)
+      .trim()
+      .split('\n')
+      .pop()}) — ` + 'Docker would see empty paths, and the suite would run on nothing'
   );
 }
 
