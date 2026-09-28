@@ -1,5 +1,6 @@
-import { globalSetup } from '../tests/e2e/global-setup.ts';
-import { ensurePersonTrack, ensurePersonTrackMapGrid } from '../tests/helpers/person-track.ts';
+import { it } from 'vitest';
+import { globalSetup } from '../tests/e2e/global-setup';
+import { ensurePersonTrack, ensurePersonTrackMapGrid } from '../tests/helpers/person-track';
 
 it('seeds the test collection and the MapGrid preset', async () => {
   await globalSetup();

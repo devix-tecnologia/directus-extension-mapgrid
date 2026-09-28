@@ -11,6 +11,10 @@
  * e2e global-setup itself — same collection, same items, same preset — run
  * through Vitest, which resolves the tests' extensionless imports. Nothing is
  * torn down afterwards: the point is to keep Directus reachable.
+ *
+ * Its own TEST_SUITE_ID and subnet, so a stack left standing here does not
+ * take the container names, volumes and network of `pnpm test:e2e` — whose
+ * teardown wipes volumes.
  */
 
 import { execSync } from 'node:child_process';
@@ -20,7 +24,12 @@ const DIRECTUS_VERSION = process.env.DIRECTUS_VERSION ?? '10.13.1';
 const DIRECTUS_PORT = process.env.DIRECTUS_PORT ?? '8065';
 const DIRECTUS_URL = `http://localhost:${DIRECTUS_PORT}`;
 
-const composeEnv = `TEST_SUITE_ID=main DIRECTUS_VERSION=${DIRECTUS_VERSION} DIRECTUS_PORT=${DIRECTUS_PORT} PUBLIC_URL=${DIRECTUS_URL}`;
+const SUITE_ID = 'collection';
+const SUBNET = process.env.TEST_SUBNET ?? '10.77.79.0/24';
+
+const composeEnv =
+  `TEST_SUITE_ID=${SUITE_ID} DIRECTUS_VERSION=${DIRECTUS_VERSION} ` +
+  `DIRECTUS_PORT=${DIRECTUS_PORT} PUBLIC_URL=${DIRECTUS_URL} TEST_SUBNET=${SUBNET}`;
 
 const compose = (args: string): void => {
   execSync(`${composeEnv} docker compose -f docker-compose.test.yml ${args}`, {
