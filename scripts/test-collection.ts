@@ -12,9 +12,12 @@
  * through Vitest, which resolves the tests' extensionless imports. Nothing is
  * torn down afterwards: the point is to keep Directus reachable.
  *
- * Its own TEST_SUITE_ID and subnet, so a stack left standing here does not
- * take the container names, volumes and network of `pnpm test:e2e` — whose
- * teardown wipes volumes.
+ * Its own compose project, TEST_SUITE_ID and subnet, so a stack left standing
+ * here survives `pnpm test:e2e`. The project name is what matters: the suite's
+ * teardown is a `down --remove-orphans` over the project in
+ * docker-compose.test.yml's `name:`, and it takes down every container in it —
+ * different container names and all. Measured on 2026-09-28, with the seeded
+ * stack wiped by an e2e run that was only supposed to touch its own.
  */
 
 import { execSync } from 'node:child_process';
@@ -28,6 +31,7 @@ const SUITE_ID = 'collection';
 const SUBNET = process.env.TEST_SUBNET ?? '10.77.79.0/24';
 
 const composeEnv =
+  `COMPOSE_PROJECT_NAME=directus-extension-mapgrid-${SUITE_ID} ` +
   `TEST_SUITE_ID=${SUITE_ID} DIRECTUS_VERSION=${DIRECTUS_VERSION} ` +
   `DIRECTUS_PORT=${DIRECTUS_PORT} PUBLIC_URL=${DIRECTUS_URL} TEST_SUBNET=${SUBNET}`;
 
