@@ -23,6 +23,8 @@
 import { execSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 
+import { credentialsLine } from '../tests/test-env.ts';
+
 const DIRECTUS_VERSION = process.env.DIRECTUS_VERSION ?? '10.13.1';
 const DIRECTUS_PORT = process.env.DIRECTUS_PORT ?? '8065';
 const DIRECTUS_URL = `http://localhost:${DIRECTUS_PORT}`;
@@ -61,8 +63,7 @@ const main = async (): Promise<void> => {
 
   console.log(`
 Directus is up with the test collections seeded:
-  ${DIRECTUS_URL}
-  admin@example.com / admin123
+  ${credentialsLine(DIRECTUS_URL)}
   - "test_mapgrid_items" — the e2e baseline
   - "test_mapgrid_person_track" — Test Person Track: five people crossing Vitória, on the MapGrid layout
 

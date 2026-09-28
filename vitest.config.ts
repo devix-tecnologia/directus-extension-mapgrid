@@ -15,6 +15,9 @@ export default defineConfig({
       'src/**/*.spec.ts',
       'src/**/*.test.ts',
       'scripts/**/*.test.ts',
+      // One level: 'tests/**' would collect the e2e and integration suites,
+      // which need a Directus of their own standing.
+      'tests/*.test.ts',
       // One level on purpose: '.sandcastle/**' would descend into
       // '.sandcastle/worktrees/<round>/' and collect the whole repository
       // again — the suite would run over a copy of itself, with twice the
