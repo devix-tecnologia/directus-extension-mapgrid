@@ -1,26 +1,10 @@
-import { Filter } from '@directus/types';
+import type { Filter } from '@directus/types';
 
-export interface LayoutOptions {
-  widthMap?: { [key: string]: number };
-  heightMap?: { [key: string]: number };
-  limit?: number;
-  spacing?: number;
-  showSelect?: boolean;
-  showDrag?: boolean;
-  coordinates?: string;
-  fields?: string[];
-  title?: string;
-  geolocation?: string;
-  zoomOnClick?: boolean;
-  coluna1?: string;
-  coluna2?: string;
-  coluna3?: string;
-  coluna4?: string;
-  coluna5?: string;
-}
+export type { LayoutOptions } from './contract/index';
 
 export interface LayoutQuery {
-  fields: string[];
+  /** The columns shown in the grid, in the same place the tabular layout uses. */
+  fields?: string[];
   limit: number;
   filter?: Filter;
   page: number;

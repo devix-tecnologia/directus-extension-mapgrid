@@ -30,8 +30,8 @@
     "url": "https://github.com/devix-tecnologia/directus-extension-mapgrid"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=10.0.0"
+    "node": ">=22.13.1",
+    "pnpm": ">=10.15.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -39,9 +39,16 @@
   },
   "files": [
     "dist/",
+    "src/contract/",
     "package.json",
     "pnpm-lock.yaml"
   ],
+  "exports": {
+    "./contract": {
+      "types": "./src/contract/index.ts",
+      "import": "./src/contract/index.ts"
+    }
+  },
   "directus:extension": {
     "type": "layout",
     "path": "dist/index.js",
@@ -58,51 +65,82 @@
   "scripts": {
     "build": "directus-extension build",
     "dev": "directus-extension build -w --no-minify",
+    "validate": "directus-extension validate",
     "link": "directus-extension link",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint \"src/**/*.{ts,vue}\"",
-    "lint:fix": "eslint \"src/**/*.{ts,vue}\" --fix",
-    "format": "prettier --write src/",
-    "prepare": "husky"
+    "typecheck": "vue-tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
+    "lint": "biome check",
+    "lint:fix": "biome check --write --unsafe",
+    "format": "biome format --write src/",
+    "prepare": "husky",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "check:stories": "playwright test --config=playwright.stories.config.ts",
+    "test": "vitest run && vitest run --config vitest.directus-vue.config.ts",
+    "test:watch": "vitest",
+    "test:integration": "VERBOSE=true node --disable-warning=ExperimentalWarning --experimental-strip-types tests/run-docker-tests.js integration",
+    "test:e2e": "pnpm build && VERBOSE=true node --disable-warning=ExperimentalWarning --experimental-strip-types tests/run-docker-tests.js e2e",
+    "test:e2e:docker": "pnpm test:e2e",
+    "test:e2e:host": "pnpm build && VERBOSE=true node --disable-warning=ExperimentalWarning --experimental-strip-types tests/run-docker-tests.js e2e --host",
+    "screenshot": "pnpm build && docker compose -f docker-compose.test.yml --profile runner run --rm -e RUNNER_CMD=screenshot tests; status=$?; docker compose -f docker-compose.test.yml --profile runner down --remove-orphans; exit $status",
+    "test:e2e:ui": "pnpm build && VERBOSE=true node --disable-warning=ExperimentalWarning --experimental-strip-types tests/run-docker-tests.js e2e --host -- --ui",
+    "test:e2e:record": "pnpm build && VERBOSE=true node --disable-warning=ExperimentalWarning --experimental-strip-types tests/run-docker-tests.js e2e --host -- --config=playwright.record.config.ts",
+    "test:e2e:record:head": "pnpm test:e2e:record && pnpm exec playwright show-report playwright-report",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "test:collection": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/test-collection.ts",
+    "demo": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/demo.ts",
+    "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
+    "sandcastle": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/main.ts",
+    "sandcastle:round": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/round.ts",
+    "sandcastle:queue": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/task-queue/cli.ts",
+    "sandcastle:image": "docker build -t sandcastle:$(basename \"$PWD\" | tr '[:upper:]' '[:lower:]') --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) -f .sandcastle/Dockerfile .sandcastle",
+    "sandcastle:clean": "node .sandcastle/clean-worktrees.mjs",
+    "typecheck:sandcastle": "tsc --noEmit -p .sandcastle/tsconfig.json",
+    "test:directus-vue": "vitest run --config vitest.directus-vue.config.ts",
+    "sandcastle:round:authenticated": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/authenticated-round.ts"
   },
   "devDependencies": {
-    "@directus/extensions-sdk": "^13.0.3",
-    "@directus/types": "^13.0.0",
-    "@eslint/js": "^9.21.0",
+    "@ai-hero/sandcastle": "^0.12.0",
+    "@biomejs/biome": "^2.5.9",
+    "@directus/constants": "^13.0.3",
+    "@directus/extensions-sdk": "^16.0.2",
+    "@directus/types": "^13.2.3",
+    "@playwright/test": "^1.62.1",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.1",
-    "@semantic-release/npm": "^12.0.1",
-    "@types/maplibre-gl": "^1.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.26.0",
-    "@typescript-eslint/parser": "^8.26.0",
-    "@vue/eslint-config-typescript": "^14.4.0",
-    "eslint": "^9.21.0",
-    "eslint-config-prettier": "^10.0.2",
-    "eslint-plugin-vue": "^9.33.0",
-    "globals": "^15.15.0",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
+    "@storybook/addon-docs": "^10.5.10",
+    "@storybook/vue3-vite": "^10.5.10",
+    "@types/node": "^26.2.0",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vue/test-utils": "^2.4.11",
+    "axios": "^1.19.0",
+    "globals": "^16.4.0",
+    "happy-dom": "^20.11.6",
     "husky": "^9.1.7",
-    "lint-staged": "^15.4.3",
-    "prettier": "^3.5.3",
-    "semantic-release": "^24.2.3",
-    "typescript": "^5.8.2",
-    "vue": "^3.5.13",
-    "vue-eslint-parser": "^9.4.3"
+    "lint-staged": "^16.2.3",
+    "playwright": "^1.62.1",
+    "semantic-release": "^24.2.9",
+    "storybook": "^10.5.10",
+    "storytype": "^0.2.6",
+    "taskin": "^4.4.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "vue": "^3.5.22",
+    "directus-vue": "npm:vue@3.4.27",
+    "vue-i18n": "^11.4.10",
+    "vue-router": "4.5.1",
+    "vue-tsc": "^3.3.11"
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",
-    "maplibre-gl": "^5.2.0"
-  },
-  "prettier": {
-    "singleQuote": true,
-    "trailingComma": "es5",
-    "printWidth": 100,
-    "semi": true,
-    "tabWidth": 2
+    "maplibre-gl": "^5.8.0"
   },
   "lint-staged": {
     "*.{ts,vue}": [
-      "eslint --fix",
-      "prettier --write"
+      "biome check --write"
     ]
   },
   "release": {

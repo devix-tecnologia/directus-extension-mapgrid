@@ -1,0 +1,17 @@
+<!--
+  The Directus icon font. The app's `v-icon` draws a Material Symbols glyph
+  from the name (`map`, `delete`, `refresh`), and the font comes from the app —
+  outside it the stub would show the name as text, which is what made the
+  stories look like a page with no CSS.
+
+  It comes from the CDN on purpose: this is a development tool, and with no
+  network Storybook simply goes back to showing the name, which is still
+  readable. A font package in devDependencies would cost megabytes for the same
+  result.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&family=Inter:wght@400;500;600;700&display=swap"
+/>

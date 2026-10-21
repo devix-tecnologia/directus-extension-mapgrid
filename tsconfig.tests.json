@@ -1,0 +1,22 @@
+{
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		// The scripts run on node with --experimental-strip-types, where ESM
+		// demands the extension in the specifier; noEmit makes it safe here.
+		"allowImportingTsExtensions": true
+	},
+	"include": [
+		"./src/**/*.ts",
+		"./tests/**/*.ts",
+		"./.storybook/**/*.ts",
+		"./playwright.config.ts",
+		"./playwright.stories.config.ts",
+		"./playwright.screenshot.config.ts",
+		"./scripts/**/*.ts",
+		"./vitest.config.ts",
+		"./vitest.integration.config.ts",
+		"./vitest.seed.config.ts"
+	],
+	"exclude": ["tests/run-docker-tests.js"]
+}

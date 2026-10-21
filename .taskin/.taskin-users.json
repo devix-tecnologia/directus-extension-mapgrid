@@ -1,0 +1,19 @@
+{
+  "users": {
+    "harrison.sanches": {
+      "email": "harrison.sanches@gmail.com",
+      "id": "harrison.sanches",
+      "name": "Harrison Sanches"
+    },
+    "marcospatricio": {
+      "email": "mampatricio@hotmail.com",
+      "id": "marcospatricio",
+      "name": "Marcos Patricio"
+    },
+    "sidartaveloso": {
+      "email": "sidartaveloso@gmail.com",
+      "id": "sidartaveloso",
+      "name": "Sidarta Veloso"
+    }
+  }
+}

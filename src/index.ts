@@ -1,8 +1,52 @@
-import { defineLayout, useCollection, useSync, useItems } from '@directus/extensions-sdk';
-import Layout from './layout.vue';
-import { LayoutOptions, LayoutQuery } from './types.js';
-import { computed, toRefs } from 'vue';
-import Options from './options.vue';
+import {
+  defineLayout,
+  useApi,
+  useCollection,
+  useExtensions,
+  useStores,
+  useSync,
+} from '@directus/extensions-sdk';
+import type { Field, LayoutProps } from '@directus/types';
+import { computed, reactive, ref, toRefs } from 'vue';
+import DeleteAction from './components/atoms/delete-action/DeleteAction.vue';
+import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
+import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
+import type { CameraTracking, GeoItem } from './contract/index';
+import { useWritableLayoutQuery } from './contract/index';
+import { CameraTrackingPolicy } from './services/camera-tracking/index';
+import {
+  EMBEDDED_LAYOUTS,
+  type EmbeddedLayout,
+  embedLayout,
+} from './services/embedded-layout/index';
+import { useOptimisticWrite } from './services/optimistic-sync/index';
+import type { LayoutOptions, LayoutQuery } from './types';
+
+/**
+ * Directus control fields. None of them works as a geometry, and picking one as
+ * the default would only mean swapping it out in every new collection.
+ */
+const EXCLUDED_FIELDS = [
+  'id',
+  'sort',
+  'status',
+  'user_created',
+  'date_created',
+  'user_updated',
+  'date_updated',
+];
+
+const detectGeometry = (fields: Field[]): string | undefined => {
+  const mapField = fields.find((field) => field.meta?.interface === 'map');
+  if (mapField) return mapField.field;
+
+  const jsonField = fields.find(
+    (field) => field.type === 'json' && !EXCLUDED_FIELDS.includes(field.field)
+  );
+  return jsonField?.field;
+};
+
+type EmbeddedOptions = { value: Record<string, unknown> };
 
 export default defineLayout<LayoutOptions, LayoutQuery | null>({
   id: 'mapgrid',
@@ -12,106 +56,307 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
   slots: {
     options: Options,
     sidebar: () => undefined,
-    actions: () => undefined,
+    actions: DeleteAction,
   },
   setup(props, { emit }) {
-    const layoutOptions = useSync(props, 'layoutOptions', emit);
-    const layoutQuery = useSync(props, 'layoutQuery', emit);
+    /*
+     * The three shared states go through the `useOptimisticWrite` mirror.
+     * Without it, two writes in the same tick would both read the prop as it
+     * was before either — and writing in the same tick is routine here, because
+     * both embedded layouts write to the same three. The why is over there.
+     */
+    const layoutOptions = useOptimisticWrite(useSync(props, 'layoutOptions', emit));
+    const layoutQuery = useOptimisticWrite(useSync(props, 'layoutQuery', emit));
+    const selection = useOptimisticWrite(useSync(props, 'selection', emit));
+    const api = useApi();
 
     const { collection, filter, search } = toRefs(props);
-    const { fields: fieldsInCollection } = useCollection(collection);
-    const { sort, limit, page, fields } = useLayoutQuery();
+    const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
+    const { layouts } = useExtensions();
 
-    // Aqui, os campos a serem usados na listagem
-    const { title, geolocation, zoomOnClick, coluna1, coluna2, coluna3, coluna4, coluna5 } =
-      useLayoutOptions();
+    /** The Directus app store: where the right sidebar's open state lives. */
+    const appStore = (useStores().useAppStore?.() ?? null) as { sidebarOpen?: boolean } | null;
+    const collapseSidebar = (): void => {
+      if (appStore) appStore.sidebarOpen = false;
+    };
 
-    const { items, loading, error, totalPages, itemCount, totalCount } = useItems(collection, {
-      sort,
-      limit,
-      page,
-      fields,
-      filter,
-      search,
+    const writableQuery = useWritableLayoutQuery(layoutQuery);
+    const detectedGeometry = computed(() => detectGeometry(fieldsInCollection.value ?? []));
+
+    /*
+     * Each embedded layout keeps its configuration under its own key of our
+     * `layoutOptions`: the map the geometry field and the basemap, the grid the
+     * spacing and the alignment. Under a single key, one would overwrite the
+     * other.
+     */
+    const gridOptions = computed<Record<string, unknown>>({
+      get: () => ({ ...((layoutOptions.value?.tabular ?? {}) as object) }),
+      set: (value) => {
+        layoutOptions.value = { ...layoutOptions.value, tabular: value };
+      },
     });
 
-    // Aqui, os campos a serem usados na listagem
-    function useLayoutOptions() {
-      const title = createViewOption('title', undefined);
-      const zoomOnClick = createViewOption('zoomOnClick', undefined);
-      const geolocation = createViewOption('geolocation', undefined);
-      const coluna1 = createViewOption('coluna1', undefined);
-      const coluna2 = createViewOption('coluna2', undefined);
-      const coluna3 = createViewOption('coluna3', undefined);
-      const coluna4 = createViewOption('coluna4', undefined);
-      const coluna5 = createViewOption('coluna5', undefined);
+    /*
+     * The detected geometry field only enters on the read side. Writing it
+     * would pin a choice the composition merely detected into the preset, and
+     * changing the collection's field would stop having any effect.
+     */
+    const mapOptions = computed<Record<string, unknown>>({
+      get: () => ({
+        geometryField: detectedGeometry.value,
+        ...((layoutOptions.value?.map ?? {}) as object),
+      }),
+      set: (value) => {
+        layoutOptions.value = { ...layoutOptions.value, map: value };
+      },
+    });
 
-      return {
-        title,
-        geolocation,
-        zoomOnClick,
-        coluna1,
-        coluna2,
-        coluna3,
-        coluna4,
-        coluna5,
+    /*
+     * The query is a single one, shared by both. Without this each layout runs
+     * its own fetch, with different fields and sorting — measured in the spike.
+     */
+    const query = computed<Record<string, unknown>>({
+      get: () => ({ ...(layoutQuery.value ?? {}) }),
+      set: (value) => {
+        layoutQuery.value = value as unknown as LayoutQuery;
+      },
+    });
+
+    const propsFor = (options: EmbeddedOptions): LayoutProps =>
+      reactive({
+        collection,
+        selection,
+        layoutOptions: options,
+        layoutQuery: query,
+        layoutProps: ref({}),
+        filter,
+        filterUser: ref(null),
+        filterSystem: ref(null),
+        search,
+        showSelect: ref('multiple'),
+        selectMode: ref(false),
+        readonly: ref(false),
+        resetPreset: ref(undefined),
+        clearFilters: ref(undefined),
+      }) as unknown as LayoutProps;
+
+    const emitFor =
+      (options: EmbeddedOptions) =>
+      (event: string, value: unknown): void => {
+        if (event === 'update:layoutQuery') query.value = value as Record<string, unknown>;
+        if (event === 'update:layoutOptions') options.value = value as Record<string, unknown>;
+        if (event === 'update:selection') selection.value = value as (string | number)[];
       };
 
-      function createViewOption<K extends keyof LayoutOptions>(
-        key: K,
-        defaultValue: LayoutOptions[K]
-      ) {
-        return computed<LayoutOptions[K]>({
-          get() {
-            return layoutOptions.value?.[key] !== undefined
-              ? layoutOptions.value[key]
-              : defaultValue;
-          },
-          set(newValue: LayoutOptions[K]) {
-            layoutOptions.value = {
-              ...layoutOptions.value,
-              [key]: newValue,
-            };
-          },
-        });
-      }
-    }
-    // até aqui
-
-    function useLayoutQuery() {
-      const page = computed(() => layoutQuery.value?.page || 1);
-      const limit = computed(() => layoutQuery.value?.limit || 25);
-      const sort = computed(() => layoutQuery.value?.sort || []);
-
-      const fields = computed(() => {
-        return fieldsInCollection.value ? fieldsInCollection.value.map((field) => field.field) : [];
+    const embed = (id: string, options: EmbeddedOptions): EmbeddedLayout | null =>
+      embedLayout({
+        id,
+        registry: layouts.value,
+        props: propsFor(options),
+        emit: emitFor(options),
       });
 
-      return { sort, limit, page, fields };
-    }
+    const grid = embed(EMBEDDED_LAYOUTS.grid, gridOptions);
+    const map = embed(EMBEDDED_LAYOUTS.map, mapOptions);
+
+    /** An option that comes from neither of them: it is the composition's. */
+    const ownOption = <Key extends keyof LayoutOptions>(key: Key) =>
+      computed<LayoutOptions[Key]>({
+        get: () => layoutOptions.value?.[key],
+        set: (value) => {
+          layoutOptions.value = { ...layoutOptions.value, [key]: value };
+        },
+      });
+
+    const zoomOnClick = ownOption('zoomOnClick');
+    const playbackInterval = ownOption('playbackInterval');
+    const playbackTiming = ownOption('playbackTiming');
+    const playbackSpeed = ownOption('playbackSpeed');
+    const playbackTimeField = ownOption('playbackTimeField');
+    const headingSource = ownOption('headingSource');
+    const headingField = ownOption('headingField');
+    const trailLength = ownOption('trailLength');
+    const showCard = ownOption('showCard');
+    const cardImageField = ownOption('cardImageField');
+    const cardFields = ownOption('cardFields');
+    const tourOnFirstVisit = ownOption('tourOnFirstVisit');
+    const mapShare = ownOption('mapShare');
+    const setMapShare = (value: number): void => {
+      mapShare.value = value;
+    };
+
+    const trackingPolicy = new CameraTrackingPolicy();
+    const cameraTracking = computed(() => trackingPolicy.from(layoutOptions.value?.cameraTracking));
+    const setCameraTracking = (value: CameraTracking): void => {
+      layoutOptions.value = { ...layoutOptions.value, cameraTracking: value };
+    };
+
+    // the same path the tabular's footer takes
+    const goToPage = (page: number): void => {
+      writableQuery.page.value = page;
+    };
+
+    // `page` stays out: turning the page walks the same sequence
+    const queryKey = computed(() =>
+      JSON.stringify([
+        props.filter,
+        props.search,
+        writableQuery.sort.value,
+        writableQuery.limit.value,
+      ])
+    );
+
+    const fetchItems = async (
+      keys: readonly unknown[],
+      fields: readonly string[]
+    ): Promise<Record<string, unknown>[]> => {
+      const key = primaryKeyField.value?.field;
+      if (!key || keys.length === 0) return [];
+      const response = await api.get(`/items/${collection.value}`, {
+        params: {
+          fields: [...fields],
+          filter: { [key]: { _in: [...keys] } },
+          limit: keys.length,
+        },
+      });
+      return (response.data?.data as Record<string, unknown>[] | undefined) ?? [];
+    };
+
+    /** The query's own filter, narrowed further by `extra` — the user's is never lost. */
+    const queryFilter = (extra?: Record<string, unknown>): Record<string, unknown> | undefined => {
+      const parts = [props.filter, extra].filter(
+        (part): part is Record<string, unknown> =>
+          typeof part === 'object' && part !== null && Object.keys(part).length > 0
+      );
+      if (parts.length === 0) return undefined;
+      return parts.length === 1 ? parts[0] : { _and: parts };
+    };
+
+    const queryRows = async (
+      params: Record<string, unknown>
+    ): Promise<Record<string, unknown>[]> => {
+      const response = await api.get(`/items/${collection.value}`, {
+        params: { search: props.search || undefined, ...params },
+      });
+      return (response.data?.data as Record<string, unknown>[] | undefined) ?? [];
+    };
+
+    /** The first and last instants of the whole query, not only of the loaded page. */
+    const fetchTimeRange = async (field: string): Promise<{ first: unknown; last: unknown }> => {
+      const [row] = await queryRows({
+        aggregate: { min: [field], max: [field] },
+        filter: queryFilter(),
+      });
+      const read = (aggregate: unknown): unknown =>
+        (aggregate as Record<string, unknown> | undefined)?.[field] ?? null;
+      return { first: read(row?.min), last: read(row?.max) };
+    };
+
+    /**
+     * The record at or right after an instant, and the page it is on. Only when
+     * the query is sorted by that field: otherwise "the page of an instant" has
+     * no meaning, and the answer is `null`.
+     */
+    const locateInstant = async (
+      field: string,
+      instant: number
+    ): Promise<{ id: string | number; page: number } | null> => {
+      const key = primaryKeyField.value?.field;
+      const [first] = writableQuery.sort.value;
+      const descending = first === `-${field}`;
+      if (!key || (first !== field && !descending) || !Number.isFinite(instant)) return null;
+
+      const iso = new Date(instant).toISOString();
+      const [counted] = await queryRows({
+        aggregate: { count: ['*'] },
+        filter: queryFilter({ [field]: { [descending ? '_gt' : '_lt']: iso } }),
+      });
+      const [target] = await queryRows({
+        fields: [key],
+        filter: queryFilter({ [field]: { [descending ? '_lte' : '_gte']: iso } }),
+        sort: [first],
+        limit: 1,
+      });
+      const id = target?.[key] as string | number | undefined;
+      if (id === undefined) return null;
+
+      const before = Number(counted?.count ?? 0);
+      const limit = writableQuery.limit.value;
+      return { id, page: Math.floor((Number.isFinite(before) ? before : 0) / limit) + 1 };
+    };
+
+    /** Through the app's own base, so a Directus served under a path still finds its assets. */
+    const assetUrl = (id: string): string => {
+      const base = String(api.defaults.baseURL ?? '/').replace(/\/$/, '');
+      return `${base}/assets/${encodeURIComponent(id)}`;
+    };
+
+    /** The app reads these from here to draw pagination and the count. */
+    const fromGrid = <T>(key: string, empty: T) =>
+      computed<T>(() => (grid?.state[key] as T) ?? empty);
+
+    const items = fromGrid<GeoItem[]>('items', []);
+
+    const selectedItems = computed<GeoItem[]>(() =>
+      items.value.filter((item) => selection.value.includes(item.id))
+    );
+
+    const deleteSelectedItems = async (): Promise<void> => {
+      if (selection.value.length === 0) return;
+
+      await api.delete(`/items/${collection.value}`, { data: [...selection.value] });
+      selection.value = [];
+      (grid?.state.refresh as (() => void) | undefined)?.();
+      (map?.state.refresh as (() => void) | undefined)?.();
+    };
 
     return {
       items,
-      loading,
-      error,
-      totalPages,
-      itemCount,
-      totalCount,
-      page,
-      limit,
-      fields,
+      loading: fromGrid('loading', false),
+      error: fromGrid<unknown>('error', null),
+      totalPages: fromGrid('totalPages', 1),
+      itemCount: fromGrid('itemCount', 0),
+      totalCount: fromGrid('totalCount', 0),
+      page: writableQuery.page,
+      limit: writableQuery.limit,
+      sort: writableQuery.sort,
       fieldsInCollection,
-
-      title,
-      geolocation,
+      primaryKeyField,
+      selectedItems,
+      deleteSelectedItems,
       zoomOnClick,
-      coluna1,
-      coluna2,
-      coluna3,
-      coluna4,
-      coluna5,
+      playbackInterval,
+      playbackTiming,
+      playbackSpeed,
+      playbackTimeField,
+      headingSource,
+      headingField,
+      trailLength,
+      showCard,
+      cardImageField,
+      cardFields,
+      tourOnFirstVisit,
+      mapShare,
+      setMapShare,
+      collapseSidebar,
+      gridFields: writableQuery.fields,
+      fetchTimeRange,
+      locateInstant,
+      assetUrl,
+      cameraTracking,
+      setCameraTracking,
+      goToPage,
+      queryKey,
+      /*
+       * Directus hands the return of this `setup()` to the component AND to the
+       * options panel, which are siblings in the tree. That is why both
+       * embedded layouts are born here: the area that draws and the panel that
+       * configures come to see the same state, with no second wrapper and no
+       * extra fetch.
+       */
+      grid,
+      map,
+      fetchItems,
     };
   },
 });
-
-//funciona

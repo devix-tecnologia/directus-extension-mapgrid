@@ -1,0 +1,13 @@
+{
+  "version": "1.0.3",
+  "automation": {
+    "level": "autopilot",
+    "defaultBranch": "develop"
+  },
+  "provider": {
+    "type": "fs",
+    "config": {
+      "tasksDir": "TASKS"
+    }
+  }
+}
