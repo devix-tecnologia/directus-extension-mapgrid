@@ -19,6 +19,17 @@ const dragTo = async (page: Page, percent: number): Promise<void> => {
   await page.mouse.up();
 };
 
+/**
+ * The bar takes its room before the span arrives, disabled; dragging it then
+ * does nothing. Ready is when it has a start to show.
+ */
+const waitForTimeline = async (page: Page): Promise<void> => {
+  await expect(page.locator(TIMELINE)).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(`${TIMELINE} [data-timeline-start]`)).not.toHaveText('', {
+    timeout: 30_000,
+  });
+};
+
 const lastReading = () => {
   const readings = [...lprReadings()].sort((a, b) => a.captured_at.localeCompare(b.captured_at));
   return readings[readings.length - 1];
@@ -34,7 +45,7 @@ test.describe('MapGrid — the timeline', () => {
     await openLpr(page, { options: { cameraTracking: 'off' } });
 
     const timeline = page.locator(TIMELINE);
-    await expect(timeline).toBeVisible({ timeout: 30_000 });
+    await waitForTimeline(page);
     await expect(timeline.locator('[data-timeline-tick]')).toHaveCount(25);
     await expect(timeline.locator('[data-timeline-marker]')).toHaveCount(0);
 
@@ -48,7 +59,7 @@ test.describe('MapGrid — the timeline', () => {
 
   test('dragging to the end lands on the last reading, on its own page', async ({ page }) => {
     await openLpr(page, { options: { cameraTracking: 'off' } });
-    await expect(page.locator(TIMELINE)).toBeVisible({ timeout: 30_000 });
+    await waitForTimeline(page);
 
     await dragTo(page, 100);
 
@@ -63,7 +74,7 @@ test.describe('MapGrid — the timeline', () => {
 
   test('dragging back to the start goes to the first reading', async ({ page }) => {
     await openLpr(page, { options: { cameraTracking: 'off' } });
-    await expect(page.locator(TIMELINE)).toBeVisible({ timeout: 30_000 });
+    await waitForTimeline(page);
 
     await dragTo(page, 100);
     await dragTo(page, 0);
