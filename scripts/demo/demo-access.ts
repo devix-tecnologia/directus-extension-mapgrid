@@ -93,9 +93,9 @@ export class DemoAccess implements IDemoAccess {
   async presentProject(visitor: DemoVisitor): Promise<void> {
     await apiRequest('PATCH', '/settings', {
       project_name: 'MapGrid',
-      project_descriptor: 'Devix Tecnologia',
+      project_descriptor: null,
       default_language: 'pt-BR',
-      public_note: `Ambiente somente leitura para conhecer o MapGrid. Entre com **${visitor.email}** e a senha **${visitor.password}**.`,
+      public_note: `Ambiente somente leitura para conhecer o MapGrid. As credenciais são públicas, de propósito: entre com **${visitor.email}** e a senha **${visitor.password}**.`,
     });
   }
 }

@@ -151,17 +151,17 @@ pnpm build
 DEMO_ADMIN_PASSWORD='a strong one' pnpm demo
 ```
 
-It comes up on <http://localhost:8070>; visitors sign in as `visitante@mapgrid.devix.co` /
-`mapgrid-visitante`, which the login page shows. The seed ends by checking, as the visitor, that reading
+It comes up on <http://localhost:8070>; visitors sign in as `publico@example.com` /
+`senha-publica` — public on purpose, so nobody takes them for a leak — which the login page shows. The seed ends by checking, as the visitor, that reading
 works and writing is refused, and that anonymous requests are refused — a demo that turned writable
 fails there.
 
 | Variable | Default | |
 | --- | --- | --- |
 | `DEMO_ADMIN_PASSWORD` | — | Required: the demo never starts with a known admin password |
-| `DEMO_ADMIN_EMAIL` | `admin@mapgrid.devix.co` | |
+| `DEMO_ADMIN_EMAIL` | `admin@example.com` | |
 | `DEMO_PORT` / `DEMO_PUBLIC_URL` | `8070` / `http://localhost:8070` | Set the URL to the published address |
-| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | `visitante@mapgrid.devix.co` / `mapgrid-visitante` | The visitor |
+| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | `publico@example.com` / `senha-publica` | The visitor |
 | `DEMO_KEY` / `DEMO_SECRET` / `DEMO_DB_PASSWORD` | demo values | Replace them before publishing |
 
 Publishing it:
@@ -445,7 +445,8 @@ pnpm build
 DEMO_ADMIN_PASSWORD='uma senha forte' pnpm demo
 ```
 
-Sobe em <http://localhost:8070>; visitantes entram com `visitante@mapgrid.devix.co` / `mapgrid-visitante`,
+Sobe em <http://localhost:8070>; visitantes entram com `publico@example.com` / `senha-publica` — públicas de propósito, para
+ninguém tomá-las por vazamento —,
 que a tela de entrada mostra. A semente termina conferindo, como visitante, que ler funciona e
 escrever é recusado, e que requisições anônimas são recusadas — uma demonstração que virou
 gravável falha ali.
@@ -453,9 +454,9 @@ gravável falha ali.
 | Variável | Padrão | |
 | --- | --- | --- |
 | `DEMO_ADMIN_PASSWORD` | — | Obrigatória: a demonstração nunca sobe com senha de admin conhecida |
-| `DEMO_ADMIN_EMAIL` | `admin@mapgrid.devix.co` | |
+| `DEMO_ADMIN_EMAIL` | `admin@example.com` | |
 | `DEMO_PORT` / `DEMO_PUBLIC_URL` | `8070` / `http://localhost:8070` | Aponte a URL para o endereço publicado |
-| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | `visitante@mapgrid.devix.co` / `mapgrid-visitante` | O visitante |
+| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | `publico@example.com` / `senha-publica` | O visitante |
 | `DEMO_KEY` / `DEMO_SECRET` / `DEMO_DB_PASSWORD` | valores de demonstração | Troque antes de publicar |
 
 Para publicar:

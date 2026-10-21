@@ -50,7 +50,7 @@ const main = (): void => {
 
   console.log(`
 The MapGrid demo is up, read-only: ${DEMO_URL}
-  visitors: ${process.env.DEMO_USER_EMAIL || 'visitante@mapgrid.devix.co'} / ${process.env.DEMO_USER_PASSWORD || 'mapgrid-visitante'}
+  visitors: ${process.env.DEMO_USER_EMAIL || 'publico@example.com'} / ${process.env.DEMO_USER_PASSWORD || 'senha-publica'}
 
 Stop it with: pnpm demo down`);
 };

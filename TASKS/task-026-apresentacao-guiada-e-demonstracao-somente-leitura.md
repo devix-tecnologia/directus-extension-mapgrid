@@ -51,8 +51,9 @@ importa — o que pular, onde pôr — ficou em duas classes puras e testadas.
 - um `:?` no compose impede até o `down`.
 
 ### Sem a palavra "demo" no que o visitante vê
-Pedido do Sidarta: o visitante entra como `visitante@mapgrid.devix.co` /
-`mapgrid-visitante`, o projeto se chama "MapGrid" e o papel "Visitante
+Pedido do Sidarta: credenciais que se leiam como públicas, para ninguém
+tomá-las por vazamento — o visitante entra como `publico@example.com` /
+`senha-publica` (o `example.com` é reservado para exemplos), o projeto se chama "MapGrid" e o papel "Visitante
 (somente leitura)". Os nomes de uso interno — `pnpm demo`,
 `docker-compose.demo.yml`, as variáveis `DEMO_*` — ficaram como estão.
 
