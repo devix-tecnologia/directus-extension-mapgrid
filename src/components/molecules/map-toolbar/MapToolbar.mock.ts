@@ -1,7 +1,14 @@
 import type { MapToolbarType } from './MapToolbar.types';
 
 export const generateMockData = (): MapToolbarType => ({
-  props: { atStart: false, atEnd: false, playing: false, loading: false, tracking: 'follow' },
+  props: {
+    atStart: false,
+    atEnd: false,
+    playing: false,
+    loading: false,
+    tracking: 'follow',
+    measuring: false,
+  },
   models: {},
   emits: {
     reset: [],
@@ -12,5 +19,6 @@ export const generateMockData = (): MapToolbarType => ({
     play: [],
     stop: [],
     'update:tracking': ['center'],
+    measure: [],
   },
 });

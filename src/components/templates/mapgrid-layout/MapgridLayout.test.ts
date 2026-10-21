@@ -395,6 +395,10 @@ function mountWalk(
     totalPages?: number;
     cameraTracking?: 'off' | 'follow' | 'center';
     playbackInterval?: number;
+    /** More fields on each grid item, by id. */
+    itemFields?: (id: string | number) => Record<string, unknown>;
+    /** Any other prop the layout takes. */
+    props?: Record<string, unknown>;
   } = {}
 ) {
   const ids = options.ids ?? [1, 2, 3];
@@ -405,6 +409,7 @@ function mountWalk(
     items: ids.map((id) => ({
       id,
       location: { coordinates: [Number(id) * 10, 0], type: 'Point' },
+      ...options.itemFields?.(id),
     })),
     loading: false,
     totalPages: options.totalPages ?? 1,
@@ -437,6 +442,7 @@ function mountWalk(
       setCameraTracking,
       playbackInterval: options.playbackInterval,
       queryKey: 'first-query',
+      ...options.props,
     },
     global: { components: directusComponentStubs },
   });
@@ -961,5 +967,383 @@ describe('MapgridLayout — the keyboard', () => {
 
     expect(walk.current()).toEqual([]);
     elsewhere.remove();
+  });
+});
+
+const headingOf = (wrapper: VueWrapper): string | undefined =>
+  wrapper.find('[data-current-point]').attributes('data-heading-degrees');
+
+describe('MapgridLayout — where the current record is heading', () => {
+  it('draws no arrow on the first record, which has nothing before it', async () => {
+    const walk = mountWalk({ cameraTracking: 'off', props: { headingSource: 'computed' } });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+
+    expect(walk.wrapper.find('[data-heading-cone]').exists()).toBe(false);
+  });
+
+  it('points from the record visited before, east along the equator', async () => {
+    const walk = mountWalk({ cameraTracking: 'off', props: { headingSource: 'computed' } });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    await walk.press('next');
+
+    expect(headingOf(walk.wrapper)).toBe('90');
+    expect(walk.wrapper.get('[data-heading-cone]').attributes('style')).toContain('rotate(90deg)');
+  });
+
+  it('reads the course field, normalising a signed one', async () => {
+    const walk = mountWalk({
+      cameraTracking: 'off',
+      itemFields: () => ({ course: -137 }),
+      props: { headingSource: 'field', headingField: 'course' },
+    });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    await nextTick();
+
+    expect(headingOf(walk.wrapper)).toBe('223');
+  });
+
+  it('shows nothing while the source is off', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    await walk.press('next');
+
+    expect(walk.wrapper.find('[data-heading-cone]').exists()).toBe(false);
+  });
+});
+
+const trailSegments = (wrapper: VueWrapper): number => {
+  const trail = wrapper.find('[data-trail]');
+  return trail.exists() ? Number(trail.attributes('data-trail-segments')) : 0;
+};
+
+describe('MapgridLayout — the trail', () => {
+  it('joins the records visited, one leg per step', async () => {
+    const walk = mountWalk({
+      cameraTracking: 'off',
+      ids: [1, 2, 3, 4],
+      props: { trailLength: 10 },
+    });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    for (const _ of [1, 2, 3]) await walk.press('next');
+
+    expect(trailSegments(walk.wrapper)).toBe(2);
+  });
+
+  it('keeps the trail across a page turn, since it comes from what was visited', async () => {
+    const walk = mountWalk({
+      cameraTracking: 'off',
+      page: 1,
+      totalPages: 2,
+      props: { trailLength: 10 },
+    });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    for (const _ of [1, 2, 3]) await walk.press('next');
+    await walk.press('next');
+    walk.gridState.items = [4, 5].map((id) => ({
+      id,
+      location: { coordinates: [id * 10, 0], type: 'Point' },
+    }));
+    await walk.wrapper.setProps({ page: 2 });
+    await nextTick();
+    await nextTick();
+
+    expect(walk.current()).toEqual(['4']);
+    expect(trailSegments(walk.wrapper)).toBe(3);
+  });
+
+  it('draws only as many records as asked for, and nothing at zero', async () => {
+    const walk = mountWalk({ cameraTracking: 'off', ids: [1, 2, 3, 4], props: { trailLength: 2 } });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+    for (const _ of [1, 2, 3, 4]) await walk.press('next');
+    expect(trailSegments(walk.wrapper)).toBe(1);
+
+    await walk.wrapper.setProps({ trailLength: 0 });
+    expect(trailSegments(walk.wrapper)).toBe(0);
+  });
+
+  it('starts over when the query became another one', async () => {
+    const walk = mountWalk({ cameraTracking: 'off', props: { trailLength: 10 } });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+    for (const _ of [1, 2, 3]) await walk.press('next');
+
+    await walk.wrapper.setProps({ queryKey: 'sorted-by-name' });
+    await nextTick();
+
+    expect(trailSegments(walk.wrapper)).toBe(0);
+  });
+});
+
+const MINUTE = 60_000;
+
+describe('MapgridLayout — playback on the data clock', () => {
+  it('waits the time between the records, sped up', async () => {
+    vi.useFakeTimers();
+    try {
+      // 2 minutes and then 8 minutes apart: at 60× that is 2s and 8s
+      const at: Record<string, number> = { 1: 0, 2: 2 * MINUTE, 3: 10 * MINUTE };
+      const walk = mountWalk({
+        cameraTracking: 'off',
+        itemFields: (id) => ({ at: new Date(at[String(id)] ?? 0).toISOString() }),
+        props: { playbackTiming: 'realtime', playbackSpeed: 60, playbackTimeField: 'at' },
+      });
+      await walk.ready();
+
+      await walk.press('play');
+      await vi.advanceTimersByTimeAsync(200);
+      expect(walk.current()).toEqual(['1']);
+
+      await vi.advanceTimersByTimeAsync(1_999);
+      expect(walk.current()).toEqual(['1']);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(walk.current()).toEqual(['2']);
+
+      await vi.advanceTimersByTimeAsync(7_999);
+      expect(walk.current()).toEqual(['2']);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(walk.current()).toEqual(['3']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the fixed beat when the timing is fixed', async () => {
+    vi.useFakeTimers();
+    try {
+      const walk = mountWalk({
+        playbackInterval: 1,
+        itemFields: (id) => ({ at: new Date(Number(id) * 60 * MINUTE).toISOString() }),
+        props: { playbackTimeField: 'at' },
+      });
+      await walk.ready();
+
+      await walk.press('play');
+      await vi.advanceTimersByTimeAsync(2_000);
+
+      expect(walk.current()).toEqual(['2']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+const flush = async (): Promise<void> => {
+  for (const _ of [1, 2, 3, 4]) await nextTick();
+};
+
+describe('MapgridLayout — the timeline', () => {
+  const at = (id: string | number): Record<string, unknown> => ({
+    at: new Date(Number(id) * MINUTE * 10).toISOString(),
+  });
+
+  type Locate = (field: string, instant: number) => Promise<{ id: number; page: number } | null>;
+
+  const timelineWalk = (locateInstant: Locate = vi.fn(async () => null)) =>
+    mountWalk({
+      cameraTracking: 'off',
+      ids: [1, 2, 3],
+      itemFields: at,
+      props: {
+        playbackTimeField: 'at',
+        fetchTimeRange: async () => ({
+          first: new Date(10 * MINUTE).toISOString(),
+          last: new Date(30 * MINUTE).toISOString(),
+        }),
+        locateInstant,
+      },
+    });
+
+  it('shows the trip with a tick per loaded record and the current one marked', async () => {
+    const walk = timelineWalk();
+    await flush();
+
+    expect(walk.wrapper.findAll('[data-timeline-tick]')).toHaveLength(3);
+    expect(walk.wrapper.find('[data-timeline-marker]').exists()).toBe(false);
+
+    await walk.press('next');
+    await walk.press('next');
+    await flush();
+
+    expect(walk.wrapper.get('[data-timeline-marker]').attributes('data-position')).toBe('50.00');
+  });
+
+  it('is not there without a time field', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    await flush();
+
+    expect(walk.wrapper.find('[data-timeline]').exists()).toBe(false);
+  });
+
+  it('jumps to the record the server places at the moment chosen', async () => {
+    const locate = vi.fn<Locate>(async () => ({ id: 3, page: 1 }));
+    const walk = timelineWalk(locate);
+    await flush();
+
+    walk.wrapper.findComponent({ name: 'TripTimelineBar' }).vm.$emit('seek', 100);
+    await flush();
+
+    expect(locate).toHaveBeenCalledWith('at', 30 * MINUTE);
+    expect(walk.current()).toEqual(['3']);
+  });
+
+  it('turns the page when the moment is on another one, and lands on that record', async () => {
+    const locate = vi.fn<Locate>(async () => ({ id: 5, page: 2 }));
+    const walk = timelineWalk(locate);
+    await flush();
+
+    walk.wrapper.findComponent({ name: 'TripTimelineBar' }).vm.$emit('seek', 90);
+    await flush();
+    expect(walk.goToPage).toHaveBeenCalledWith(2);
+
+    walk.gridState.items = [4, 5, 6].map((id) => ({ id, ...at(id) }));
+    await walk.wrapper.setProps({ page: 2 });
+    await flush();
+
+    expect(walk.current()).toEqual(['5']);
+  });
+
+  it('goes to the nearest record of the page when the query is not sorted by time', async () => {
+    const walk = timelineWalk();
+    await flush();
+
+    // 10 to 30 minutes: 45% is 19 minutes, nearest to record 2 at 20
+    walk.wrapper.findComponent({ name: 'TripTimelineBar' }).vm.$emit('seek', 45);
+    await flush();
+
+    expect(walk.current()).toEqual(['2']);
+  });
+});
+
+describe('MapgridLayout — the capture card', () => {
+  const cardWalk = (extra: Record<string, unknown> = {}) => {
+    const fetchItems = vi.fn(async () => [{ id: 1, plate: 'RQP4C58', photo: 'file-1' }]);
+    const walk = mountWalk({
+      cameraTracking: 'off',
+      props: {
+        showCard: true,
+        cardImageField: 'photo',
+        gridFields: ['photo', 'plate'],
+        fieldsInCollection: [
+          { field: 'plate', name: 'Plate', type: 'string' },
+          { field: 'photo', name: 'Photo', type: 'uuid' },
+        ],
+        fetchItems,
+        assetUrl: (id: string) => `/assets/${id}`,
+        ...extra,
+      },
+    });
+    return { walk, fetchItems };
+  };
+
+  it('shows the focused record with its photo', async () => {
+    const { walk, fetchItems } = cardWalk();
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('next');
+    await flush();
+
+    expect(fetchItems).toHaveBeenCalledWith([1], ['id', 'plate', 'photo']);
+    expect(walk.wrapper.get('[data-capture-title]').text()).toBe('RQP4C58');
+    expect(walk.wrapper.get('[data-capture-photo] img').attributes('src')).toBe('/assets/file-1');
+  });
+
+  it('stays closed for that record once dismissed', async () => {
+    const { walk } = cardWalk();
+    await walk.ready();
+    await walk.press('next');
+    await flush();
+
+    walk.wrapper.findComponent({ name: 'CaptureCard' }).vm.$emit('close');
+    await flush();
+
+    expect(walk.wrapper.find('[data-capture-card]').exists()).toBe(false);
+  });
+
+  it('is not shown unless asked for', async () => {
+    const { walk, fetchItems } = cardWalk({ showCard: false });
+    await walk.ready();
+    await walk.press('next');
+    await flush();
+
+    expect(walk.wrapper.find('[data-capture-card]').exists()).toBe(false);
+    expect(fetchItems).not.toHaveBeenCalled();
+  });
+});
+
+describe('MapgridLayout — measuring', () => {
+  const clickTheMap = async (wrapper: VueWrapper, x: number, y: number): Promise<MouseEvent> => {
+    const pane = wrapper.get('.mapgrid-pane--map').element;
+    let canvas = pane.querySelector('.maplibregl-canvas-container');
+    if (!canvas) {
+      canvas = document.createElement('div');
+      canvas.className = 'maplibregl-canvas-container';
+      pane.appendChild(canvas);
+    }
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+    });
+    canvas.dispatchEvent(event);
+    await nextTick();
+    return event;
+  };
+
+  it('marks points where the map is clicked and adds up the distance', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+
+    await walk.press('measure');
+    await clickTheMap(walk.wrapper, 400, 200);
+    // the record at 10° east, which the second point snaps to
+    await clickTheMap(walk.wrapper, 400 + (4096 * 10) / 360 + 5, 203);
+
+    expect(walk.wrapper.findAll('[data-measure-point]')).toHaveLength(2);
+    expect(walk.wrapper.get('[data-measure-total]').text()).toBe('1,111.95 km');
+  });
+
+  it('keeps the click from the map, so measuring picks no record', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+    await walk.press('measure');
+
+    const event = await clickTheMap(walk.wrapper, 400, 200);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(walk.current()).toEqual([]);
+  });
+
+  it('forgets the points when turned off', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    givePaneSize(walk.wrapper);
+    await walk.ready();
+    await walk.press('measure');
+    await clickTheMap(walk.wrapper, 400, 200);
+
+    await walk.press('measure');
+    await walk.press('measure');
+
+    expect(walk.wrapper.findAll('[data-measure-point]')).toHaveLength(0);
   });
 });

@@ -84,6 +84,21 @@
     </v-button>
 
     <v-button
+      v-tooltip="t('measure')"
+      class="map-toolbar__button"
+      :class="{ 'map-toolbar__button--active': props.measuring === true }"
+      data-control="measure"
+      icon
+      rounded
+      small
+      secondary
+      :aria-pressed="props.measuring === true"
+      @click="emit('measure')"
+    >
+      <v-icon name="straighten" small />
+    </v-button>
+
+    <v-button
       v-tooltip="t('resetView')"
       class="map-toolbar__button"
       data-control="reset"
@@ -174,6 +189,10 @@ export default {
 
 .map-toolbar__button :deep(.v-icon) {
   --v-icon-color: var(--theme--primary);
+}
+
+.map-toolbar__button--active {
+  --v-button-background-color: var(--theme--primary-background);
 }
 
 .map-toolbar__button :deep(button:disabled .v-icon) {

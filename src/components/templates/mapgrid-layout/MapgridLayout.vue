@@ -5,13 +5,40 @@
     </v-info>
 
     <div v-else class="mapgrid-container">
-      <div ref="mapPane" class="mapgrid-pane mapgrid-pane--map">
+      <div
+        ref="mapPane"
+        class="mapgrid-pane mapgrid-pane--map"
+        :class="{ 'mapgrid-pane--measuring': measuring }"
+        @pointerdown="onPanePointerDown"
+        @pointermove="onPanePointerMove"
+        @wheel.passive="onPaneWheel"
+        @click.capture="onPaneClick"
+      >
         <component :is="map?.component" v-if="map?.component" v-bind="mapProps" />
-        <div
+        <MapTrail v-if="trailSegments.length > 0" :segments="trailSegments" />
+        <CurrentMark
           v-if="currentPoint"
-          class="mapgrid-current-point"
-          data-current-point
-          :style="{ left: `${currentPoint.x}px`, top: `${currentPoint.y}px` }"
+          :x="currentPoint.x"
+          :y="currentPoint.y"
+          :screen-angle="currentHeading.screen"
+          :heading="currentHeading.geographic"
+        />
+        <MeasureOverlay
+          v-if="measuring"
+          :points="measuredOnScreen"
+          :last-leg="measuredLastLeg"
+          :total="measuredTotal"
+          @clear="measured = []"
+          @close="toggleMeasure"
+        />
+        <CaptureCard
+          v-if="card"
+          class="mapgrid-card"
+          :title="card.title"
+          :rows="card.rows"
+          :coordinates="card.coordinates"
+          :image-url="card.imageUrl"
+          @close="dismissCard"
         />
         <MapToolbar
           class="mapgrid-toolbar"
@@ -20,16 +47,30 @@
           :loading="loading"
           :playing="playing"
           :tracking="tracking"
+          :measuring="measuring"
           @reset="resetView"
-          @first="step((position) => sequence.first(position))"
-          @previous="step((position) => sequence.previous(position))"
-          @next="step((position) => sequence.next(position))"
-          @last="step((position) => sequence.last(position))"
+          @first="manualStep((position) => sequence.first(position))"
+          @previous="manualStep((position) => sequence.previous(position))"
+          @next="manualStep((position) => sequence.next(position))"
+          @last="manualStep((position) => sequence.last(position))"
           @play="startPlayback"
           @stop="stopPlayback"
+          @measure="toggleMeasure"
           @update:tracking="props.setCameraTracking?.($event)"
         />
       </div>
+
+      <TripTimelineBar
+        v-if="timelineBar"
+        class="mapgrid-timeline"
+        :start-label="timelineBar.startLabel"
+        :end-label="timelineBar.endLabel"
+        :ticks="timelineBar.ticks"
+        :marker="timelineBar.marker"
+        :marker-label="timelineBar.markerLabel"
+        :disabled="loading"
+        @seek="seek"
+      />
 
       <div ref="gridPane" class="mapgrid-pane mapgrid-pane--grid">
         <component :is="grid?.component" v-if="grid?.component" v-bind="gridProps" />
@@ -43,14 +84,25 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
 import { CameraTrackingPolicy } from '../../../services/camera-tracking/index';
-import { DirectusCurrentPoint, type ScreenPoint } from '../../../services/current-point/index';
+import {
+  type Coordinate,
+  DirectusCurrentPoint,
+  type ScreenPoint,
+} from '../../../services/current-point/index';
+import { DistanceMeasure } from '../../../services/distance-measure/index';
 import { EmbeddedStateReader } from '../../../services/embedded-state-reader/index';
+import { FieldValues } from '../../../services/field-values/index';
 import {
   KeyboardNavigation,
   type NavigationAction,
 } from '../../../services/keyboard-navigation/index';
 import { DirectusMapCenterer } from '../../../services/map-centerer/index';
 import { PageTurnAnticipation } from '../../../services/page-turn-anticipation/index';
+import { PlaybackClock } from '../../../services/playback-clock/index';
+import { PlaybackTempo } from '../../../services/playback-tempo/index';
+import { type CardRow, RecordCard } from '../../../services/record-card/index';
+import { RecordHeading } from '../../../services/record-heading/index';
+import { RecordInstants } from '../../../services/record-instants/index';
 import {
   type PageEdge,
   type RecordId,
@@ -59,13 +111,21 @@ import {
   type SequenceStep,
 } from '../../../services/record-sequence/index';
 import { TableRowHighlighter } from '../../../services/row-highlighter/index';
+import { TrailPath, type TrailSegment } from '../../../services/trail-path/index';
+import { type TimelineRange, TripTimeline } from '../../../services/trip-timeline/index';
+import { VisitedPath } from '../../../services/visited-path/index';
 import { MESSAGES } from '../../../shared/messages';
+import CaptureCard from '../../molecules/capture-card/CaptureCard.vue';
+import CurrentMark from '../../molecules/current-mark/CurrentMark.vue';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
+import MapTrail from '../../molecules/map-trail/MapTrail.vue';
+import MeasureOverlay from '../../molecules/measure-overlay/MeasureOverlay.vue';
+import TripTimelineBar from '../../molecules/trip-timeline-bar/TripTimelineBar.vue';
 import type { MapgridLayoutProps } from './MapgridLayout.types';
 
 const props = defineProps<MapgridLayoutProps>();
 
-const { t } = useI18n({ useScope: 'local', messages: MESSAGES });
+const { t, locale } = useI18n({ useScope: 'local', messages: MESSAGES });
 
 const missingLayout = computed(() => !props.grid?.component || !props.map?.component);
 
@@ -124,9 +184,21 @@ const gridItems = computed<GeoItem[]>(
 const ids = computed<RecordId[]>(() => gridItems.value.map((item) => item.id));
 const loading = computed(() => props.grid?.state.loading === true);
 
+const primaryKey = (): string => props.primaryKeyField?.field ?? 'id';
+
+/** A record by its key: the loaded one when it is on the page, a bare key otherwise. */
+const itemFor = (id: RecordId): Record<string, unknown> => {
+  const loaded = gridItems.value.find((item) => item.id === id);
+  if (loaded) return loaded;
+  const featureId = props.map?.state?.featureId;
+  return typeof featureId === 'string' ? { id, [featureId]: id } : { id };
+};
+
 const currentId = ref<RecordId | null>(null);
 /** The end of the page a `page` step is waiting for, `null` when none is pending. */
 const pendingEdge = ref<PageEdge | null>(null);
+/** A record the timeline asked for on another page; it wins over the edge when the page lands. */
+let pendingId: RecordId | null = null;
 
 const position = computed<SequencePosition>(() => ({
   currentId: currentId.value,
@@ -138,6 +210,24 @@ const position = computed<SequencePosition>(() => ({
 const atStart = computed(() => sequence.atStart(position.value));
 const atEnd = computed(() => sequence.atEnd(position.value));
 
+/** The current record's mark, drawn beside the map — see `DirectusCurrentPoint`. */
+const currentPointer = computed<DirectusCurrentPoint | null>(() => {
+  const state = props.map?.state;
+  return state ? new DirectusCurrentPoint(state, paneSize) : null;
+});
+
+const visited = new VisitedPath();
+/** The path is a plain object, so its changes are counted here for what draws it. */
+const pathVersion = ref(0);
+
+const fieldValues = new FieldValues({
+  primaryKey,
+  gridItems: () => gridItems.value,
+  fetchItems: (keys, fields) => props.fetchItems?.(keys, fields) ?? Promise.resolve([]),
+});
+/** Bumped when values arrive from the server, which the cache does not announce. */
+const valuesVersion = ref(0);
+
 /** The only writer of the current record: marks the row and, if tracking asks, moves the camera. */
 const focus = (id: RecordId | null, item?: GeoItem): void => {
   currentId.value = id;
@@ -145,16 +235,23 @@ const focus = (id: RecordId | null, item?: GeoItem): void => {
   void nextTick(() => highlighter.highlight(index));
 
   if (id === null) return;
-  const record = item ?? gridItems.value[index] ?? ({ id } as GeoItem);
+  const record = item ?? gridItems.value[index] ?? (itemFor(id) as GeoItem);
+  visited.visit(id, currentPointer.value?.coordinateOf(record) ?? null);
+  pathVersion.value += 1;
+  loadHeadingOf(id);
+
   const framing = trackingPolicy.framing(tracking.value, { zoomIn: props.zoomOnClick === true });
   if (framing && centerer.value?.centerItem(record, framing) === true) awaitCamera();
 };
 
-/** The current record's mark, drawn beside the map — see `DirectusCurrentPoint`. */
-const currentPointer = computed<DirectusCurrentPoint | null>(() => {
-  const state = props.map?.state;
-  return state ? new DirectusCurrentPoint(state, paneSize) : null;
-});
+/** A page that has just landed may reach the map after the grid: its visits get their place then. */
+watch(
+  () => props.map?.state?.geojson,
+  () => {
+    visited.resolve((id) => currentPointer.value?.coordinateOf(itemFor(id)) ?? null);
+    pathVersion.value += 1;
+  }
+);
 
 /** The pane's size is not reactive: a resize is what makes the projection read it again. */
 const paneResizes = ref(0);
@@ -176,14 +273,80 @@ const awaitCamera = (): void => {
   landing = setTimeout(cameraLanded, CAMERA_LANDING_DEADLINE_MS);
 };
 
+const project = (coordinate: Coordinate): ScreenPoint | null => {
+  void paneResizes.value;
+  return currentPointer.value?.screenPointOfCoordinate(coordinate) ?? null;
+};
+
 const currentPoint = computed<ScreenPoint | null>(() => {
   void paneResizes.value;
   const id = currentId.value;
   if (!cameraSettled.value || id === null) return null;
 
   const index = ids.value.indexOf(id);
-  const item = (gridItems.value[index] ?? { id }) as Record<string, unknown>;
+  const item = (gridItems.value[index] ?? itemFor(id)) as Record<string, unknown>;
   return currentPointer.value?.screenPointOf(item) ?? null;
+});
+
+const heading = new RecordHeading();
+const headingSource = computed(() => heading.sourceFrom(props.headingSource));
+
+const loadHeadingOf = (id: RecordId): void => {
+  const field = props.headingField;
+  if (headingSource.value !== 'field' || !field) return;
+  void fieldValues
+    .load([id], field)
+    .then(() => {
+      valuesVersion.value += 1;
+    })
+    .catch(() => {});
+};
+
+const NO_HEADING = { screen: null, geographic: null } as const;
+
+/** No direction is better than a wrong one: no repeating the last known, no guessing. */
+const currentHeading = computed<{ screen: number | null; geographic: number | null }>(() => {
+  void pathVersion.value;
+  void valuesVersion.value;
+  const id = currentId.value;
+  if (id === null || !cameraSettled.value) return NO_HEADING;
+
+  if (headingSource.value === 'computed') {
+    const before = visited.previous();
+    const now = visited.last();
+    if (now?.id !== id || !before?.coordinate || !now.coordinate) return NO_HEADING;
+    const from = project(before.coordinate);
+    const to = project(now.coordinate);
+    if (!from || !to) return NO_HEADING;
+    return {
+      screen: heading.screenAngle(from, to),
+      geographic: heading.azimuth(before.coordinate, now.coordinate),
+    };
+  }
+
+  if (headingSource.value === 'field' && props.headingField) {
+    const geographic = heading.fromField(fieldValues.peek(id, props.headingField));
+    const bearing = currentPointer.value?.bearing() ?? null;
+    if (geographic === null || bearing === null) return NO_HEADING;
+    return { screen: heading.onScreen(geographic, bearing), geographic };
+  }
+
+  return NO_HEADING;
+});
+
+const trailPath = new TrailPath();
+const trailLength = computed(() => trailPath.lengthFrom(props.trailLength));
+
+const trailSegments = computed<TrailSegment[]>(() => {
+  void pathVersion.value;
+  void paneResizes.value;
+  const size = paneSize();
+  if (trailLength.value === 0 || !cameraSettled.value || !size) return [];
+
+  const points = visited
+    .points(trailLength.value)
+    .map((visit) => (visit.coordinate ? project(visit.coordinate) : null));
+  return trailPath.segments(points, size);
 });
 
 let paneObserver: ResizeObserver | null = null;
@@ -206,6 +369,7 @@ const frameItem = (payload: unknown): void => {
   const item = (payload as { item?: GeoItem } | null)?.item;
   if (!item) return;
 
+  timeline.reset();
   focus(item.id, item);
 };
 
@@ -243,6 +407,12 @@ const step = (resolve: (position: SequencePosition) => SequenceStep | null): voi
   turnTo(target);
 };
 
+/** A step the person asked for: the timeline's marker may go back with it. */
+const manualStep = (resolve: (position: SequencePosition) => SequenceStep | null): void => {
+  timeline.reset();
+  step(resolve);
+};
+
 /** The page changed under us — the mark is on a row that is now another record. */
 watch(gridItems, () => {
   if (pendingEdge.value !== null) return;
@@ -252,7 +422,6 @@ watch(gridItems, () => {
 });
 
 const playing = ref(false);
-let ticker: ReturnType<typeof setInterval> | null = null;
 
 const DEFAULT_PLAYBACK_SECONDS = 2;
 /** One second at least: each step starts a camera animation. */
@@ -260,6 +429,55 @@ const MINIMUM_PLAYBACK_MS = 1_000;
 
 const beatMs = (): number =>
   Math.max(MINIMUM_PLAYBACK_MS, (props.playbackInterval ?? DEFAULT_PLAYBACK_SECONDS) * 1_000);
+
+const tempo = new PlaybackTempo();
+const instants = new RecordInstants(fieldValues);
+const playbackTiming = computed(() => tempo.timingFrom(props.playbackTiming));
+const playbackSpeed = computed(() => tempo.speedFrom(props.playbackSpeed));
+
+/** The chosen field, or the sort's date — offered, never written to the preset. */
+const timeField = computed<string | null>(
+  () =>
+    props.playbackTimeField ||
+    instants.suggestedField(props.sort, props.fieldsInCollection ?? []) ||
+    null
+);
+
+watch(
+  [ids, timeField],
+  () => {
+    const field = timeField.value;
+    if (!field || ids.value.length === 0) return;
+    void instants
+      .load(ids.value, field)
+      .then(() => {
+        valuesVersion.value += 1;
+      })
+      .catch(() => {});
+  },
+  { immediate: true }
+);
+
+/**
+ * The wait before the next record. With the data's clock it is the time
+ * between the current record and the next; when the next is on a page not
+ * loaded yet, the page's typical gap stands in for it.
+ */
+const nextWaitMs = (): number => {
+  const field = timeField.value;
+  if (playbackTiming.value !== 'realtime' || !field) return beatMs();
+
+  const options = { speed: playbackSpeed.value, cameraMoves: tracking.value !== 'off' };
+  const id = currentId.value;
+  if (id === null) return tempo.waitMs(null, null, options);
+
+  const next = ids.value[ids.value.indexOf(id) + 1];
+  if (next !== undefined) {
+    return tempo.waitMs(instants.instantOf(id, field), instants.instantOf(next, field), options);
+  }
+  const typical = tempo.medianDelta(ids.value.map((record) => instants.instantOf(record, field)));
+  return tempo.waitMs(0, typical, options);
+};
 
 const onBeat = (): void => {
   // `pendingEdge` too: an anticipated turn is asked for before the layout reports loading
@@ -272,10 +490,7 @@ const onBeat = (): void => {
   anticipatePageTurn();
 };
 
-const restartBeat = (): void => {
-  if (ticker !== null) clearInterval(ticker);
-  ticker = setInterval(onBeat, beatMs());
-};
+const clock = new PlaybackClock(nextWaitMs, onBeat);
 
 /** Asks for the next page inside the step that precedes it. */
 const anticipatePageTurn = (): void => {
@@ -289,13 +504,12 @@ const anticipatePageTurn = (): void => {
     anticipating = null;
     turnAnticipated = true;
     turnTo(target);
-  }, anticipation.delayMs(beatMs()));
+  }, anticipation.delayMs(nextWaitMs()));
 };
 
 const stopPlayback = (): void => {
   stopAnticipating();
-  if (ticker !== null) clearInterval(ticker);
-  ticker = null;
+  clock.stop();
   playing.value = false;
 };
 
@@ -303,7 +517,7 @@ const startPlayback = (): void => {
   if (playing.value) return;
 
   playing.value = true;
-  restartBeat();
+  clock.start();
   anticipatePageTurn();
 };
 
@@ -317,32 +531,302 @@ watch([ids, loading], () => {
     anticipation.measure(Date.now() - turnAskedAt);
     turnAskedAt = null;
   }
-  focus(sequence.atEdge(ids.value, edge));
+  const wanted = pendingId;
+  pendingId = null;
+  focus(wanted !== null && ids.value.includes(wanted) ? wanted : sequence.atEdge(ids.value, edge));
 
   // the beat restarts where the page lands, or its record keeps only what is left of the step
   if (!turnAnticipated) return;
   turnAnticipated = false;
-  if (playing.value) restartBeat();
+  if (playing.value) clock.restart();
 });
 
 onBeforeUnmount(stopPlayback);
 
+const timeline = new TripTimeline();
+const timelineRange = ref<TimelineRange | null>(null);
+let rangeRequest = 0;
+
+const instantFrom = (value: unknown): number | null => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value !== 'string') return null;
+  const instant = Date.parse(value);
+  return Number.isFinite(instant) ? instant : null;
+};
+
+watch(
+  [timeField, () => props.queryKey],
+  () => {
+    const request = ++rangeRequest;
+    timelineRange.value = null;
+    const field = timeField.value;
+    if (!field || !props.fetchTimeRange) return;
+
+    props
+      .fetchTimeRange(field)
+      .then(({ first, last }) => {
+        if (request === rangeRequest) {
+          timelineRange.value = timeline.range(instantFrom(first), instantFrom(last));
+        }
+      })
+      .catch(() => {});
+  },
+  { immediate: true }
+);
+
+const formatInstant = (instant: number): string =>
+  new Intl.DateTimeFormat(locale.value, { dateStyle: 'short', timeStyle: 'short' }).format(instant);
+
+/** Where the marker is; during playback it only moves forward. */
+const timelineMarker = ref<number | null>(null);
+
+watch([currentId, valuesVersion, timelineRange], () => {
+  const field = timeField.value;
+  const id = currentId.value;
+  if (id === null || !field) {
+    timelineMarker.value = null;
+    return;
+  }
+  const position = timeline.positionOf(instants.instantOf(id, field), timelineRange.value);
+  if (position === null) return;
+  timelineMarker.value = playing.value ? timeline.advance(position) : position;
+});
+
+const timelineBar = computed(() => {
+  void valuesVersion.value;
+  const field = timeField.value;
+  const range = timelineRange.value;
+  if (!field || !range) return null;
+
+  const ticks = ids.value
+    .map((id) => timeline.positionOf(instants.instantOf(id, field), range))
+    .filter((tick): tick is number => tick !== null);
+  const currentInstant =
+    currentId.value === null ? null : instants.instantOf(currentId.value, field);
+  return {
+    startLabel: formatInstant(range.start),
+    endLabel: formatInstant(range.end),
+    ticks,
+    marker: timelineMarker.value,
+    markerLabel: currentInstant === null ? undefined : formatInstant(currentInstant),
+  };
+});
+
+/** The record at a moment of the trip: on any page when the query is sorted by time, on this one otherwise. */
+const seek = async (position: number): Promise<void> => {
+  const field = timeField.value;
+  const range = timelineRange.value;
+  if (!field || !range) return;
+
+  stopPlayback();
+  timeline.reset();
+  const instant = timeline.instantAt(position, range);
+
+  const located = (await props.locateInstant?.(field, instant).catch(() => null)) ?? null;
+  if (located) {
+    if (located.page === (props.page ?? 1) && ids.value.includes(located.id)) {
+      focus(located.id);
+      return;
+    }
+    pendingId = located.id;
+    pendingEdge.value = 'first';
+    turnAskedAt = null;
+    props.goToPage?.(located.page);
+    return;
+  }
+
+  let nearest: RecordId | null = null;
+  let distance = Number.POSITIVE_INFINITY;
+  for (const id of ids.value) {
+    const at = instants.instantOf(id, field);
+    if (at !== null && Math.abs(at - instant) < distance) {
+      distance = Math.abs(at - instant);
+      nearest = id;
+    }
+  }
+  if (nearest !== null) focus(nearest);
+};
+
+const recordCard = new RecordCard();
+const cardItem = ref<Record<string, unknown> | null>(null);
+/** Closing the card hides it for that record only; the next one opens it again. */
+const cardDismissedFor = ref<RecordId | null>(null);
+let cardRequest = 0;
+
+const cardFieldList = computed<string[]>(() => {
+  const chosen = props.cardFields?.length ? props.cardFields : (props.gridFields ?? []);
+  const geometry = props.map?.state?.geometryField;
+  return chosen.filter((field) => field !== props.cardImageField && field !== geometry);
+});
+
+watch(
+  [currentId, () => props.showCard, cardFieldList, () => props.cardImageField],
+  () => {
+    const request = ++cardRequest;
+    const id = currentId.value;
+    if (props.showCard !== true || id === null) {
+      cardItem.value = null;
+      return;
+    }
+    const fields = [primaryKey(), ...cardFieldList.value];
+    if (props.cardImageField) fields.push(props.cardImageField);
+
+    void (props.fetchItems?.([id], fields) ?? Promise.resolve([]))
+      .then(([item]) => {
+        if (request === cardRequest) cardItem.value = item ?? null;
+      })
+      .catch(() => {});
+  },
+  { immediate: true }
+);
+
+const imageIdOf = (value: unknown): string | null => {
+  if (typeof value === 'string' && value !== '') return value;
+  const id = (value as { id?: unknown } | null | undefined)?.id;
+  return typeof id === 'string' ? id : null;
+};
+
+const card = computed<{
+  title: string;
+  rows: CardRow[];
+  coordinates: string | null;
+  imageUrl: string | null;
+} | null>(() => {
+  const item = cardItem.value;
+  const id = currentId.value;
+  if (!item || id === null || cardDismissedFor.value === id) return null;
+
+  const [first, ...rows] = recordCard.rows(
+    item,
+    cardFieldList.value,
+    props.fieldsInCollection ?? [],
+    locale.value
+  );
+  const coordinate = currentPointer.value?.coordinateOf(itemFor(id)) ?? null;
+  const imageId = props.cardImageField ? imageIdOf(item[props.cardImageField]) : null;
+  return {
+    title: first?.value ?? String(id),
+    rows,
+    coordinates: coordinate ? recordCard.coordinates(coordinate, locale.value) : null,
+    imageUrl: imageId && props.assetUrl ? props.assetUrl(imageId) : null,
+  };
+});
+
+const dismissCard = (): void => {
+  cardDismissedFor.value = currentId.value;
+};
+
+watch(currentId, (id) => {
+  if (id !== cardDismissedFor.value) cardDismissedFor.value = null;
+});
+
+const distances = new DistanceMeasure();
+const measuring = ref(false);
+const measured = ref<Coordinate[]>([]);
+
+const toggleMeasure = (): void => {
+  measuring.value = !measuring.value;
+  measured.value = [];
+};
+
+const measuredOnScreen = computed<(ScreenPoint | null)[]>(() =>
+  cameraSettled.value ? measured.value.map((coordinate) => project(coordinate)) : []
+);
+
+const measuredLastLeg = computed(() => {
+  const legs = distances.legs(measured.value);
+  const last = legs[legs.length - 1];
+  return last === undefined ? null : distances.format(last, locale.value);
+});
+
+const measuredTotal = computed(() =>
+  measured.value.length < 2 ? null : distances.format(distances.total(measured.value), locale.value)
+);
+
+/** Close enough to a record to mean it: the point goes to the reading, not beside it. */
+const SNAP_RADIUS_PX = 14;
+/** A press that moved further than this was a pan, and its click marks nothing. */
+const CLICK_TOLERANCE_PX = 4;
+let pressedAt: { x: number; y: number } | null = null;
+
+const onTheMap = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest('.maplibregl-canvas-container') !== null;
+
+const onPanePointerDown = (event: PointerEvent): void => {
+  pressedAt = onTheMap(event.target) ? { x: event.clientX, y: event.clientY } : null;
+};
+
+/** The person is moving the map: what is drawn over it waits for the camera to land. */
+const onPanePointerMove = (event: PointerEvent): void => {
+  if (!pressedAt || event.buttons === 0) return;
+  if (Math.hypot(event.clientX - pressedAt.x, event.clientY - pressedAt.y) > CLICK_TOLERANCE_PX) {
+    awaitCamera();
+  }
+};
+
+const onPaneWheel = (event: WheelEvent): void => {
+  if (onTheMap(event.target)) awaitCamera();
+};
+
+const snapped = (point: ScreenPoint): Coordinate | null => {
+  let nearest: Coordinate | null = null;
+  let distance = SNAP_RADIUS_PX;
+  for (const item of gridItems.value) {
+    const coordinate = currentPointer.value?.coordinateOf(item);
+    const on = coordinate ? project(coordinate) : null;
+    if (!coordinate || !on) continue;
+    const away = Math.hypot(on.x - point.x, on.y - point.y);
+    if (away <= distance) {
+      distance = away;
+      nearest = coordinate;
+    }
+  }
+  return nearest;
+};
+
+/** In the capture phase, so while measuring the map never sees the click and picks nothing. */
+const onPaneClick = (event: MouseEvent): void => {
+  if (!measuring.value || !onTheMap(event.target)) return;
+  const pressed = pressedAt;
+  pressedAt = null;
+  if (
+    pressed &&
+    Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > CLICK_TOLERANCE_PX
+  ) {
+    return;
+  }
+
+  event.stopPropagation();
+  event.preventDefault();
+  const box = mapPane.value?.getBoundingClientRect();
+  if (!box) return;
+  const point = { x: event.clientX - box.left, y: event.clientY - box.top };
+  const coordinate = snapped(point) ?? currentPointer.value?.coordinateAt(point) ?? null;
+  if (coordinate) measured.value = [...measured.value, coordinate];
+};
+
 const keyboard = new KeyboardNavigation();
 
 const KEYBOARD_ACTIONS: Record<NavigationAction, () => void> = {
-  first: () => step((position) => sequence.first(position)),
-  last: () => step((position) => sequence.last(position)),
-  next: () => step((position) => sequence.next(position)),
+  first: () => manualStep((position) => sequence.first(position)),
+  last: () => manualStep((position) => sequence.last(position)),
+  next: () => manualStep((position) => sequence.next(position)),
   playback: () => {
     if (playing.value) stopPlayback();
     else if (!atEnd.value) startPlayback();
   },
-  previous: () => step((position) => sequence.previous(position)),
+  previous: () => manualStep((position) => sequence.previous(position)),
 };
 
 /** On the document, not on the pane: the page starts with the focus nowhere, and the keys still answer. */
 const onKeyDown = (event: KeyboardEvent): void => {
   if (!keyboard.inScope(layoutRoot.value, document.activeElement)) return;
+
+  if (event.key === 'Escape' && measuring.value) {
+    event.preventDefault();
+    toggleMeasure();
+    return;
+  }
 
   const action = keyboard.actionFor(event);
   if (!action) return;
@@ -360,9 +844,14 @@ watch(
   () => {
     stopPlayback();
     pendingEdge.value = null;
+    pendingId = null;
     turnAskedAt = null;
     turnAnticipated = false;
     anticipation.reset();
+    visited.clear();
+    pathVersion.value += 1;
+    fieldValues.clear();
+    timeline.reset();
     focus(null);
   }
 );
@@ -372,6 +861,7 @@ const selectItem = (payload: unknown): void => {
   const id = (payload as { id?: string | number } | null | undefined)?.id;
   if (id === undefined || id === null) return;
 
+  timeline.reset();
   focus(id);
 };
 
@@ -428,11 +918,28 @@ const mapProps = computed(() => ({
   overflow: auto;
 }
 
+.mapgrid-timeline {
+  flex: none;
+  margin-block: calc(-1 * var(--content-padding) / 2);
+}
+
 .mapgrid-toolbar {
   position: absolute;
   inset-block-start: 8px;
   inset-inline-end: 8px;
   z-index: 2;
+}
+
+.mapgrid-card {
+  position: absolute;
+  inset-block-end: 28px;
+  inset-inline-start: 8px;
+  z-index: 2;
+}
+
+/* MapLibre writes the cursor inline on the canvas, so only `!important` wins over it */
+.mapgrid-pane--measuring :deep(.maplibregl-canvas) {
+  cursor: crosshair !important;
 }
 
 /*
@@ -454,20 +961,6 @@ const mapProps = computed(() => ({
 
 .mapgrid-pane--grid :deep(thead.table-header tr.fixed) {
   top: 0;
-}
-
-/* the current record over the map; drawn on the canvas, so not clickable */
-.mapgrid-current-point {
-  position: absolute;
-  z-index: 1;
-  inline-size: 22px;
-  block-size: 22px;
-  transform: translate(-50%, -50%);
-  border: 3px solid var(--theme--primary);
-  border-radius: 50%;
-  background-color: var(--theme--primary-background);
-  box-shadow: 0 0 0 2px var(--white), var(--theme--elevation-2xl);
-  pointer-events: none;
 }
 
 /* the current record; the inline-start bar tells it apart from `selection` */

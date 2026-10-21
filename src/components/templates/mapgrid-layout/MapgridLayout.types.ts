@@ -1,6 +1,11 @@
+import type { HeadingSource, PlaybackTiming } from '../../../contract/index';
 import type { CameraTracking } from '../../../services/camera-tracking/index';
 import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
 import type { CollectionSource } from '../../../services/map-centerer/index';
+import type { CardField } from '../../../services/record-card/index';
+
+/** A collection field, as `useCollection` lists it. */
+export type CollectionField = CardField;
 
 export interface MapgridLayoutType {
   models: MapgridLayoutModels;
@@ -40,6 +45,41 @@ export interface MapgridLayoutProps {
    * anything. The layout builds it, because it is the one holding the query.
    */
   queryKey?: string;
+  /** Fixed beat, or the data's own clock. */
+  playbackTiming?: PlaybackTiming;
+  /** How many times faster than the data's clock. */
+  playbackSpeed?: number;
+  /** The field the data's clock is read from; empty, the sort's date is used. */
+  playbackTimeField?: string;
+  /** Where the current record's arrow takes its direction from. */
+  headingSource?: HeadingSource;
+  /** The numeric course field, for `headingSource: 'field'`. */
+  headingField?: string;
+  /** How many visited records the trail joins; `0` turns it off. */
+  trailLength?: number;
+  /** Shows the focused record in a card over the map. */
+  showCard?: boolean;
+  /** The file field whose image the card shows. */
+  cardImageField?: string;
+  /** The fields the card lists; empty, the grid's columns. */
+  cardFields?: string[];
+  /** The grid's columns, `layoutQuery.fields`. */
+  gridFields?: string[];
+  /** The query's sort, which says which date the clock suggests. */
+  sort?: string[];
+  /** The collection's fields, for the card's labels and the time field's suggestion. */
+  fieldsInCollection?: CollectionField[];
+  /** The primary key field, to read the records the card and the arrow fetch. */
+  primaryKeyField?: { field: string } | null;
+  /** The whole query's first and last values of a field, as the server returns them. */
+  fetchTimeRange?: (field: string) => Promise<{ first: unknown; last: unknown }>;
+  /** The record at or right after an instant and its page, when the query is sorted by that field. */
+  locateInstant?: (
+    field: string,
+    instant: number
+  ) => Promise<{ id: string | number; page: number } | null>;
+  /** The address of a file of the project. */
+  assetUrl?: (id: string) => string;
 }
 
 export type MapgridLayoutEmits = Record<string, never>;

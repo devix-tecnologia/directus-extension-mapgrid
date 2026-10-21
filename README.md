@@ -30,8 +30,21 @@ A Layout-type extension for Directus that displays a collection in map and grid 
   leaves the visible area, *keep centred* keeps it in the middle at every step
 - **What the Directus layouts already do**: basemap, clustering and display template from the map
   layout; columns, sorting, pagination and spacing from the table layout
+- **Where it is heading**: an arrow on the current record, from a course field of the data
+  (degrees from north, signed values included) or from the record visited before
+- **The trail**: the records already visited, joined in order with arrows repeated along the line,
+  the older legs fading. It joins what was visited, not the road between: a jump to a distant row
+  draws a straight leg
+- **The data's clock**: playback can wait the real time between the records, sped up (1× to 600×),
+  instead of a fixed beat. The movement is still from record to record, not continuous
+- **Timeline**: the trip on a time axis between the map and the grid, with a tick per loaded
+  record. Dragging it jumps to that moment — on any page when the query is sorted by that date
+- **Capture card**: the focused record over the map, with its photo — which enlarges on click — its
+  fields and its coordinates
+- **Measuring**: click the map to mark points and read the distance of the last leg and the total;
+  a click near a record snaps to it
 - **Reset view**: re-fit the map to the current result set at any time
-- **Bulk delete**: select rows and delete them from the layout header
+- **Bulk actions**: select rows and edit or delete them all at once from the header
 - **Bilingual interface**: follows the Directus app locale (en-US, pt-BR)
 
 ### Installation
@@ -44,14 +57,21 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Make sure your collection has a field of type **Map** (geolocation).
 2. In the layout dropdown on the right, select **MapGrid**.
-3. The layout options have four sections:
+3. The layout options have these sections:
    - **Map**: the Directus map layout's own options — basemap, geospatial field, display template
      and clustering
    - **Grid**: the Directus table layout's own options
    - **Zoom on focus**: zoom in on the focused record instead of keeping the current zoom. It says
      nothing about *whether* the camera moves — that is the camera tracking's call
    - **Playback**: how many seconds to wait between records while playing back. One second is the
-     floor, because each step asks the map for a camera animation
+     floor, because each step asks the map for a camera animation. The pace can instead follow
+     **the data clock**, at a chosen speed, reading a date/time field — the first date of the
+     sort is used when none is chosen, and only shown, never stored
+   - **Direction**: where the current record's arrow points — nowhere, a numeric course field, or
+     the bearing from the record visited before
+   - **Trail**: how many visited records the trail joins; `0` turns it off
+   - **Capture card**: show the focused record in a card, with a photo field and the fields to list
+     (the grid's columns when none are chosen)
 
 The geospatial field is detected from the collection, so the layout works before anything is set.
 
@@ -248,8 +268,22 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
   registro sai da área visível, *centralizar* mantém o registro sempre no meio
 - **O que os layouts do Directus já fazem**: mapa base, agrupamento e template de exibição vêm do
   layout de mapa; colunas, ordenação, paginação e espaçamento vêm do layout de tabela
+- **Para onde vai**: uma seta no registro atual, a partir de um campo de rumo do dado (graus a
+  partir do norte, valores negativos inclusive) ou do registro visitado antes
+- **O rastro**: os registros já visitados, ligados em ordem, com setas repetidas ao longo da linha e
+  os trechos mais antigos esmaecendo. Liga o que foi visitado, não a rua entre eles: um salto para
+  uma linha distante desenha um trecho reto
+- **O relógio dos dados**: a reprodução pode esperar o tempo real entre os registros, acelerado (1×
+  a 600×), em vez de um intervalo fixo. O movimento continua de registro em registro, não contínuo
+- **Linha do tempo**: a viagem num eixo de tempo entre o mapa e a grade, com uma marca por registro
+  carregado. Arrastar leva àquele momento — em qualquer página quando a consulta está ordenada por
+  aquela data
+- **Card da captura**: o registro em foco sobre o mapa, com a foto — que amplia ao clicar —, os
+  campos e as coordenadas
+- **Medição**: clique no mapa para marcar pontos e ler a distância do último trecho e a total; um
+  clique perto de um registro vai até ele
 - **Reenquadrar**: reajustar o mapa ao resultado atual a qualquer momento
-- **Exclusão em lote**: selecionar linhas e excluí-las pelo cabeçalho do layout
+- **Ações em lote**: selecionar linhas e editá-las ou excluí-las de uma vez pelo cabeçalho
 - **Interface bilíngue**: acompanha o idioma do app do Directus (en-US, pt-BR)
 
 ### Instalação
@@ -262,14 +296,21 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Garanta que a coleção possua um campo do tipo **Map** (geolocalização).
 2. No menu de layouts à direita, selecione **MapGrid**.
-3. As opções do layout têm quatro seções:
+3. As opções do layout têm estas seções:
    - **Mapa**: as opções do próprio layout de mapa do Directus — mapa base, campo geoespacial,
      template de exibição e agrupamento
    - **Grade**: as opções do próprio layout de tabela do Directus
    - **Zoom ao focar**: aproximar do registro focado em vez de manter o zoom de agora. Não diz nada
      sobre *se* a câmera se move — isso é do acompanhamento da câmera
    - **Reprodução**: quantos segundos esperar entre um registro e o próximo durante a reprodução. O
-     piso é um segundo, porque cada passo pede uma animação de câmera ao mapa
+     piso é um segundo, porque cada passo pede uma animação de câmera ao mapa. O ritmo pode, em vez
+     disso, seguir **o relógio dos dados**, numa velocidade escolhida, lendo um campo de data/hora —
+     sem escolha, vale a primeira data da ordenação, que só é mostrada, nunca gravada
+   - **Sentido**: para onde a seta do registro atual aponta — para lugar nenhum, um campo numérico
+     de rumo, ou o rumo a partir do registro visitado antes
+   - **Rastro**: quantos registros visitados o rastro liga; `0` desliga
+   - **Card da captura**: mostrar o registro em foco num card, com um campo de foto e os campos a
+     listar (as colunas da grade quando nenhum é escolhido)
 
 O campo geoespacial é detectado a partir da coleção, então o layout funciona antes de qualquer
 opção ser preenchida.

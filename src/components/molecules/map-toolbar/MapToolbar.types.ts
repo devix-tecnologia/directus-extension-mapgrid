@@ -18,6 +18,8 @@ export interface MapToolbarProps {
   /** The page is still being fetched, so a step would run over the old list. */
   loading?: boolean;
   tracking?: CameraTracking;
+  /** The measuring tool is on: clicks on the map mark points instead of picking records. */
+  measuring?: boolean;
 }
 
 export interface MapToolbarEmits {
@@ -29,4 +31,6 @@ export interface MapToolbarEmits {
   play: [];
   stop: [];
   'update:tracking': [CameraTracking];
+  /** Turns the measuring tool on or off. */
+  measure: [];
 }
