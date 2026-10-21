@@ -110,6 +110,19 @@
     >
       <v-icon name="zoom_out_map" small />
     </v-button>
+
+    <v-button
+      v-tooltip="t('tourStart')"
+      class="map-toolbar__button"
+      data-control="tour"
+      icon
+      rounded
+      small
+      secondary
+      @click="emit('tour')"
+    >
+      <v-icon name="help_outline" small />
+    </v-button>
   </div>
 </template>
 

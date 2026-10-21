@@ -182,3 +182,13 @@ describe('MapToolbar — the measuring tool', () => {
     );
   });
 });
+
+describe('MapToolbar — the tour', () => {
+  it('asks for it', async () => {
+    const wrapper = toolbar();
+
+    await control(wrapper, 'tour').trigger('click');
+
+    expect(wrapper.emitted('tour')).toHaveLength(1);
+  });
+});

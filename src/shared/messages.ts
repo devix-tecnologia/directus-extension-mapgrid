@@ -87,6 +87,44 @@ export const MESSAGES = {
     optionShowCard: 'Show the focused record in a card',
     optionCardImageField: 'Photo field',
     optionCardFields: 'Fields in the card (empty: the grid columns)',
+    tourStart: 'Take the tour',
+    tourCount: '{number} of {total}',
+    tourNext: 'Next',
+    tourPrevious: 'Back',
+    tourDone: 'Done',
+    tourClose: 'Close the tour',
+    optionTour: 'Tour',
+    optionTourOnFirstVisit: 'Open the tour on the first visit',
+    tourMapTitle: 'The map and the grid, together',
+    tourMapBody:
+      'Both show the same query. Click a point to mark its row in the grid; click a row to take the map to it.',
+    tourGridTitle: 'The Directus grid',
+    tourGridBody:
+      'Pick columns with the +, sort from the header menu, and select rows to edit or delete them all at once.',
+    tourFiltersTitle: 'Search and filters',
+    tourFiltersBody:
+      'Filter by status, municipality, neighbourhood or address: the filter narrows the map and the grid alike.',
+    tourNavigationTitle: 'Walk the records',
+    tourNavigationBody:
+      'First, previous, next and last, in the order of the query; the page turns by itself. Keys: ← → Home End.',
+    tourPlaybackTitle: 'Play them back',
+    tourPlaybackBody:
+      'The camera walks the records on its own — at a fixed beat, or on the data clock, sped up. Space starts and stops it.',
+    tourTrackingTitle: 'Camera tracking',
+    tourTrackingBody: 'Free, follow or keep centred: how much the map chases the current record.',
+    tourHeadingTitle: 'Where it is heading',
+    tourHeadingBody:
+      'The arrow shows the direction of travel, and the trail joins the records already visited, with arrows along it.',
+    tourCardTitle: 'The capture card',
+    tourCardBody:
+      'The focused record with its photo, fields and coordinates. Click the photo to enlarge it.',
+    tourTimelineTitle: 'Timeline',
+    tourTimelineBody: 'The trip on a time axis. Drag the marker to jump to any moment.',
+    tourMeasureTitle: 'Measure distances',
+    tourMeasureBody:
+      'Turn the ruler on and click the map: near a record, the point snaps to it. It shows the last leg and the total.',
+    tourResetTitle: 'Reset the view',
+    tourResetBody: 'Fits the map to every record of the query again.',
   },
   'pt-BR': {
     loading: 'Carregando…',
@@ -170,6 +208,44 @@ export const MESSAGES = {
     optionShowCard: 'Mostrar o registro em foco num card',
     optionCardImageField: 'Campo da foto',
     optionCardFields: 'Campos do card (vazio: as colunas da grade)',
+    tourStart: 'Conhecer o MapGrid',
+    tourCount: '{number} de {total}',
+    tourNext: 'Próximo',
+    tourPrevious: 'Voltar',
+    tourDone: 'Concluir',
+    tourClose: 'Fechar a apresentação',
+    optionTour: 'Apresentação',
+    optionTourOnFirstVisit: 'Abrir a apresentação na primeira visita',
+    tourMapTitle: 'Mapa e grade juntos',
+    tourMapBody:
+      'Os dois mostram a mesma consulta. Clique num ponto para marcar a linha na grade; clique numa linha para levar o mapa até ela.',
+    tourGridTitle: 'A grade do Directus',
+    tourGridBody:
+      'Escolha colunas no +, ordene pelo menu do cabeçalho e selecione linhas para editar ou excluir todas de uma vez.',
+    tourFiltersTitle: 'Busca e filtros',
+    tourFiltersBody:
+      'Filtre por status, município, bairro ou endereço: o filtro vale para o mapa e para a grade.',
+    tourNavigationTitle: 'Percorrer os registros',
+    tourNavigationBody:
+      'Primeiro, anterior, próximo e último, na ordem da consulta; a página vira sozinha. Atalhos: ← → Home End.',
+    tourPlaybackTitle: 'Reproduzir',
+    tourPlaybackBody:
+      'A câmera percorre os registros sozinha — num intervalo fixo ou no relógio dos dados, acelerado. Espaço liga e desliga.',
+    tourTrackingTitle: 'Acompanhamento da câmera',
+    tourTrackingBody: 'Livre, seguir ou centralizar: quanto o mapa persegue o registro atual.',
+    tourHeadingTitle: 'Para onde vai',
+    tourHeadingBody:
+      'A seta mostra o sentido do deslocamento, e o rastro liga os registros já visitados, com setas ao longo dele.',
+    tourCardTitle: 'Card da captura',
+    tourCardBody:
+      'O registro em foco com foto, campos e coordenadas. Clique na foto para ampliá-la.',
+    tourTimelineTitle: 'Linha do tempo',
+    tourTimelineBody: 'A viagem num eixo de tempo. Arraste o marcador para ir a qualquer momento.',
+    tourMeasureTitle: 'Medir distâncias',
+    tourMeasureBody:
+      'Ligue a régua e clique no mapa: perto de um registro, o ponto vai até ele. Mostra o último trecho e o total.',
+    tourResetTitle: 'Reenquadrar',
+    tourResetBody: 'Ajusta o mapa de novo a todos os registros da consulta.',
   },
 } as const;
 

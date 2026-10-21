@@ -20,5 +20,6 @@ export const generateMockData = (): MapToolbarType => ({
     stop: [],
     'update:tracking': ['center'],
     measure: [],
+    tour: [],
   },
 });

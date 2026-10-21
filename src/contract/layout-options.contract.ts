@@ -47,4 +47,6 @@ export interface LayoutOptions {
   cardImageField?: string;
   /** The fields the card lists; empty, it lists the grid's columns. */
   cardFields?: string[];
+  /** Opens the tour of the features on the first visit of each browser. */
+  tourOnFirstVisit?: boolean;
 }

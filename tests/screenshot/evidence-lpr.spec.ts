@@ -1,5 +1,5 @@
 /**
- * Evidence for tasks 019, 020, 022 and 025, over the LPR collection and in
+ * Evidence for tasks 019, 020, 022, 025 and 026, over the LPR collection and in
  * Portuguese, as the people the collection is for read it.
  *
  * Each capture belongs to one task and only runs when `EVIDENCE_TASK` names
@@ -257,4 +257,37 @@ test('025 — editing the selected readings at once', async ({ page }) => {
   await expect(page.locator('.v-drawer')).toBeVisible({ timeout: 20_000 });
   await page.waitForTimeout(1_000);
   await shootPage(page, path);
+});
+
+test('026 — the tour of the features', async ({ page }) => {
+  const start = evidenceFor('026', 'apresentacao');
+  const heading = evidenceFor('026', 'apresentacao-sentido');
+  test.skip(!start || !heading, 'only runs when EVIDENCE_TASK=026');
+  if (!start || !heading) return;
+
+  await open(page, {
+    options: {
+      cameraTracking: 'off',
+      headingSource: 'computed',
+      trailLength: 20,
+      showCard: true,
+      cardImageField: 'photo',
+      tourOnFirstVisit: true,
+      map: { geometryField: 'location', cameraOptions: cameraOn('LPR-22283', 12) },
+    },
+  });
+
+  // before the tour existed there is no balloon to wait for: the screen is shot as it is
+  const balloon = page.locator('[data-tour-balloon]');
+  await balloon.waitFor({ timeout: 15_000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  await shootPage(page, start);
+
+  for (let guard = 0; guard < 11 && (await balloon.count()) > 0; guard += 1) {
+    if ((await balloon.getAttribute('data-tour-step')) === 'heading') break;
+    await page.locator('[data-tour-next] button').click();
+    await page.waitForTimeout(400);
+  }
+  await page.waitForTimeout(500);
+  await shootPage(page, heading);
 });

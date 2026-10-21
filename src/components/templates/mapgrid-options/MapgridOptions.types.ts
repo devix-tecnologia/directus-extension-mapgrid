@@ -39,6 +39,7 @@ export interface MapgridOptionsProps {
   showCard?: boolean;
   cardImageField?: string;
   cardFields?: string[];
+  tourOnFirstVisit?: boolean;
   /** The collection's fields, which the field pickers offer. */
   fieldsInCollection?: OptionField[];
   /** The query's sort, from which the time field is suggested. */
@@ -58,4 +59,5 @@ export interface MapgridOptionsEmits {
   'update:showCard': [value: boolean];
   'update:cardImageField': [value: string];
   'update:cardFields': [value: string[]];
+  'update:tourOnFirstVisit': [value: boolean];
 }

@@ -33,4 +33,6 @@ export interface MapToolbarEmits {
   'update:tracking': [CameraTracking];
   /** Turns the measuring tool on or off. */
   measure: [];
+  /** Starts the tour of the features. */
+  tour: [];
 }

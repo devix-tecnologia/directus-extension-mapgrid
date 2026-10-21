@@ -56,6 +56,7 @@
           @play="startPlayback"
           @stop="stopPlayback"
           @measure="toggleMeasure"
+          @tour="startTour"
           @update:tracking="props.setCameraTracking?.($event)"
         />
       </div>
@@ -76,6 +77,19 @@
         <component :is="grid?.component" v-if="grid?.component" v-bind="gridProps" />
       </div>
     </div>
+
+    <TourBalloon
+      v-if="tourPosition"
+      :step-id="tourPosition.step.id"
+      :title="t(TOUR_TEXT[tourPosition.step.id].title)"
+      :body="t(TOUR_TEXT[tourPosition.step.id].body)"
+      :number="tourPosition.number"
+      :total="tourPosition.total"
+      :anchor="tourAnchor"
+      @next="moveTour('next')"
+      @previous="moveTour('previous')"
+      @close="finishTour"
+    />
   </div>
 </template>
 
@@ -83,6 +97,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
+import type { Box } from '../../../services/balloon-placement/index';
 import { CameraTrackingPolicy } from '../../../services/camera-tracking/index';
 import {
   type Coordinate,
@@ -97,6 +112,12 @@ import {
   type NavigationAction,
 } from '../../../services/keyboard-navigation/index';
 import { DirectusMapCenterer } from '../../../services/map-centerer/index';
+import {
+  OnboardingTour,
+  type TourPosition,
+  type TourStep,
+  type TourStepId,
+} from '../../../services/onboarding-tour/index';
 import { PageTurnAnticipation } from '../../../services/page-turn-anticipation/index';
 import { PlaybackClock } from '../../../services/playback-clock/index';
 import { PlaybackTempo } from '../../../services/playback-tempo/index';
@@ -111,15 +132,17 @@ import {
   type SequenceStep,
 } from '../../../services/record-sequence/index';
 import { TableRowHighlighter } from '../../../services/row-highlighter/index';
+import { TourMemory } from '../../../services/tour-memory/index';
 import { TrailPath, type TrailSegment } from '../../../services/trail-path/index';
 import { type TimelineRange, TripTimeline } from '../../../services/trip-timeline/index';
 import { VisitedPath } from '../../../services/visited-path/index';
-import { MESSAGES } from '../../../shared/messages';
+import { MESSAGES, type MessageKey } from '../../../shared/messages';
 import CaptureCard from '../../molecules/capture-card/CaptureCard.vue';
 import CurrentMark from '../../molecules/current-mark/CurrentMark.vue';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import MapTrail from '../../molecules/map-trail/MapTrail.vue';
 import MeasureOverlay from '../../molecules/measure-overlay/MeasureOverlay.vue';
+import TourBalloon from '../../molecules/tour-balloon/TourBalloon.vue';
 import TripTimelineBar from '../../molecules/trip-timeline-bar/TripTimelineBar.vue';
 import type { MapgridLayoutProps } from './MapgridLayout.types';
 
@@ -815,6 +838,126 @@ const onPaneClick = (event: MouseEvent): void => {
   if (coordinate) measured.value = [...measured.value, coordinate];
 };
 
+const TOUR_TEXT: Record<TourStepId, { title: MessageKey; body: MessageKey }> = {
+  map: { title: 'tourMapTitle', body: 'tourMapBody' },
+  grid: { title: 'tourGridTitle', body: 'tourGridBody' },
+  filters: { title: 'tourFiltersTitle', body: 'tourFiltersBody' },
+  navigation: { title: 'tourNavigationTitle', body: 'tourNavigationBody' },
+  playback: { title: 'tourPlaybackTitle', body: 'tourPlaybackBody' },
+  tracking: { title: 'tourTrackingTitle', body: 'tourTrackingBody' },
+  heading: { title: 'tourHeadingTitle', body: 'tourHeadingBody' },
+  card: { title: 'tourCardTitle', body: 'tourCardBody' },
+  timeline: { title: 'tourTimelineTitle', body: 'tourTimelineBody' },
+  measure: { title: 'tourMeasureTitle', body: 'tourMeasureBody' },
+  reset: { title: 'tourResetTitle', body: 'tourResetBody' },
+};
+
+const tour = new OnboardingTour();
+const tourMemory = new TourMemory();
+const tourPosition = ref<TourPosition | null>(null);
+const tourAnchor = ref<Box | null>(null);
+
+const anchorOf = (step: TourStep): Element | null =>
+  step.scope === 'page'
+    ? document.querySelector(step.anchor)
+    : (layoutRoot.value?.querySelector(step.anchor) ?? null);
+
+const canShow = (step: TourStep): boolean => anchorOf(step) !== null;
+
+const locateTour = (): void => {
+  const step = tourPosition.value?.step;
+  const box = step ? anchorOf(step)?.getBoundingClientRect() : undefined;
+  tourAnchor.value = box
+    ? { top: box.top, left: box.left, width: box.width, height: box.height }
+    : null;
+};
+
+const finishTour = (): void => {
+  tour.stop();
+  tourPosition.value = null;
+  tourAnchor.value = null;
+  if (props.collection) tourMemory.remember(props.collection);
+};
+
+const moveTour = (direction: 'next' | 'previous'): void => {
+  tourPosition.value = direction === 'next' ? tour.next(canShow) : tour.previous(canShow);
+  if (!tourPosition.value) {
+    finishTour();
+    return;
+  }
+  void nextTick(locateTour);
+};
+
+/** Polls until `ready`, or until the deadline; the tour then shows whatever is there. */
+const waitUntil = async (ready: () => boolean, deadlineMs: number): Promise<void> => {
+  const until = Date.now() + deadlineMs;
+  while (!ready() && Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+};
+
+/** Long enough for the card's record to arrive; short enough not to keep the tour waiting. */
+const TOUR_READY_DEADLINE_MS = 2_000;
+
+/**
+ * The tour presents the features with a record in focus — the second one, so
+ * the arrow has a record before it and the trail a leg to draw — and waits for
+ * the card, so the count it shows on the first balloon is the count to the end.
+ */
+const startTour = async (): Promise<void> => {
+  stopPlayback();
+  if (measuring.value) toggleMeasure();
+  if (currentId.value === null) {
+    manualStep((position) => sequence.first(position));
+    await nextTick();
+    step((position) => sequence.next(position));
+  }
+  for (const _ of [1, 2, 3]) await nextTick();
+  await waitUntil(() => props.showCard !== true || cardItem.value !== null, TOUR_READY_DEADLINE_MS);
+  await nextTick();
+
+  tourPosition.value = tour.start(canShow);
+  if (tourPosition.value) locateTour();
+};
+
+const TOUR_KEYS: Record<string, () => void> = {
+  Escape: finishTour,
+  ArrowRight: () => moveTour('next'),
+  ArrowLeft: () => moveTour('previous'),
+};
+
+/** Long enough for the map to draw its points, so the first balloon does not point at a blank pane. */
+const TOUR_AUTOSTART_DELAY_MS = 1_500;
+let tourAutostart: ReturnType<typeof setTimeout> | null = null;
+
+let tourConsidered = false;
+
+/** The first time the records arrive, a browser that never saw the tour gets it. */
+watch(
+  ids,
+  (loaded) => {
+    if (tourConsidered || loaded.length === 0) return;
+    tourConsidered = true;
+    if (props.tourOnFirstVisit !== true || !props.collection) return;
+    if (tourMemory.seen(props.collection)) return;
+    tourAutostart = setTimeout(() => {
+      tourAutostart = null;
+      void startTour();
+    }, TOUR_AUTOSTART_DELAY_MS);
+  },
+  { immediate: true }
+);
+
+const onWindowResize = (): void => {
+  if (tourPosition.value) locateTour();
+};
+
+onMounted(() => window.addEventListener('resize', onWindowResize));
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onWindowResize);
+  if (tourAutostart !== null) clearTimeout(tourAutostart);
+});
+
 const keyboard = new KeyboardNavigation();
 
 const KEYBOARD_ACTIONS: Record<NavigationAction, () => void> = {
@@ -830,6 +973,11 @@ const KEYBOARD_ACTIONS: Record<NavigationAction, () => void> = {
 
 /** On the document, not on the pane: the page starts with the focus nowhere, and the keys still answer. */
 const onKeyDown = (event: KeyboardEvent): void => {
+  if (tourPosition.value && TOUR_KEYS[event.key]) {
+    event.preventDefault();
+    TOUR_KEYS[event.key]?.();
+    return;
+  }
   if (!keyboard.inScope(layoutRoot.value, document.activeElement)) return;
 
   if (event.key === 'Escape' && measuring.value) {

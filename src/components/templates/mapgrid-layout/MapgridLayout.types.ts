@@ -80,6 +80,10 @@ export interface MapgridLayoutProps {
   ) => Promise<{ id: string | number; page: number } | null>;
   /** The address of a file of the project. */
   assetUrl?: (id: string) => string;
+  /** Opens the tour of the features on the first visit of each browser. */
+  tourOnFirstVisit?: boolean;
+  /** The collection, which keys what the browser remembers of the tour. */
+  collection?: string;
 }
 
 export type MapgridLayoutEmits = Record<string, never>;

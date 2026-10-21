@@ -172,6 +172,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const showCard = ownOption('showCard');
     const cardImageField = ownOption('cardImageField');
     const cardFields = ownOption('cardFields');
+    const tourOnFirstVisit = ownOption('tourOnFirstVisit');
 
     const trackingPolicy = new CameraTrackingPolicy();
     const cameraTracking = computed(() => trackingPolicy.from(layoutOptions.value?.cameraTracking));
@@ -323,6 +324,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       showCard,
       cardImageField,
       cardFields,
+      tourOnFirstVisit,
       gridFields: writableQuery.fields,
       fetchTimeRange,
       locateInstant,

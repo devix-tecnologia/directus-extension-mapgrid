@@ -1347,3 +1347,85 @@ describe('MapgridLayout — measuring', () => {
     expect(walk.wrapper.findAll('[data-measure-point]')).toHaveLength(0);
   });
 });
+
+const tourStep = (): string | null =>
+  document.querySelector('[data-tour-balloon]')?.getAttribute('data-tour-step') ?? null;
+
+describe('MapgridLayout — the tour', () => {
+  it('starts at the map and walks the features that are on screen', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    await walk.ready();
+
+    await walk.press('tour');
+    await flush();
+    expect(tourStep()).toBe('map');
+
+    walk.wrapper.findComponent({ name: 'TourBalloon' }).vm.$emit('next');
+    await flush();
+    // the Directus header is not in this test, so the filters balloon is skipped
+    expect(tourStep()).toBe('grid');
+    walk.wrapper.findComponent({ name: 'TourBalloon' }).vm.$emit('next');
+    await flush();
+    expect(tourStep()).toBe('navigation');
+    walk.wrapper.unmount();
+  });
+
+  it('puts the second record in focus, so the arrow has one before it', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    await walk.ready();
+
+    await walk.press('tour');
+    await flush();
+
+    expect(walk.current()).toEqual(['2']);
+    walk.wrapper.unmount();
+  });
+
+  it('closes on Escape and answers the arrows while open', async () => {
+    const walk = mountWalk({ cameraTracking: 'off' });
+    await walk.ready();
+    await walk.press('tour');
+    await flush();
+
+    await press('ArrowRight');
+    await flush();
+    expect(tourStep()).toBe('grid');
+    // the arrow belonged to the tour, not to the records
+    expect(walk.current()).toEqual(['2']);
+
+    await press('Escape');
+    await flush();
+    expect(tourStep()).toBeNull();
+    walk.wrapper.unmount();
+  });
+
+  it('opens by itself on the first visit only', async () => {
+    vi.useFakeTimers();
+    try {
+      localStorage.clear();
+      const first = mountWalk({
+        cameraTracking: 'off',
+        props: { tourOnFirstVisit: true, collection: 'lpr' },
+      });
+      await vi.advanceTimersByTimeAsync(1_600);
+      await flush();
+      expect(tourStep()).toBe('map');
+
+      first.wrapper.findComponent({ name: 'TourBalloon' }).vm.$emit('close');
+      await flush();
+      first.wrapper.unmount();
+
+      const second = mountWalk({
+        cameraTracking: 'off',
+        props: { tourOnFirstVisit: true, collection: 'lpr' },
+      });
+      await vi.advanceTimersByTimeAsync(1_600);
+      await flush();
+      expect(tourStep()).toBeNull();
+      second.wrapper.unmount();
+    } finally {
+      vi.useRealTimers();
+      localStorage.clear();
+    }
+  });
+});

@@ -143,6 +143,12 @@
       </div>
     </template>
   </v-detail>
+
+  <v-detail class="mapgrid-option mapgrid-option--tour full" icon="tour" :label="t('optionTour')">
+    <div class="field">
+      <v-checkbox v-model="tourOnFirstVisit" :label="t('optionTourOnFirstVisit')" />
+    </div>
+  </v-detail>
 </template>
 
 <script setup lang="ts">
@@ -273,6 +279,11 @@ const cardImageField = computed<string | null, unknown>({
   get: () => props.cardImageField || null,
   set: (value) => emit('update:cardImageField', typeof value === 'string' ? value : ''),
 });
+const tourOnFirstVisit = computed<boolean, unknown>({
+  get: () => props.tourOnFirstVisit === true,
+  set: (value) => emit('update:tourOnFirstVisit', Boolean(value)),
+});
+
 const cardFields = computed<string[], unknown>({
   get: () => props.cardFields ?? [],
   set: (value) =>
