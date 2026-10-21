@@ -48,6 +48,11 @@ A Layout-type extension for Directus that displays a collection in map and grid 
 - **Guided tour**: a balloon per feature — map, grid, filters, navigation, playback, tracking,
   direction, card, timeline, measuring and reset — from the **?** of the toolbar, or by itself on
   the first visit of each browser
+- **Room for the map**: the Directus right sidebar starts collapsed the first time a browser opens
+  the collection; opened again, it stays as you left it
+- **Map and grid, resizable**: drag the handle between them to share the height (or use ↑ ↓ on
+  it); the share is kept in your preset, and a double click puts the default back
+- **Dates to the second**: the card and the timeline write moments as `27/03/2026 10:30:47`
 - **Bilingual interface**: follows the Directus app locale (en-US, pt-BR)
 
 ### Installation
@@ -225,7 +230,7 @@ src/
 ├── components/
 │   ├── atoms/           # DeleteAction
 │   ├── molecules/       # MapToolbar, CurrentMark, MapTrail, TripTimelineBar, CaptureCard,
-│   │                    # MeasureOverlay, TourBalloon
+│   │                    # MeasureOverlay, TourBalloon, PaneSplitter
 │   └── templates/       # MapgridLayout, MapgridOptions
 ├── services/            # One class per folder, behind an I<Name> interface
 │   ├── map-centerer/    # Moves the embedded Directus map (works around its limitation)
@@ -233,8 +238,9 @@ src/
 │   ├── embedded-layout/ # Runs a Directus layout's setup() inside the MapGrid
 │   ├── record-heading/, trail-path/, visited-path/      # direction and trail
 │   ├── playback-clock/, playback-tempo/, trip-timeline/ # playback and timeline
-│   ├── record-card/, distance-measure/                  # card and measuring
-│   ├── onboarding-tour/, balloon-placement/, tour-memory/ # the tour
+│   ├── record-card/, distance-measure/, instant-format/ # card, measuring, dates
+│   ├── pane-split/      # The height shared between map and grid
+│   ├── onboarding-tour/, balloon-placement/, browser-memory/ # the tour, first visits
 │   └── optimistic-sync/ # Two writes to the preset in the same tick no longer erase each other
 ├── shared/              # Extension strings (en-US, pt-BR)
 ├── mocks/               # Directus environment and the mappable-collection catalogue
@@ -341,6 +347,11 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
 - **Apresentação guiada**: um balão por recurso — mapa, grade, filtros, navegação, reprodução,
   acompanhamento, sentido, card, linha do tempo, medição e reenquadrar — pelo **?** da barra, ou
   sozinha na primeira visita de cada navegador
+- **Espaço para o mapa**: a barra lateral direita do Directus começa recolhida na primeira vez que
+  o navegador abre a coleção; reaberta, fica como você deixou
+- **Mapa e grade redimensionáveis**: arraste a divisória entre eles para dividir a altura (ou use
+  ↑ ↓ nela); a divisão fica no seu preset, e um duplo clique volta ao padrão
+- **Datas até o segundo**: o card e a linha do tempo escrevem os momentos como `27/03/2026 10:30:47`
 - **Interface bilíngue**: acompanha o idioma do app do Directus (en-US, pt-BR)
 
 ### Instalação
@@ -519,7 +530,7 @@ src/
 ├── components/
 │   ├── atoms/           # DeleteAction
 │   ├── molecules/       # MapToolbar, CurrentMark, MapTrail, TripTimelineBar, CaptureCard,
-│   │                    # MeasureOverlay, TourBalloon
+│   │                    # MeasureOverlay, TourBalloon, PaneSplitter
 │   └── templates/       # MapgridLayout, MapgridOptions
 ├── services/            # Uma classe por pasta, atrás de uma interface I<Nome>
 │   ├── map-centerer/    # Move o mapa embutido do Directus (contorna a limitação dele)
@@ -527,8 +538,9 @@ src/
 │   ├── embedded-layout/ # Roda o setup() de um layout do Directus dentro do MapGrid
 │   ├── record-heading/, trail-path/, visited-path/      # sentido e rastro
 │   ├── playback-clock/, playback-tempo/, trip-timeline/ # reprodução e linha do tempo
-│   ├── record-card/, distance-measure/                  # card e medição
-│   ├── onboarding-tour/, balloon-placement/, tour-memory/ # a apresentação
+│   ├── record-card/, distance-measure/, instant-format/ # card, medição, datas
+│   ├── pane-split/      # A altura dividida entre mapa e grade
+│   ├── onboarding-tour/, balloon-placement/, browser-memory/ # apresentação, primeiras visitas
 │   └── optimistic-sync/ # Duas escritas no preset no mesmo tick deixam de se apagar
 ├── shared/              # Textos da extensão (en-US, pt-BR)
 ├── mocks/               # Ambiente do Directus e catálogo de coleções mapeáveis

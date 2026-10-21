@@ -40,10 +40,11 @@ describe('RecordCard — the rows', () => {
     expect(row?.value).toBe('Theft');
   });
 
-  it('formats a moment in the person locale', () => {
+  it('formats a moment as 27/03/2026 10:30:47, to the second and without a comma', () => {
     const [row] = card.rows(READING, ['captured_at'], SCHEMA, 'pt-BR');
 
-    expect(row?.value).toMatch(/0[56]\/06\/2026/);
+    // the hour depends on the machine's time zone; the shape does not
+    expect(row?.value).toMatch(/^0[56]\/06\/2026 \d{2}:12:06$/);
   });
 
   it('formats a number, and names a field without a name from its key', () => {

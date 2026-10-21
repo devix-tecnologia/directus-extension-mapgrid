@@ -97,7 +97,7 @@ export default {
 .capture-card {
   display: flex;
   flex-direction: column;
-  inline-size: 340px;
+  inline-size: 372px;
   max-inline-size: calc(100% - 16px);
   max-block-size: calc(100% - 64px);
   overflow: hidden;

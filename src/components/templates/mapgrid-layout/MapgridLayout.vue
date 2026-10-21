@@ -80,11 +80,22 @@
         :ticks="timelineBar.ticks"
         :marker="timelineBar.marker"
         :marker-label="timelineBar.markerLabel"
-        :disabled="loading"
+        :disabled="loading || !timelineBar.ready"
         @seek="seek"
       />
 
-      <div ref="gridPane" class="mapgrid-pane mapgrid-pane--grid">
+      <PaneSplitter
+        :share="mapShare"
+        @preview="shareDraft = $event"
+        @commit="commitShare"
+        @reset="commitShare(DEFAULT_MAP_SHARE)"
+      />
+
+      <div
+        ref="gridPane"
+        class="mapgrid-pane mapgrid-pane--grid"
+        :style="{ flexBasis: `${Math.round((1 - mapShare) * 1000) / 10}%` }"
+      >
         <component :is="grid?.component" v-if="grid?.component" v-bind="gridProps" />
       </div>
     </div>
@@ -109,6 +120,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n';
 import type { GeoItem } from '../../../contract/index';
 import type { Box } from '../../../services/balloon-placement/index';
+import {
+  BrowserMemory,
+  SIDEBAR_COLLAPSED,
+  TOUR_SEEN,
+} from '../../../services/browser-memory/index';
 import { CameraTrackingPolicy } from '../../../services/camera-tracking/index';
 import {
   type Coordinate,
@@ -118,6 +134,7 @@ import {
 import { DistanceMeasure } from '../../../services/distance-measure/index';
 import { EmbeddedStateReader } from '../../../services/embedded-state-reader/index';
 import { FieldValues } from '../../../services/field-values/index';
+import { InstantFormat } from '../../../services/instant-format/index';
 import {
   KeyboardNavigation,
   type NavigationAction,
@@ -130,6 +147,7 @@ import {
   type TourStepId,
 } from '../../../services/onboarding-tour/index';
 import { PageTurnAnticipation } from '../../../services/page-turn-anticipation/index';
+import { DEFAULT_MAP_SHARE, PaneSplit } from '../../../services/pane-split/index';
 import { PlaybackClock } from '../../../services/playback-clock/index';
 import { PlaybackTempo } from '../../../services/playback-tempo/index';
 import { type CardRow, RecordCard } from '../../../services/record-card/index';
@@ -143,7 +161,6 @@ import {
   type SequenceStep,
 } from '../../../services/record-sequence/index';
 import { TableRowHighlighter } from '../../../services/row-highlighter/index';
-import { TourMemory } from '../../../services/tour-memory/index';
 import { TrailPath, type TrailSegment } from '../../../services/trail-path/index';
 import { type TimelineRange, TripTimeline } from '../../../services/trip-timeline/index';
 import { VisitedPath } from '../../../services/visited-path/index';
@@ -153,6 +170,7 @@ import CurrentMark from '../../molecules/current-mark/CurrentMark.vue';
 import MapToolbar from '../../molecules/map-toolbar/MapToolbar.vue';
 import MapTrail from '../../molecules/map-trail/MapTrail.vue';
 import MeasureOverlay from '../../molecules/measure-overlay/MeasureOverlay.vue';
+import PaneSplitter from '../../molecules/pane-splitter/PaneSplitter.vue';
 import TourBalloon from '../../molecules/tour-balloon/TourBalloon.vue';
 import TripTimelineBar from '../../molecules/trip-timeline-bar/TripTimelineBar.vue';
 import type { MapgridLayoutProps } from './MapgridLayout.types';
@@ -618,8 +636,8 @@ watch(
   { immediate: true }
 );
 
-const formatInstant = (instant: number): string =>
-  new Intl.DateTimeFormat(locale.value, { dateStyle: 'short', timeStyle: 'short' }).format(instant);
+const instantFormat = new InstantFormat();
+const formatInstant = (instant: number): string => instantFormat.dateTime(instant, locale.value);
 
 /** Where the marker is; during playback it only moves forward. */
 const timelineMarker = ref<number | null>(null);
@@ -640,7 +658,19 @@ const timelineBar = computed(() => {
   void valuesVersion.value;
   const field = timeField.value;
   const range = timelineRange.value;
-  if (!field || !range) return null;
+  if (!field) return null;
+  // the bar takes its room as soon as there is a time field, before the span arrives:
+  // appearing later shrank the map under whatever was being pointed at
+  if (!range) {
+    return {
+      startLabel: '',
+      endLabel: '',
+      ticks: [],
+      marker: null,
+      markerLabel: undefined,
+      ready: false,
+    };
+  }
 
   const ticks = ids.value
     .map((id) => timeline.positionOf(instants.instantOf(id, field), range))
@@ -653,6 +683,7 @@ const timelineBar = computed(() => {
     ticks,
     marker: timelineMarker.value,
     markerLabel: currentInstant === null ? undefined : formatInstant(currentInstant),
+    ready: true,
   };
 });
 
@@ -861,7 +892,7 @@ const TOUR_TEXT: Record<TourStepId, { title: MessageKey; body: MessageKey }> = {
 };
 
 const tour = new OnboardingTour();
-const tourMemory = new TourMemory();
+const tourMemory = new BrowserMemory(TOUR_SEEN);
 const tourPosition = ref<TourPosition | null>(null);
 const tourAnchor = ref<Box | null>(null);
 
@@ -958,6 +989,20 @@ watch(
   { immediate: true }
 );
 
+const sidebarMemory = new BrowserMemory(SIDEBAR_COLLAPSED);
+
+/**
+ * The Directus app opens its right sidebar on wide screens, and over a map and
+ * a grid it is space taken from both. The MapGrid closes it the first time this
+ * browser opens the collection; reopened after that, it stays as the person left it.
+ */
+onMounted(() => {
+  const collection = props.collection;
+  if (!collection || sidebarMemory.seen(collection)) return;
+  props.collapseSidebar?.();
+  sidebarMemory.remember(collection);
+});
+
 const onWindowResize = (): void => {
   if (tourPosition.value) locateTour();
 };
@@ -967,6 +1012,18 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onWindowResize);
   if (tourAutostart !== null) clearTimeout(tourAutostart);
 });
+
+const paneSplit = new PaneSplit();
+/** The share while the handle is dragged: drawn at once, stored only on release. */
+const shareDraft = ref<number | null>(null);
+const mapShare = computed(() => shareDraft.value ?? paneSplit.from(props.mapShare));
+
+/** MapLibre sizes its canvas on window resizes; the pane changing alone it would not see. */
+const commitShare = (share: number): void => {
+  shareDraft.value = null;
+  props.setMapShare?.(paneSplit.from(share));
+  void nextTick(() => window.dispatchEvent(new Event('resize')));
+};
 
 const keyboard = new KeyboardNavigation();
 

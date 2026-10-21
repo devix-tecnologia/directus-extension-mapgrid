@@ -84,6 +84,12 @@ export interface MapgridLayoutProps {
   tourOnFirstVisit?: boolean;
   /** The collection, which keys what the browser remembers of the tour. */
   collection?: string;
+  /** Closes the Directus right sidebar, which the app opens on wide screens. */
+  collapseSidebar?: () => void;
+  /** The map's share of the height, as stored in the preset. */
+  mapShare?: number;
+  /** Stores the share — a callback for the same reason as `setCameraTracking`. */
+  setMapShare?: (share: number) => void;
 }
 
 export type MapgridLayoutEmits = Record<string, never>;

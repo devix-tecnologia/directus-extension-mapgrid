@@ -475,6 +475,8 @@ const LPR_SCHEMA_FIELDS = [
     meta: {
       interface: 'datetime',
       display: 'datetime',
+      // the same as the card and the timeline: 27/03/2026 10:30:47
+      display_options: { format: 'dd/MM/yyyy HH:mm:ss' },
       translations: translationsOf('captured_at'),
     },
     schema: {},
@@ -558,6 +560,13 @@ const isCurrentSchema = async (): Promise<boolean> => {
     `/fields/${LPR_COLLECTION}/plate`
   );
   return Array.isArray(plate.data.meta?.translations);
+};
+
+/** A stack seeded before the date pattern existed gets it here; on a fresh one it is a no-op. */
+const ensureDateTimeDisplay = async (): Promise<void> => {
+  await apiRequest('PATCH', `/fields/${LPR_COLLECTION}/captured_at`, {
+    meta: { display: 'datetime', display_options: { format: 'dd/MM/yyyy HH:mm:ss' } },
+  });
 };
 
 /** Adds the choice labels that are missing; the ones already there are left as they are. */
@@ -648,6 +657,7 @@ export async function ensureLprCollection(): Promise<void> {
   }
   if (!(await resourceExists(`/collections/${LPR_COLLECTION}`))) await createCollection();
   await ensureChoiceLabels();
+  await ensureDateTimeDisplay();
 
   const readings = lprReadings();
   if ((await countReadings()) >= readings.length) return;
@@ -694,6 +704,11 @@ export async function ensureLprMapGrid(
       mapgrid: {
         zoomOnClick: false,
         ...overrides.options,
+        // a date to the second needs more than the 160px Directus gives a column
+        tabular: {
+          widths: { captured_at: 200 },
+          ...(overrides.options?.tabular as Record<string, unknown> | undefined),
+        },
         // merged, not replaced: a preset that only sets the camera kept losing the
         // popup's template, and the popup fell back to the record's id
         map: {

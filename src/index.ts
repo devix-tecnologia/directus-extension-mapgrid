@@ -3,6 +3,7 @@ import {
   useApi,
   useCollection,
   useExtensions,
+  useStores,
   useSync,
 } from '@directus/extensions-sdk';
 import type { Field, LayoutProps } from '@directus/types';
@@ -72,6 +73,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
     const { layouts } = useExtensions();
+
+    /** The Directus app store: where the right sidebar's open state lives. */
+    const appStore = (useStores().useAppStore?.() ?? null) as { sidebarOpen?: boolean } | null;
+    const collapseSidebar = (): void => {
+      if (appStore) appStore.sidebarOpen = false;
+    };
 
     const writableQuery = useWritableLayoutQuery(layoutQuery);
     const detectedGeometry = computed(() => detectGeometry(fieldsInCollection.value ?? []));
@@ -173,6 +180,10 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const cardImageField = ownOption('cardImageField');
     const cardFields = ownOption('cardFields');
     const tourOnFirstVisit = ownOption('tourOnFirstVisit');
+    const mapShare = ownOption('mapShare');
+    const setMapShare = (value: number): void => {
+      mapShare.value = value;
+    };
 
     const trackingPolicy = new CameraTrackingPolicy();
     const cameraTracking = computed(() => trackingPolicy.from(layoutOptions.value?.cameraTracking));
@@ -325,6 +336,9 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       cardImageField,
       cardFields,
       tourOnFirstVisit,
+      mapShare,
+      setMapShare,
+      collapseSidebar,
       gridFields: writableQuery.fields,
       fetchTimeRange,
       locateInstant,

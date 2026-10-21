@@ -42,8 +42,12 @@ vi.mock('@directus/extensions-sdk', async () => {
     useApi: () => ({ delete: () => Promise.resolve() }),
     useCollection: () => ({ fields: vueRef([]), primaryKeyField: vueRef(null) }),
     useExtensions: () => ({ layouts: vueComputed(() => registry.layouts) }),
+    useStores: () => ({ useAppStore: () => appStore }),
   };
 });
+
+/** The Directus app store, as far as the sidebar goes. */
+const appStore = { sidebarOpen: true };
 
 const emptyComponent = defineComponent({
   name: 'EmptyComponent',
@@ -288,5 +292,16 @@ describe('the layoutOptions sections do not overwrite each other', () => {
 
     expect(storedOptions(composition).zoomOnClick).toBe(true);
     expect(storedOptions(composition).tabular?.spacing).toBe('cozy');
+  });
+});
+
+describe('the Directus sidebar', () => {
+  it('is closed through the app store', async () => {
+    appStore.sidebarOpen = true;
+    const composition = await mountComposition();
+
+    (composition.state.collapseSidebar as () => void)();
+
+    expect(appStore.sidebarOpen).toBe(false);
   });
 });

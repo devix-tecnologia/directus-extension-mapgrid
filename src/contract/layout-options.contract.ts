@@ -49,4 +49,6 @@ export interface LayoutOptions {
   cardFields?: string[];
   /** Opens the tour of the features on the first visit of each browser. */
   tourOnFirstVisit?: boolean;
+  /** The map's share of the height, against the grid's; the rest is the grid's. */
+  mapShare?: number;
 }

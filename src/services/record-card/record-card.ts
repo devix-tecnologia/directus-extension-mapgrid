@@ -1,3 +1,4 @@
+import { InstantFormat } from '../instant-format/index';
 import type { CardField, CardRow, IRecordCard } from './record-card.types';
 
 export const EMPTY_VALUE = '—';
@@ -12,6 +13,8 @@ const labelOf = (field: CardField): string =>
 const TRANSLATION_PREFIX = '$t:';
 
 export class RecordCard implements IRecordCard {
+  private readonly instants = new InstantFormat();
+
   /** @param translate resolves a `$t:` key through the app's own translations */
   constructor(private readonly translate: (key: string) => string = (key) => key) {}
 
@@ -48,16 +51,14 @@ export class RecordCard implements IRecordCard {
     if (typeof value === 'string' && DATE_TIME_TYPES.includes(field.type)) {
       const instant = new Date(value);
       if (!Number.isNaN(instant.getTime())) {
-        return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'medium' }).format(
-          instant
-        );
+        return this.instants.dateTime(instant, locale);
       }
     }
     if (typeof value === 'string' && field.type === 'date') {
       // a bare date has no zone; read it as noon so no offset moves it to another day
       const day = new Date(`${value}T12:00:00`);
       if (!Number.isNaN(day.getTime())) {
-        return new Intl.DateTimeFormat(locale, { dateStyle: 'short' }).format(day);
+        return this.instants.date(day, locale);
       }
     }
     if (typeof value === 'number') return new Intl.NumberFormat(locale).format(value);

@@ -50,7 +50,22 @@ export const MAP_CANVAS = `${MAP_PANE} .maplibregl-canvas`;
 
 const LOADING = 60_000;
 
+/**
+ * The MapGrid collapses the Directus sidebar the first time a browser opens a
+ * collection, and every test is a new browser: the map would change width
+ * right after loading, under clicks already aimed at it. Marking every
+ * collection as already seen keeps the layout still.
+ */
+const SIDEBAR_ALREADY_COLLAPSED = (): void => {
+  const original = Storage.prototype.getItem;
+  Storage.prototype.getItem = function (key: string): string | null {
+    if (key.startsWith('mapgrid:sidebar-collapsed:')) return '1';
+    return original.call(this, key);
+  };
+};
+
 export async function login(page: Page): Promise<void> {
+  await page.addInitScript(SIDEBAR_ALREADY_COLLAPSED);
   await page.goto('/admin/login');
   await page
     .locator('input[type="email"], input[name="email"]')

@@ -16,8 +16,9 @@ recurso do MapGrid, para publicar um ambiente de demonstração somente leitura.
 - [x] `src/services/balloon-placement/` — o lado com espaço (baixo, cima,
       direita, esquerda), preso à tela, com a seta apontando para o meio do
       elemento
-- [x] `src/services/tour-memory/` — lembra, por navegador, que a apresentação
-      já foi vista; sem `localStorage` (janela privada) só deixa de lembrar
+- [x] `src/services/browser-memory/` — lembra, por navegador e por coleção, o
+      que já aconteceu ali (a apresentação, o primeiro recolher da barra);
+      sem `localStorage` (janela privada) só deixa de lembrar
 - [x] `src/components/molecules/tour-balloon/` — balão com contagem, Voltar,
       Próximo/Concluir e fechar, e o destaque que escurece o resto da tela
 - [x] Botão **?** na barra; ←, → e Esc enquanto aberta; opção
@@ -33,6 +34,8 @@ recurso do MapGrid, para publicar um ambiente de demonstração somente leitura.
 - [x] A semente prova o somente leitura: como visitante, ler funciona e escrever
       dá 403; anônimo dá 403
 - [x] e2e `tests/e2e/mapgrid-tour.spec.ts` e evidência (`EVIDENCE_TASK=026`)
+- [x] A barra lateral direita do Directus começa recolhida na primeira visita
+      do navegador à coleção (`appStore.sidebarOpen`); reaberta, é respeitada
 - [x] README: apresentação guiada, controles da barra e a seção da demonstração
 
 ## Notes
@@ -56,6 +59,12 @@ tomá-las por vazamento — o visitante entra como `publico@example.com` /
 `senha-publica` (o `example.com` é reservado para exemplos), o projeto se chama "MapGrid" e o papel "Visitante
 (somente leitura)". Os nomes de uso interno — `pnpm demo`,
 `docker-compose.demo.yml`, as variáveis `DEMO_*` — ficaram como estão.
+
+### A barra lateral recolhida, só na primeira vez
+O app abre a barra direita em telas de 1430 px ou mais (`app-store-sidebar-open`
+no `localStorage`, padrão `innerWidth >= 1430`). Fechá-la em toda visita
+brigaria com quem a quer aberta; por isso o MapGrid a recolhe uma vez por
+navegador e coleção, e daí em diante vale a escolha da pessoa.
 
 ### O visitante pode trocar a própria senha
 O Directus dá a todo usuário com acesso ao app a edição do próprio perfil.

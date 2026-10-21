@@ -68,6 +68,7 @@ export const MESSAGES = {
     cardNoPhoto: 'No photo',
     cardShow: 'Card',
     cardHide: 'Collapse the card',
+    splitResize: 'Drag to share the height between the map and the grid; double-click to reset',
     timelineLabel: 'Timeline',
     timelineSeek: 'Drag to jump to a moment of the trip',
     optionHeading: 'Direction',
@@ -191,6 +192,8 @@ export const MESSAGES = {
     cardNoPhoto: 'Sem foto',
     cardShow: 'Card',
     cardHide: 'Recolher o card',
+    splitResize:
+      'Arraste para dividir a altura entre o mapa e a grade; duplo clique volta ao padrão',
     timelineLabel: 'Linha do tempo',
     timelineSeek: 'Arraste para ir a um momento da viagem',
     optionHeading: 'Sentido',

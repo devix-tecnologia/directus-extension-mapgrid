@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TourMemory } from './tour-memory';
-import type { KeyValueStore } from './tour-memory.types';
+import { BrowserMemory, SIDEBAR_COLLAPSED, TOUR_SEEN } from './browser-memory';
+import type { KeyValueStore } from './browser-memory.types';
 
 const memoryStore = (): KeyValueStore => {
   const values = new Map<string, string>();
@@ -12,9 +12,9 @@ const memoryStore = (): KeyValueStore => {
   };
 };
 
-describe('TourMemory', () => {
+describe('BrowserMemory', () => {
   it('has not seen a collection until told so, and then has', () => {
-    const memory = new TourMemory(memoryStore());
+    const memory = new BrowserMemory(TOUR_SEEN, memoryStore());
 
     expect(memory.seen('lpr')).toBe(false);
     memory.remember('lpr');
@@ -22,7 +22,7 @@ describe('TourMemory', () => {
   });
 
   it('keeps each collection apart', () => {
-    const memory = new TourMemory(memoryStore());
+    const memory = new BrowserMemory(TOUR_SEEN, memoryStore());
     memory.remember('lpr');
 
     expect(memory.seen('person_track')).toBe(false);
@@ -38,8 +38,15 @@ describe('TourMemory', () => {
       },
     };
 
-    expect(() => new TourMemory(refusing).remember('lpr')).not.toThrow();
-    expect(new TourMemory(refusing).seen('lpr')).toBe(false);
-    expect(new TourMemory(null).seen('lpr')).toBe(false);
+    expect(() => new BrowserMemory(TOUR_SEEN, refusing).remember('lpr')).not.toThrow();
+    expect(new BrowserMemory(TOUR_SEEN, refusing).seen('lpr')).toBe(false);
+    expect(new BrowserMemory(TOUR_SEEN, null).seen('lpr')).toBe(false);
+  });
+
+  it('keeps the tour apart from the sidebar', () => {
+    const store = memoryStore();
+    new BrowserMemory(TOUR_SEEN, store).remember('lpr');
+
+    expect(new BrowserMemory(SIDEBAR_COLLAPSED, store).seen('lpr')).toBe(false);
   });
 });

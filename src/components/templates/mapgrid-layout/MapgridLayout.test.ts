@@ -1449,3 +1449,49 @@ describe('MapgridLayout — the tour', () => {
     }
   });
 });
+
+describe('MapgridLayout — the Directus sidebar', () => {
+  it('closes it the first time the collection opens in this browser, and only then', () => {
+    localStorage.clear();
+    const collapseSidebar = vi.fn();
+
+    mountWalk({ props: { collection: 'lpr', collapseSidebar } }).wrapper.unmount();
+    mountWalk({ props: { collection: 'lpr', collapseSidebar } }).wrapper.unmount();
+
+    expect(collapseSidebar).toHaveBeenCalledTimes(1);
+    localStorage.clear();
+  });
+});
+
+describe('MapgridLayout — sharing the height', () => {
+  const gridBasis = (wrapper: VueWrapper): string =>
+    (wrapper.get('.mapgrid-pane--grid').element as HTMLElement).style.flexBasis;
+
+  it('gives the grid what the map leaves, 40% by default', () => {
+    expect(gridBasis(mountWalk().wrapper)).toBe('40%');
+    expect(gridBasis(mountWalk({ props: { mapShare: 0.7 } }).wrapper)).toBe('30%');
+  });
+
+  it('follows the handle while dragged, and stores the share only on release', async () => {
+    const setMapShare = vi.fn();
+    const walk = mountWalk({ props: { setMapShare } });
+    const handle = walk.wrapper.findComponent({ name: 'PaneSplitter' });
+
+    handle.vm.$emit('preview', 0.5);
+    await nextTick();
+    expect(gridBasis(walk.wrapper)).toBe('50%');
+    expect(setMapShare).not.toHaveBeenCalled();
+
+    handle.vm.$emit('commit', 0.5);
+    expect(setMapShare).toHaveBeenCalledWith(0.5);
+  });
+
+  it('goes back to the default on reset', () => {
+    const setMapShare = vi.fn();
+    const walk = mountWalk({ props: { mapShare: 0.3, setMapShare } });
+
+    walk.wrapper.findComponent({ name: 'PaneSplitter' }).vm.$emit('reset');
+
+    expect(setMapShare).toHaveBeenCalledWith(0.6);
+  });
+});
