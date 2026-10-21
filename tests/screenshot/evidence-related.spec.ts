@@ -126,7 +126,15 @@ test('030 — the card image picker lists the related device icon', async ({ pag
   await open(page, TRACKING_COLLECTION);
   await openLayoutOptions(page);
   await openOptionsSection(page, '.mapgrid-option--card');
-  await page.locator('.mapgrid-option__card-image').click();
+  const picker = page.locator('.mapgrid-option__card-image');
+  const tree = page.locator('.v-menu-content');
+  // the "antes" build has a plain select: open it as it is
+  if ((await picker.locator('[data-field-path-activator]').count()) > 0) {
+    await picker.locator('[data-field-path-activator]').click();
+    await tree.getByText('Smartphone', { exact: true }).click();
+  } else {
+    await picker.click();
+  }
   await page.waitForTimeout(1_000);
   await shoot(page, path as string);
 });

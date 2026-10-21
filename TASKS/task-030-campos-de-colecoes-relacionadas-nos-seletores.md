@@ -34,7 +34,29 @@ Para provar, coleções de teste no molde do geohub, com campos em inglês:
       não agrega através de relação) e os filtros vão aninhados
 - [x] e2e `tests/e2e/mapgrid-related-fields.spec.ts` no Directus 11: grade com a
       marca e o modelo, card com o ícone, seletor com `Smartphone → Icon`
+- [x] e2e: o botão de edição do cabeçalho segue funcionando com um e com
+      vários registros selecionados (smartphones e LPR)
 - [ ] A coleção entra na demonstração
+
+### Decisão do Sidarta (pela sessão do geohub, 2026-10-21)
+Toda opção que aponta para um campo aceita campo de coleção relacionada, em
+qualquer profundidade, com os componentes do próprio Directus:
+- texto (campos do card, título): o modelo de exibição
+  (`system-display-template`), renderizado pelo motor de template do Directus;
+  o valor antigo, nome de campo solto, segue aceito como `{{campo}}`
+- campo único (imagem, data, rumo, geometria): o seletor em árvore
+  (`system-field-tree`); ele não filtra por tipo, então a escolha é validada
+  (imagem termina num `uuid` com `special: file`)
+- relação de vários itens no meio do caminho: imagem usa o primeiro item
+
+Tasks da decisão:
+- [ ] Seletores de campo único com `system-field-tree`, validando o tipo
+      (hoje: `FieldPathSelect` sobre o `v-field-list` — clicar no nome de uma
+      relação a escolhe em vez de abri-la, e o e2e do seletor falha por isso)
+- [ ] Campos do card pelo modelo de exibição — em aberto: um template único ou
+      uma linha (rótulo + template) por campo
+- [ ] o2m/m2m no meio do caminho (primeiro item na imagem; valores juntos no texto)
+- [ ] Geometria por caminho relacionado
 
 ### Evidência
 `EVIDENCE_TASK=030`, `tests/screenshot/evidence-related.spec.ts`, no Directus

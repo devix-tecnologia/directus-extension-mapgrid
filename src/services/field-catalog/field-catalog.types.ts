@@ -22,4 +22,9 @@ export interface FieldCatalogSource {
  */
 export interface IFieldCatalog {
   fieldsOf(collection: string): CatalogField[];
+  /**
+   * The field a path ends on, at any depth through many-to-one relations, named
+   * after every step (`Smartphone → Owner → Email`); `null` when a step is missing.
+   */
+  describe(collection: string, path: string): CatalogField | null;
 }

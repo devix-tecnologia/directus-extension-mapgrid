@@ -24,4 +24,21 @@ export class FieldCatalog implements IFieldCatalog {
     });
     return [...own, ...related];
   }
+
+  describe(collection: string, path: string): CatalogField | null {
+    const steps = path.split('.');
+    const names: string[] = [];
+    let current = collection;
+    let field: CatalogField | undefined;
+    for (const [index, step] of steps.entries()) {
+      field = this.source.fieldsOf(current).find((candidate) => candidate.field === step);
+      if (!field) return null;
+      names.push(labelOf(field));
+      if (index === steps.length - 1) break;
+      const next = this.source.relatedCollectionOf(current, step);
+      if (!next) return null;
+      current = next;
+    }
+    return field ? { ...field, field: path, name: names.join(' → ') } : null;
+  }
 }

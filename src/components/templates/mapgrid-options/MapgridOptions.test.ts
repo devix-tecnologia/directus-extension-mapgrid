@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { directusComponentStubs } from '../../../mocks/directus-mocks';
+import { FieldPathSelect } from '../../molecules/field-path-select/index';
 import type { MapgridOptionsProps } from './MapgridOptions.types';
 import MapgridOptions from './MapgridOptions.vue';
 
@@ -19,10 +20,17 @@ const panel = (props: Partial<MapgridOptionsProps> = {}) =>
     global: { components: directusComponentStubs },
   });
 
-const optionsOf = (wrapper: ReturnType<typeof panel>, selector: string): string[] =>
-  Array.from(wrapper.get(selector).element.querySelectorAll('option'))
-    .map((option) => option.getAttribute('value') ?? '')
-    .filter((value) => value !== '');
+/** The collection's fields a picker accepts, from the filter it gives the field tree. */
+const optionsOf = (wrapper: ReturnType<typeof panel>, selector: string): string[] => {
+  const picker = wrapper
+    .findAllComponents(FieldPathSelect)
+    .find((candidate) => candidate.classes().includes(selector.replace(/^\./, '')));
+  if (!picker) throw new Error(`no picker ${selector}`);
+  const accept = picker.props('accept') as
+    | ((field: (typeof FIELDS)[number]) => boolean)
+    | undefined;
+  return FIELDS.filter((field) => (accept ? accept(field) : true)).map((field) => field.field);
+};
 
 describe('MapgridOptions — the direction', () => {
   it('asks for a course field only when the arrow reads one, offering numbers only', () => {

@@ -61,4 +61,18 @@ describe('FieldCatalog', () => {
   it('keeps the relation field itself, as before', () => {
     expect(paths()).toContain('smartphone');
   });
+
+  it('describes a path at any depth, named after every step', () => {
+    expect(catalog.describe('tracking', 'smartphone.owner.email')).toMatchObject({
+      field: 'smartphone.owner.email',
+      name: 'Smartphone → Owner → Email',
+      type: 'string',
+    });
+    expect(catalog.describe('tracking', 'tracked_at')).toMatchObject({ name: 'Tracked at' });
+  });
+
+  it('describes nothing when a step is missing or is not a relation', () => {
+    expect(catalog.describe('tracking', 'smartphone.colour')).toBeNull();
+    expect(catalog.describe('tracking', 'tracked_at.year')).toBeNull();
+  });
 });

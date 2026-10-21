@@ -66,12 +66,14 @@
     </template>
     <div class="field">
       <p class="field-label">{{ t('optionPlaybackTimeField') }}</p>
-      <v-select
+      <field-path-select
         v-model="playbackTimeField"
         class="mapgrid-option__time-field"
-        :items="temporalFields"
+        :collection="props.collection"
+        :fields="fields"
+        :accept="isTemporal"
         :placeholder="t('optionNone')"
-        show-deselect
+        clearable
       />
       <small v-if="!props.playbackTimeField" class="hint" data-time-field-hint>
         {{
@@ -94,10 +96,12 @@
     </div>
     <div v-if="headingSource === 'field'" class="field">
       <p class="field-label">{{ t('optionHeadingField') }}</p>
-      <v-select
+      <field-path-select
         v-model="headingField"
         class="mapgrid-option__heading-field"
-        :items="numericFields"
+        :collection="props.collection"
+        :fields="fields"
+        :accept="isNumeric"
         :placeholder="t('optionNone')"
       />
     </div>
@@ -123,22 +127,26 @@
     <template v-if="showCard">
       <div class="field">
         <p class="field-label">{{ t('optionCardImageField') }}</p>
-        <v-select
+        <field-path-select
           v-model="cardImageField"
           class="mapgrid-option__card-image"
-          :items="fileFields"
+          :collection="props.collection"
+          :fields="fields"
+          :accept="isFile"
+          relational-selectable
           :placeholder="t('optionNone')"
-          show-deselect
+          clearable
         />
       </div>
       <div class="field">
         <p class="field-label">{{ t('optionCardFields') }}</p>
-        <v-select
+        <field-path-select
           v-model="cardFields"
           class="mapgrid-option__card-fields"
-          :items="textualFields"
+          :collection="props.collection"
+          :fields="fields"
+          :accept="isTextual"
           multiple
-          show-deselect
         />
       </div>
     </template>
@@ -164,6 +172,7 @@ import { HEADING_SOURCES, RecordHeading } from '../../../services/record-heading
 import { RecordInstants, TEMPORAL_FIELD_TYPES } from '../../../services/record-instants/index';
 import { MAX_TRAIL_LENGTH, TrailPath } from '../../../services/trail-path/index';
 import { MESSAGES } from '../../../shared/messages';
+import { type FieldPathOption, FieldPathSelect } from '../../molecules/field-path-select/index';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
 const props = defineProps<MapgridOptionsProps>();
@@ -211,29 +220,16 @@ const playbackSpeed = computed<number, unknown>({
 });
 
 const fields = computed(() => props.fieldsWithRelated ?? props.fieldsInCollection ?? []);
-const itemsOf = (accept: (field: (typeof fields.value)[number]) => boolean) =>
-  fields.value
-    .filter(accept)
-    .map((field) => ({ text: field.name?.trim() || field.field, value: field.field }));
 
-const temporalFields = computed(() =>
-  itemsOf((field) => TEMPORAL_FIELD_TYPES.includes(field.type))
-);
+const isTemporal = (field: FieldPathOption): boolean => TEMPORAL_FIELD_TYPES.includes(field.type);
 const NUMERIC_TYPES = ['integer', 'bigInteger', 'float', 'decimal'];
-const numericFields = computed(() => itemsOf((field) => NUMERIC_TYPES.includes(field.type)));
-const fileFields = computed(() =>
-  itemsOf(
-    (field) =>
-      field.type === 'uuid' &&
-      (field.meta?.special?.includes('file') === true || field.meta?.interface === 'file-image')
-  )
-);
-/** Fields with a value of their own: the card is text, so relations and groups stay out. */
-const textualFields = computed(() =>
-  itemsOf(
-    (field) => field.type !== 'alias' && field.type !== 'json' && !field.type.startsWith('geometry')
-  )
-);
+const isNumeric = (field: FieldPathOption): boolean => NUMERIC_TYPES.includes(field.type);
+const isFile = (field: FieldPathOption): boolean =>
+  field.type === 'uuid' &&
+  (field.meta?.special?.includes('file') === true || field.meta?.interface === 'file-image');
+/** Fields with a value of their own: the card is text, so lists, groups and geometries stay out. */
+const isTextual = (field: FieldPathOption): boolean =>
+  field.type !== 'alias' && field.type !== 'json' && !field.type.startsWith('geometry');
 
 /** Shown, never written: the clock only reads the sort when nothing was chosen. */
 const suggestedTimeField = computed(() =>

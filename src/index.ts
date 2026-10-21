@@ -96,12 +96,6 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
           .find((relation) => relation.collection === name && relation.field === field)
           ?.related_collection ?? null,
     });
-    /** What the pickers and the card may use: the collection's fields and, one relation away, the related ones. */
-    const fieldsWithRelated = computed(() =>
-      fieldsStore && collection.value
-        ? catalog.fieldsOf(collection.value)
-        : (fieldsInCollection.value ?? [])
-    );
 
     /** The Directus app store: where the right sidebar's open state lives. */
     const appStore = (useStores().useAppStore?.() ?? null) as { sidebarOpen?: boolean } | null;
@@ -213,6 +207,28 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const showCard = ownOption('showCard');
     const cardImageField = ownOption('cardImageField');
     const cardFields = ownOption('cardFields');
+
+    /**
+     * The collection's fields and, by path, every field the options point to
+     * through a relation, at any depth: the card's labels and the pickers'
+     * names come from here.
+     */
+    const fieldsWithRelated = computed<CatalogField[]>(() => {
+      const own = (fieldsInCollection.value ?? []) as unknown as CatalogField[];
+      const name = collection.value;
+      if (!fieldsStore || !name) return own;
+      const chosen = [
+        playbackTimeField.value,
+        headingField.value,
+        cardImageField.value,
+        ...((cardFields.value as string[] | undefined) ?? []),
+        ...((writableQuery.fields.value as string[] | undefined) ?? []),
+      ].filter((path): path is string => typeof path === 'string' && fieldPath.isRelated(path));
+      const related = [...new Set(chosen)]
+        .map((path) => catalog.describe(name, path))
+        .filter((field): field is CatalogField => field !== null);
+      return [...own, ...related];
+    });
     const tourOnFirstVisit = ownOption('tourOnFirstVisit');
     const mapShare = ownOption('mapShare');
     const setMapShare = (value: number): void => {
