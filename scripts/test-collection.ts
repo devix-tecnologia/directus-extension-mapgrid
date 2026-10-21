@@ -66,6 +66,7 @@ Directus is up with the test collections seeded:
   ${credentialsLine(DIRECTUS_URL)}
   - "test_mapgrid_items" — the e2e baseline
   - "test_mapgrid_person_track" — Test Person Track: five people crossing Vitória, on the MapGrid layout
+  - "test_mapgrid_lpr" — Test LPR: licence plate readings across Grande Vitória, on the MapGrid layout
 
 Tear it down with: pnpm test:collection down`);
 };
