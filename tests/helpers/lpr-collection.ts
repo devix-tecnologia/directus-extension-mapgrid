@@ -531,9 +531,14 @@ const LPR_SCHEMA_FIELDS = [
   },
   {
     field: 'location',
-    meta: { interface: 'map', translations: translationsOf('location') },
+    meta: {
+      interface: 'map',
+      options: { geometryType: 'Point' },
+      translations: translationsOf('location'),
+    },
     schema: {},
-    type: 'json',
+    // a native geometry, as in the collections the MapGrid is for: the map then loads only the visible area
+    type: 'geometry.Point',
   },
 ];
 
@@ -551,11 +556,16 @@ const PHOTO_FIELD = {
 };
 
 /**
- * A collection seeded before the photos and the translations existed is
- * dropped, not patched: the stack is a test one.
+ * A collection seeded before the photos, the translations or the native
+ * geometry existed is dropped, not patched: the stack is a test one.
  */
 const isCurrentSchema = async (): Promise<boolean> => {
   if (!(await resourceExists(`/fields/${LPR_COLLECTION}/photo`))) return false;
+  const location = await apiRequest<DirectusSingleResponse<{ type: string }>>(
+    'GET',
+    `/fields/${LPR_COLLECTION}/location`
+  );
+  if (location.data.type !== 'geometry.Point') return false;
   const plate = await apiRequest<DirectusSingleResponse<{ meta?: { translations?: unknown } }>>(
     'GET',
     `/fields/${LPR_COLLECTION}/plate`
