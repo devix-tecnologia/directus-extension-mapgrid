@@ -4,6 +4,7 @@ import {
   resourceExists,
   unwrapItems,
 } from './helpers/directus-api';
+import { publicScope } from './helpers/public-access';
 import { waitForCondition } from './helpers/wait';
 import { logger } from './test-logger';
 
@@ -122,7 +123,8 @@ type PermissionAction = (typeof CRUD_ACTIONS)[number];
 const existingPublicPermissionActions = async (
   collection: string
 ): Promise<Set<PermissionAction>> => {
-  const query = `filter[collection][_eq]=${collection}&filter[role][_null]=true&fields=action&limit=-1`;
+  const { filter } = await publicScope();
+  const query = `filter[collection][_eq]=${collection}&${filter}&fields=action&limit=-1`;
   const response = await apiRequest<DirectusCollectionResponse<{ action: PermissionAction }>>(
     'GET',
     `/permissions?${query}`
@@ -130,14 +132,15 @@ const existingPublicPermissionActions = async (
   return new Set(unwrapItems(response).map((permission) => permission.action));
 };
 
-const grantMissingPublicPermissions = async (collection: string): Promise<void> => {
+export const grantMissingPublicPermissions = async (collection: string): Promise<void> => {
   const grantedActions = await existingPublicPermissionActions(collection);
   const missingActions = CRUD_ACTIONS.filter((action) => !grantedActions.has(action));
+  const { owner } = await publicScope();
 
   await Promise.all(
     missingActions.map((action) =>
       apiRequest('POST', '/permissions', {
-        role: null,
+        ...owner,
         collection,
         action,
         permissions: {},

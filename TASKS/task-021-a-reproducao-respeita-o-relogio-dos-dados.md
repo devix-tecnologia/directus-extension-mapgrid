@@ -1,6 +1,6 @@
 # 🧩 Task 021 — A reproducao respeita o relogio dos dados
 
-- Status: pending
+- Status: done
 - Type: feat
 - Assignee: A definir
 - Priority: 850
@@ -19,22 +19,22 @@ minuto, e a irregularidade do trajeto — o ônibus parado no ponto — aparece.
 
 ## Tasks
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
-- [ ] `playbackTiming: 'fixed' | 'realtime'` (padrão `fixed`), `playbackSpeed` e
+- [x] `playbackTiming: 'fixed' | 'realtime'` (padrão `fixed`), `playbackSpeed` e
       `playbackTimeField` no contrato, com policy `from(value: unknown)`
-- [ ] Trocar o `setInterval` da reprodução por **cadeia de `setTimeout`** — ver
+- [x] Trocar o `setInterval` da reprodução por **cadeia de `setTimeout`** — ver
       "A mudança estrutural"
-- [ ] `src/services/playback-tempo/` — `waitMs(from, to, options)` como função
+- [x] `src/services/playback-tempo/` — `waitMs(from, to, options)` como função
       pura de dois instantes, com piso, teto e multiplicador
-- [ ] `src/services/record-instants/` — lê o instante dos itens da página e
+- [x] `src/services/record-instants/` — lê o instante dos itens da página e
       busca por `fetchItems` o que faltar, **sem** tocar em `layoutQuery.fields`
-- [ ] Painel: modo, multiplicador e campo de tempo, com a **sugestão** do campo
+- [x] Painel: modo, multiplicador e campo de tempo, com a **sugestão** do campo
       vindo do `sort` sem ser gravada — ver "O campo é escolhido"
-- [ ] A batida que cruza a borda da página usa a mediana dos deltas da página; o
+- [x] A batida que cruza a borda da página usa a mediana dos deltas da página; o
       `PageTurnAnticipation` não muda, muda quem calcula o parâmetro dele
-- [ ] Unitários com `vi.useFakeTimers()`, como os de reprodução já fazem
-- [ ] e2e com semente de intervalos desiguais, afirmando a **razão** entre as
+- [x] Unitários com `vi.useFakeTimers()`, como os de reprodução já fazem
+- [x] e2e com semente de intervalos desiguais, afirmando a **razão** entre as
       esperas, não o valor absoluto
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 
 ## Notes
 

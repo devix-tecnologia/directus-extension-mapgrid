@@ -1,6 +1,6 @@
 # 🧩 Task 018 — A projecao do ponto atual vira servico, e o caminho visitado e lembrado
 
-- Status: pending
+- Status: done
 - Type: refactor
 - Assignee: A definir
 - Priority: 820
@@ -24,20 +24,20 @@ A cópia que motiva a extração já existe: `pointsOf` está escrito duas vezes
 
 ## Tasks
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
-- [ ] Extrair `src/services/item-geometry/` (`IItemGeometry` com `centreOf` e
+- [x] Extrair `src/services/item-geometry/` (`IItemGeometry` com `centreOf` e
       `pointsOf`), movendo de `current-point.ts` sem mudança de comportamento —
       os testes atuais de `current-point.test.ts` são a rede
-- [ ] Apontar `map-centerer.ts` para o serviço novo, apagando a cópia de lá
-- [ ] `ICurrentPoint` ganha `screenPointOfCoordinate(coordinate)` — a mesma
+- [x] Apontar `map-centerer.ts` para o serviço novo, apagando a cópia de lá
+- [x] `ICurrentPoint` ganha `screenPointOfCoordinate(coordinate)` — a mesma
       projeção para uma coordenada solta; `screenPointOf(item)` passa a ser
       `screenPointOfCoordinate(itemGeometry.centreOf(item))`
-- [ ] Desembrulhar a longitude em relação ao centro da câmera (somar/subtrair
+- [x] Desembrulhar a longitude em relação ao centro da câmera (somar/subtrair
       360 até ficar a menos de 180° do centro) — ver "O antimeridiano"
-- [ ] `src/services/visited-path/` — `VisitedPath` com `visit`, `points(limit)`,
+- [x] `src/services/visited-path/` — `VisitedPath` com `visit`, `points(limit)`,
       `last()`, `clear()`, capacidade e dedupe de id consecutivo
-- [ ] Gravar em `VisitedPath` dentro do `focus()` de `MapgridLayout.vue`, e
+- [x] Gravar em `VisitedPath` dentro do `focus()` de `MapgridLayout.vue`, e
       limpar no `watch(queryKey)` que já zera o registro atual
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build` verdes
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build` verdes
 
 ## Notes
 

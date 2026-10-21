@@ -169,3 +169,26 @@ describe('MapToolbar — the keyboard help', () => {
     expect(tooltipOf(wrapper, 'reset')).toBe('Reset view');
   });
 });
+
+describe('MapToolbar — the measuring tool', () => {
+  it('asks for it, and shows when it is on', async () => {
+    const wrapper = toolbar({ measuring: true });
+
+    await control(wrapper, 'measure').trigger('click');
+
+    expect(wrapper.emitted('measure')).toHaveLength(1);
+    expect(wrapper.get('[data-control="measure"]').classes()).toContain(
+      'map-toolbar__button--active'
+    );
+  });
+});
+
+describe('MapToolbar — the tour', () => {
+  it('asks for it', async () => {
+    const wrapper = toolbar();
+
+    await control(wrapper, 'tour').trigger('click');
+
+    expect(wrapper.emitted('tour')).toHaveLength(1);
+  });
+});

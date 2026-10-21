@@ -158,3 +158,43 @@ describe('DirectusCurrentPoint', () => {
     expect(currentPoint(mapState(), { height: 0, width: 0 }).screenPointOf({ id: 1 })).toBeNull();
   });
 });
+
+describe('DirectusCurrentPoint — a loose coordinate', () => {
+  it('projects it the same way as an item', () => {
+    const point = currentPoint(mapState()).screenPointOfCoordinate(BRASILIA);
+
+    expect(point?.x).toBeCloseTo(400, 6);
+    expect(point?.y).toBeCloseTo(200, 6);
+  });
+
+  it('keeps a point across the antimeridian on the camera side of the world', () => {
+    const state = mapState({ cameraOptions: { center: [179, 0], zoom: 4 } });
+    const point = currentPoint(state).screenPointOfCoordinate([-179, 0]);
+
+    // two degrees east of the camera, not 358 degrees west
+    expect(point?.x).toBeGreaterThan(400);
+    expect(point?.x).toBeLessThan(500);
+  });
+
+  it('turns a pixel back into the coordinate under it', () => {
+    const projection = currentPoint(
+      mapState({ cameraOptions: { bearing: 30, center: BRASILIA, zoom: 9 } })
+    );
+    const target: [number, number] = [-47.8, -15.9];
+    const pixel = projection.screenPointOfCoordinate(target);
+    if (!pixel) throw new Error('the coordinate should project');
+
+    const back = projection.coordinateAt(pixel);
+    expect(back?.[0]).toBeCloseTo(target[0], 6);
+    expect(back?.[1]).toBeCloseTo(target[1], 6);
+  });
+
+  it('reports the camera rotation, and nothing before the camera is known', () => {
+    expect(
+      currentPoint(
+        mapState({ cameraOptions: { bearing: 45, center: BRASILIA, zoom: 3 } })
+      ).bearing()
+    ).toBe(45);
+    expect(currentPoint(mapState({ cameraOptions: undefined })).bearing()).toBeNull();
+  });
+});

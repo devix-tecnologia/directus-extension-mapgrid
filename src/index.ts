@@ -3,6 +3,7 @@ import {
   useApi,
   useCollection,
   useExtensions,
+  useStores,
   useSync,
 } from '@directus/extensions-sdk';
 import type { Field, LayoutProps } from '@directus/types';
@@ -72,6 +73,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
     const { layouts } = useExtensions();
+
+    /** The Directus app store: where the right sidebar's open state lives. */
+    const appStore = (useStores().useAppStore?.() ?? null) as { sidebarOpen?: boolean } | null;
+    const collapseSidebar = (): void => {
+      if (appStore) appStore.sidebarOpen = false;
+    };
 
     const writableQuery = useWritableLayoutQuery(layoutQuery);
     const detectedGeometry = computed(() => detectGeometry(fieldsInCollection.value ?? []));
@@ -152,20 +159,31 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const grid = embed(EMBEDDED_LAYOUTS.grid, gridOptions);
     const map = embed(EMBEDDED_LAYOUTS.map, mapOptions);
 
-    /** The only options that come from neither of them: they are the composition's. */
-    const zoomOnClick = computed<boolean | undefined>({
-      get: () => layoutOptions.value?.zoomOnClick,
-      set: (value) => {
-        layoutOptions.value = { ...layoutOptions.value, zoomOnClick: value };
-      },
-    });
+    /** An option that comes from neither of them: it is the composition's. */
+    const ownOption = <Key extends keyof LayoutOptions>(key: Key) =>
+      computed<LayoutOptions[Key]>({
+        get: () => layoutOptions.value?.[key],
+        set: (value) => {
+          layoutOptions.value = { ...layoutOptions.value, [key]: value };
+        },
+      });
 
-    const playbackInterval = computed<number | undefined>({
-      get: () => layoutOptions.value?.playbackInterval,
-      set: (value) => {
-        layoutOptions.value = { ...layoutOptions.value, playbackInterval: value };
-      },
-    });
+    const zoomOnClick = ownOption('zoomOnClick');
+    const playbackInterval = ownOption('playbackInterval');
+    const playbackTiming = ownOption('playbackTiming');
+    const playbackSpeed = ownOption('playbackSpeed');
+    const playbackTimeField = ownOption('playbackTimeField');
+    const headingSource = ownOption('headingSource');
+    const headingField = ownOption('headingField');
+    const trailLength = ownOption('trailLength');
+    const showCard = ownOption('showCard');
+    const cardImageField = ownOption('cardImageField');
+    const cardFields = ownOption('cardFields');
+    const tourOnFirstVisit = ownOption('tourOnFirstVisit');
+    const mapShare = ownOption('mapShare');
+    const setMapShare = (value: number): void => {
+      mapShare.value = value;
+    };
 
     const trackingPolicy = new CameraTrackingPolicy();
     const cameraTracking = computed(() => trackingPolicy.from(layoutOptions.value?.cameraTracking));
@@ -204,6 +222,75 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       return (response.data?.data as Record<string, unknown>[] | undefined) ?? [];
     };
 
+    /** The query's own filter, narrowed further by `extra` — the user's is never lost. */
+    const queryFilter = (extra?: Record<string, unknown>): Record<string, unknown> | undefined => {
+      const parts = [props.filter, extra].filter(
+        (part): part is Record<string, unknown> =>
+          typeof part === 'object' && part !== null && Object.keys(part).length > 0
+      );
+      if (parts.length === 0) return undefined;
+      return parts.length === 1 ? parts[0] : { _and: parts };
+    };
+
+    const queryRows = async (
+      params: Record<string, unknown>
+    ): Promise<Record<string, unknown>[]> => {
+      const response = await api.get(`/items/${collection.value}`, {
+        params: { search: props.search || undefined, ...params },
+      });
+      return (response.data?.data as Record<string, unknown>[] | undefined) ?? [];
+    };
+
+    /** The first and last instants of the whole query, not only of the loaded page. */
+    const fetchTimeRange = async (field: string): Promise<{ first: unknown; last: unknown }> => {
+      const [row] = await queryRows({
+        aggregate: { min: [field], max: [field] },
+        filter: queryFilter(),
+      });
+      const read = (aggregate: unknown): unknown =>
+        (aggregate as Record<string, unknown> | undefined)?.[field] ?? null;
+      return { first: read(row?.min), last: read(row?.max) };
+    };
+
+    /**
+     * The record at or right after an instant, and the page it is on. Only when
+     * the query is sorted by that field: otherwise "the page of an instant" has
+     * no meaning, and the answer is `null`.
+     */
+    const locateInstant = async (
+      field: string,
+      instant: number
+    ): Promise<{ id: string | number; page: number } | null> => {
+      const key = primaryKeyField.value?.field;
+      const [first] = writableQuery.sort.value;
+      const descending = first === `-${field}`;
+      if (!key || (first !== field && !descending) || !Number.isFinite(instant)) return null;
+
+      const iso = new Date(instant).toISOString();
+      const [counted] = await queryRows({
+        aggregate: { count: ['*'] },
+        filter: queryFilter({ [field]: { [descending ? '_gt' : '_lt']: iso } }),
+      });
+      const [target] = await queryRows({
+        fields: [key],
+        filter: queryFilter({ [field]: { [descending ? '_lte' : '_gte']: iso } }),
+        sort: [first],
+        limit: 1,
+      });
+      const id = target?.[key] as string | number | undefined;
+      if (id === undefined) return null;
+
+      const before = Number(counted?.count ?? 0);
+      const limit = writableQuery.limit.value;
+      return { id, page: Math.floor((Number.isFinite(before) ? before : 0) / limit) + 1 };
+    };
+
+    /** Through the app's own base, so a Directus served under a path still finds its assets. */
+    const assetUrl = (id: string): string => {
+      const base = String(api.defaults.baseURL ?? '/').replace(/\/$/, '');
+      return `${base}/assets/${encodeURIComponent(id)}`;
+    };
+
     /** The app reads these from here to draw pagination and the count. */
     const fromGrid = <T>(key: string, empty: T) =>
       computed<T>(() => (grid?.state[key] as T) ?? empty);
@@ -239,6 +326,23 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       deleteSelectedItems,
       zoomOnClick,
       playbackInterval,
+      playbackTiming,
+      playbackSpeed,
+      playbackTimeField,
+      headingSource,
+      headingField,
+      trailLength,
+      showCard,
+      cardImageField,
+      cardFields,
+      tourOnFirstVisit,
+      mapShare,
+      setMapShare,
+      collapseSidebar,
+      gridFields: writableQuery.fields,
+      fetchTimeRange,
+      locateInstant,
+      assetUrl,
       cameraTracking,
       setCameraTracking,
       goToPage,

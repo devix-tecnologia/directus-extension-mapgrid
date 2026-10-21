@@ -1,6 +1,6 @@
 # 🧩 Task 022 — A viagem aparece como linha do tempo
 
-- Status: pending
+- Status: done
 - Type: feat
 - Assignee: A definir
 - Priority: 860
@@ -21,19 +21,21 @@ dele é **tempo**, não distância — e é o que faz sentido aqui também.
 
 ## Tasks
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
-- [ ] Decidir onde a barra mora (sob o painel do mapa, sobre a grade?) e se é
-      opção do preset ou aparece sempre que houver campo de tempo
-- [ ] `src/services/trip-timeline/` — posição percentual de cada registro no
+- [x] Decidido: a barra mora **entre o mapa e a grade**, e aparece sempre que
+      há campo de tempo — o escolhido, ou a data da ordenação sugerida. Não é
+      opção do preset: sem campo de tempo ela não teria eixo
+- [x] `src/services/trip-timeline/` — posição percentual de cada registro no
       intervalo, com guarda de amplitude zero e `Number.isFinite`
-- [ ] Marcador **monotônico** — ver "O marcador nunca anda para trás"
-- [ ] Duração mínima, para um trajeto de dois minutos não virar barra sem
+- [x] Marcador **monotônico** — ver "O marcador nunca anda para trás"
+- [x] Duração mínima, para um trajeto de dois minutos não virar barra sem
       resolução
-- [ ] Arrastar navega (chama o mesmo `focus()` do resto); o play caminha por ela
-- [ ] Rótulos en-US/pt-BR em `src/shared/messages.ts`; nada de literal
-- [ ] Unitários do serviço e do componente; e2e arrastando e conferindo o
+- [x] Arrastar navega (chama o mesmo `focus()` do resto); o play caminha por ela
+- [x] Rótulos en-US/pt-BR em `src/shared/messages.ts`; nada de literal
+- [x] Unitários do serviço e do componente; e2e arrastando e conferindo o
       registro atual
-- [ ] Evidência de tela (`EVIDENCE_TASK=022 pnpm screenshot`)
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
+- [x] Evidência de tela, antes e depois, em português:
+      `TASKS/assets/task-022-linha-do-tempo-{antes,depois}.jpg`
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 
 ## Notes
 

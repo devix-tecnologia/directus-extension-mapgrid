@@ -1,6 +1,6 @@
 # 🧩 Task 020 — O rastro do trajeto aparece, com o sentido legivel
 
-- Status: pending
+- Status: done
 - Type: feat
 - Assignee: A definir
 - Priority: 840
@@ -23,20 +23,22 @@ painel do mapa, projetando os pontos com a mesma matemática do registro atual
 
 ## Tasks
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
-- [ ] `trailLength` em `src/contract/layout-options.contract.ts` (0 = desligado,
+- [x] `trailLength` em `src/contract/layout-options.contract.ts` (0 = desligado,
       padrão 20, teto 200) com policy `from(value: unknown)` — ver "Uma opção só"
-- [ ] `src/services/trail-path/` — segmentos com opacidade por idade, ponto não
+- [x] `src/services/trail-path/` — segmentos com opacidade por idade, ponto não
       projetável quebra a linha, descarte do que está fora do painel
-- [ ] `src/components/molecules/map-trail/` — três camadas e `marker-mid`,
+- [x] `src/components/molecules/map-trail/` — três camadas e `marker-mid`,
       `pointer-events: none` no `<svg>` raiz
-- [ ] Ligar no `MapgridLayout.vue` lendo o `VisitedPath` da task-018; esconder
+- [x] Ligar no `MapgridLayout.vue` lendo o `VisitedPath` da task-018; esconder
       junto com a marca enquanto a câmera não pousa; limpar no `watch(queryKey)`
-- [ ] Seção no painel de opções e rótulos en-US/pt-BR em `src/shared/messages.ts`
-- [ ] e2e `tests/e2e/mapgrid-trail.spec.ts`: quatro passos **atravessando a
-      virada de página** com `limit: 3` e quatro segmentos desenhados; clique no
+- [x] Seção no painel de opções e rótulos en-US/pt-BR em `src/shared/messages.ts`
+- [x] e2e `tests/e2e/mapgrid-trail.spec.ts`: quatro passos **atravessando a
+      virada de página** com `limit: 3` e três trechos desenhados (quatro pontos
+      fazem três trechos); clique no
       marcador continua selecionando; reordenar pelo cabeçalho zera o rastro
-- [ ] Evidência de tela, antes e depois (`EVIDENCE_TASK=020 pnpm screenshot`)
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
+- [x] Evidência de tela, antes e depois, em português:
+      `TASKS/assets/task-020-rastro-{antes,depois}.jpg`
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 - [ ] ... — adiado, se não couber: setas marchando (ver "Setas marchando")
 
 ## Notes

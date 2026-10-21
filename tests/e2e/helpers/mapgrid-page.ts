@@ -50,7 +50,22 @@ export const MAP_CANVAS = `${MAP_PANE} .maplibregl-canvas`;
 
 const LOADING = 60_000;
 
+/**
+ * The MapGrid collapses the Directus sidebar the first time a browser opens a
+ * collection, and every test is a new browser: the map would change width
+ * right after loading, under clicks already aimed at it. Marking every
+ * collection as already seen keeps the layout still.
+ */
+const SIDEBAR_ALREADY_COLLAPSED = (): void => {
+  const original = Storage.prototype.getItem;
+  Storage.prototype.getItem = function (key: string): string | null {
+    if (key.startsWith('mapgrid:sidebar-collapsed:')) return '1';
+    return original.call(this, key);
+  };
+};
+
 export async function login(page: Page): Promise<void> {
+  await page.addInitScript(SIDEBAR_ALREADY_COLLAPSED);
   await page.goto('/admin/login');
   await page
     .locator('input[type="email"], input[name="email"]')
@@ -220,6 +235,17 @@ export async function openOptionsSection(page: Page, section: string): Promise<v
 }
 
 /**
+ * An item of an open Directus menu or select list. Directus 10 draws them as
+ * `listitem`s and Directus 11 as `button`s; the test means the same thing.
+ * Looked for inside the open menu only: in Directus 11 a grid header is a
+ * `button` too, and "Name" matched the column instead of the field.
+ */
+export const menuItem = (page: Page, text: RegExp | string) => {
+  const menu = page.locator('.v-menu-content');
+  return menu.getByRole('listitem').or(menu.getByRole('button')).filter({ hasText: text }).first();
+};
+
+/**
  * Picks an item in a `v-select` inside a section. Their menu list is drawn in a
  * portal, outside the section, so the click on the item cannot be looked for
  * inside it.
@@ -227,7 +253,7 @@ export async function openOptionsSection(page: Page, section: string): Promise<v
 export async function pickInSelect(page: Page, section: string, item: RegExp): Promise<void> {
   await page.locator(`${section} .v-select`).first().click();
 
-  const option = page.getByRole('listitem').filter({ hasText: item }).first();
+  const option = menuItem(page, item);
   await expect(option).toBeVisible({ timeout: 20_000 });
   await option.click();
 }

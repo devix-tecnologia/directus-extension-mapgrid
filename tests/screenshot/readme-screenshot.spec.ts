@@ -4,10 +4,13 @@ import {
   type EvidenceMoment,
   evidenceName,
 } from '../../scripts/screenshot/index';
-import { waitForMapGrid } from '../e2e/helpers/mapgrid-page';
-import { COLLECTION_NAME } from '../helper-collection';
-import { apiRequest } from '../helpers/directus-api';
-import { ensureMapGridPreset } from '../helpers/mapgrid-preset';
+import { control, waitForMapGrid } from '../e2e/helpers/mapgrid-page';
+import {
+  ensureLprCollection,
+  ensureLprMapGrid,
+  LPR_COLLECTION,
+  setAdminLanguage,
+} from '../helpers/lpr-collection';
 import { setupTestEnvironment } from '../setup';
 import { testEnv } from '../test-env';
 
@@ -17,16 +20,19 @@ import { testEnv } from '../test-env';
  * It exists so that refreshing the image is a command and not a chore: the
  * project requires the screenshot to be updated whenever a component changes
  * how it looks, and an image that has to be produced by hand is an image that
- * silently goes stale — which is exactly what happened when the options panel
- * lost its five numbered column selects.
+ * silently goes stale.
+ *
+ * The scene is the licence plate collection with what the MapGrid adds on
+ * screen at once: a record in focus with its card and photo, the arrow and the
+ * trail behind it, and the timeline between the map and the grid.
  */
 
-/*
- * Wide on purpose. Below roughly 1200px Directus turns the right sidebar into an
- * overlay drawer that dims the content behind it, so a narrower shot hides the
- * very thing it is meant to show.
- */
+/* Wide on purpose: the map, the card and the grid all need the room. */
 const VIEWPORT = { width: 1600, height: 900 };
+
+/** The first readings of the first trip, Itaparica to the Enseada do Suá, all in the frame. */
+const CAMERA = { center: [-40.294, -20.335], zoom: 12.6 };
+const STEPS = 4;
 
 /**
  * The same capture also becomes task evidence, when asked for.
@@ -35,12 +41,6 @@ const VIEWPORT = { width: 1600, height: 900 };
  * `TASKS/assets/task-NNN-<label>-<moment>.png`, with the moment in the name and
  * not in a subfolder, so the before/after pair shows up side by side when the
  * folder is opened.
- *
- * The "before" is obtained by running this same script against the
- * `dist/index.js` built from an earlier revision: both images then come from
- * the same environment, same collection and same viewport, and the only
- * difference between them is the extension. Capturing the "before" after the
- * change would be too late — only git still has that state.
  */
 const evidence = (): string | undefined => {
   const moment = process.env.EVIDENCE_MOMENT;
@@ -62,6 +62,11 @@ const evidence = (): string | undefined => {
   })}`;
 };
 
+/**
+ * Signs in without the e2e helper on purpose: that one marks the sidebar as
+ * already collapsed, and here the MapGrid's first-visit collapse is wanted —
+ * it is what gives the map its room.
+ */
 async function login(page: Page): Promise<void> {
   await page.goto('/admin/login');
   await page
@@ -76,62 +81,57 @@ async function login(page: Page): Promise<void> {
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
 }
 
-/**
- * Opens the layout options panel, so the shot shows how the layout is
- * configured.
- *
- * The section it opens is the map one. It used to be the popup template one,
- * and that does not exist any more: after task-010 the panel hosts the Directus
- * layouts' own configuration, in two sections — map and grid. The script went
- * on looking for "Popup Pin Map" and failed after 30s of waiting, so
- * `pnpm screenshot` stopped producing the README image without anyone noticing.
- */
-async function openLayoutOptions(page: Page): Promise<void> {
-  const header = page.getByRole('button', { name: /^layers/ });
-  await expect(header).toBeVisible({ timeout: 30_000 });
-  if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
-
-  const mapSection = page.getByText(/^(map|mapa)$/i).first();
-  await expect(mapSection).toBeVisible({ timeout: 30_000 });
-  await mapSection.click();
-}
-
-test('captures the README screenshot', async ({ page }) => {
+test('captures the README screenshot', async ({ browser }) => {
   await setupTestEnvironment();
-
-  // the shot should show the layout doing its job, so the preset names the
-  // geolocation field, a popup template and a few columns
-  await ensureMapGridPreset();
-  await apiRequest('POST', '/presets', {
-    collection: COLLECTION_NAME,
-    layout: 'mapgrid',
-    // the columns live in the query, and not in the options: that is where
-    // Directus keeps them, and where the grid reads them from since task-005
-    layout_query: { mapgrid: { page: 1, limit: 25, sort: ['name'], fields: ['name', 'status'] } },
-    layout_options: {
-      mapgrid: {
-        geolocation: 'location',
-        title: '{{name}}',
-        zoomOnClick: false,
-      },
+  await ensureLprCollection();
+  await setAdminLanguage('en-US');
+  await ensureLprMapGrid({
+    options: {
+      cameraTracking: 'off',
+      headingSource: 'computed',
+      trailLength: 20,
+      showCard: true,
+      cardImageField: 'photo',
+      cardFields: [
+        'plate',
+        'captured_at',
+        'alert_status',
+        'vehicle_type',
+        'equipment_label',
+        'address',
+        'neighbourhood',
+        'municipality',
+      ],
+      map: { geometryField: 'location', cameraOptions: CAMERA },
     },
   });
 
-  await page.setViewportSize(VIEWPORT);
+  const context = await browser.newContext({ viewport: VIEWPORT });
+  // the tour would cover the screen it is meant to show
+  await context.addInitScript((collection) => {
+    localStorage.setItem(`mapgrid:tour-seen:${collection}`, '1');
+  }, LPR_COLLECTION);
+  const page = await context.newPage();
+
   await login(page);
-  await page.goto(`/admin/content/${COLLECTION_NAME}`);
+  await page.goto(`/admin/content/${LPR_COLLECTION}`);
   await waitForMapGrid(page);
-
-  await openLayoutOptions(page);
-
-  // let the map settle: tiles, clustering and the initial framing all animate
   await expect(page.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
-  await page.waitForTimeout(6_000);
+  await expect(page.locator('[data-timeline-start]')).not.toHaveText('', { timeout: 30_000 });
+
+  for (let step = 0; step < STEPS; step += 1) {
+    await control(page, 'next').click();
+    await page.waitForTimeout(1_200);
+  }
+  await expect(page.locator('[data-capture-photo] img')).toBeVisible({ timeout: 30_000 });
+  // tiles, the photo and the trail all settle on their own clocks
+  await page.waitForTimeout(4_000);
+  await page.mouse.move(0, VIEWPORT.height - 1);
 
   await page.screenshot({
     path: 'docs/tela.jpg',
     type: 'jpeg',
-    quality: 90,
+    quality: 85,
     animations: 'disabled',
   });
 
@@ -139,4 +139,5 @@ test('captures the README screenshot', async ({ page }) => {
   if (evidencePath) {
     await page.screenshot({ path: evidencePath, animations: 'disabled' });
   }
+  await context.close();
 });

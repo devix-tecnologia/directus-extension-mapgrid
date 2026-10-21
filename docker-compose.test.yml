@@ -1,3 +1,5 @@
+name: directus-extension-mapgrid-test
+
 services:
   database:
     image: postgis/postgis:15-3.3-alpine
@@ -11,11 +13,11 @@ services:
     networks:
       - mapgrid-directus-test-network
     healthcheck:
-      # -h 127.0.0.1 forca TCP de proposito. Durante o initdb o entrypoint sobe
-      # um servidor temporario com listen_addresses vazio, atendendo so no
-      # socket Unix — e um pg_isready sem host responde "pronto" ali, antes de a
-      # porta existir. O Directus entao conectava por TCP, levava ECONNREFUSED e
-      # morria, derrubando o pipeline de e2e uma vez a cada duas.
+      # -h 127.0.0.1 forces TCP on purpose. During initdb the entrypoint starts
+      # a temporary server with an empty listen_addresses, answering only on the
+      # Unix socket — and a pg_isready without a host replies "ready" there,
+      # before the port exists. Directus then connected over TCP, got
+      # ECONNREFUSED and died, taking the e2e pipeline down every other run.
       test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U directus -d directus']
       interval: 5s
       timeout: 5s
@@ -26,7 +28,7 @@ services:
     image: directus/directus:${DIRECTUS_VERSION:-10.13.1}
     container_name: directus-mapgrid-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
     ports:
-      - '0:8055'
+      - '${DIRECTUS_PORT:-0}:8055'
     environment:
       DB_CLIENT: 'pg'
       DB_HOST: 'database'
@@ -39,7 +41,7 @@ services:
       ADMIN_EMAIL: 'admin@example.com'
       ADMIN_PASSWORD: 'admin123'
       STATIC_TOKEN: 'test-static-token'
-      PUBLIC_URL: 'http://directus:8055'
+      PUBLIC_URL: ${PUBLIC_URL:-http://directus:8055}
       STORAGE_LOCAL_ROOT: '/directus/uploads'
       EXTENSIONS_PATH: '/directus/extensions'
       EXTENSIONS_AUTO_RELOAD: 'true'
@@ -49,11 +51,11 @@ services:
       PROJECT_OWNER: 'admin@example.com'
       PRESSURE_LIMITER_ENABLED: 'false'
       LOG_LEVEL: 'warn'
-      # Folga no pool de conexoes. Com a maquina ocupada por outras pilhas, o
-      # Directus morria no boot com "Knex: Timeout acquiring a connection" antes
-      # mesmo de responder o primeiro health check — e a suite inteira caia por
-      # isso, e nao pelo que ela mede. Os padroes sao apertados para um host
-      # sob carga; estes dobram a paciencia sem mudar o comportamento no resto.
+      # Headroom on the connection pool. On a machine busy with other stacks,
+      # Directus died at boot with "Knex: Timeout acquiring a connection" before
+      # even answering the first health check — and the whole suite fell for
+      # that, not for what it measures. The defaults are tight for a host under
+      # load; these double the patience without changing behaviour elsewhere.
       DB_POOL__MIN: '1'
       DB_POOL__MAX: '10'
       DB_POOL__ACQUIRE_TIMEOUT_MILLIS: '120000'
@@ -80,22 +82,23 @@ services:
       retries: 50
       start_period: 60s
 
-  # O runner dos testes, dentro da mesma rede.
+  # The test runner, on the same network.
   #
-  # Roda o Playwright num container em vez de na maquina, e alcanca o Directus
-  # pelo nome do servico — `http://directus:8055` — sem depender de porta
-  # publicada no host. Em ambiente que nao enxerga a porta publicada, esse e o
-  # unico caminho; e mesmo onde enxerga, remove a dependencia de qual porta o
-  # Docker sorteou. Abordagem emprestada do directus-extension-inframe.
+  # Runs Playwright in a container instead of on the machine, and reaches
+  # Directus by service name — `http://directus:8055` — without depending on a
+  # port published on the host. In an environment that cannot see the published
+  # port this is the only way; and even where it can, it removes the dependence
+  # on which port Docker drew. Approach borrowed from directus-extension-inframe.
   #
-  # A instalacao acontece dentro do container porque node_modules da maquina e
-  # de outra arquitetura e sistema, e nao serve para o Linux da imagem.
+  # Installation happens inside the container because the machine's
+  # node_modules is for another architecture and system, and does not work on
+  # the image's Linux.
   #
-  # A versao do pnpm e fixada de proposito, e nao deixada a cargo do corepack:
-  # o corepack baixa a mais recente, e a 12 aplica uma politica de idade minima
-  # de publicacao que recusa o lockfile sempre que alguma dependencia transitiva
-  # tiver sido publicada nas ultimas horas. Fixar na mesma versao da maquina faz
-  # o container instalar exatamente o que o lockfile descreve.
+  # The pnpm version is pinned on purpose, not left to corepack: corepack pulls
+  # the latest, and pnpm 12 enforces a minimum publish-age policy that rejects
+  # the lockfile whenever any transitive dependency was published in the last
+  # few hours. Pinning to the same version as the machine makes the container
+  # install exactly what the lockfile describes.
   tests:
     image: mcr.microsoft.com/playwright:v1.62.1-noble
     container_name: directus-mapgrid-tests-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}
@@ -103,10 +106,10 @@ services:
     environment:
       CI: 'true'
       DIRECTUS_URL: 'http://directus:8055'
-      # `e2e` roda a suite; `screenshot` regenera docs/tela.jpg
+      # `e2e` runs the suite; `screenshot` regenerates docs/tela.jpg
       RUNNER_CMD: ${RUNNER_CMD:-e2e}
-      # Quando presentes, a captura tambem grava a evidencia da task em
-      # TASKS/assets, no formato task-NNN-<rotulo>-<momento>.png
+      # When present, the capture also records the task's evidence in
+      # TASKS/assets, as task-NNN-<label>-<moment>.png
       EVIDENCE_TASK: ${EVIDENCE_TASK:-}
       EVIDENCE_LABEL: ${EVIDENCE_LABEL:-}
       EVIDENCE_MOMENT: ${EVIDENCE_MOMENT:-}
@@ -121,17 +124,17 @@ services:
     working_dir: /workspace
     volumes:
       - ./:/workspace:rw
-      # Volumes nomeados cobrindo node_modules e o store do pnpm.
+      # Named volumes covering node_modules and the pnpm store.
       #
-      # O node_modules precisa ser coberto porque o `pnpm install` de dentro do
-      # container escreveria por cima do da maquina, trocando os binarios por
-      # versoes de Linux e quebrando todo comando local depois — foi o que
-      # aconteceu na primeira tentativa, com `directus-extension: command not
-      # found` na execucao seguinte.
+      # node_modules must be covered because `pnpm install` from inside the
+      # container would write over the machine's, swapping the binaries for
+      # Linux versions and breaking every local command afterwards — that is
+      # what happened on the first attempt, with `directus-extension: command
+      # not found` on the following run.
       #
-      # Sao nomeados, e nao anonimos, para sobreviverem ao `--rm`: com volume
-      # anonimo cada execucao rebaixava os 919 pacotes do zero, o que dominava o
-      # tempo total.
+      # Named rather than anonymous so they survive `--rm`: with an anonymous
+      # volume every run reinstalled the 919 packages from scratch, which
+      # dominated the total time.
       - mapgrid-test-node-modules:/workspace/node_modules
       - mapgrid-test-pnpm-store:/root/.local/share/pnpm/store
       - /dev/shm:/dev/shm
@@ -156,14 +159,14 @@ volumes:
     name: directus-mapgrid-pnpm-store-${TEST_SUITE_ID:-main}
 
 networks:
-  # A sub-rede e fixada de proposito, e nao deixada a cargo do docker.
+  # The subnet is pinned on purpose, not left to docker.
   #
-  # Quando o docker sorteia, ele costuma cair em 172.18.0.0/16 — e numa maquina
-  # que anuncia rota de saida no Tailscale o trafego entre conteineres nessa
-  # faixa e engolido: o nome resolve, o ping nao volta e a conexao expira sem
-  # erro. O Directus entao morre no boot com "Knex: Timeout acquiring a
-  # connection", e a suite inteira cai por um motivo que nao tem nada a ver com
-  # o que ela mede. Numa faixa 10.x o mesmo teste passa.
+  # When docker draws, it usually lands on 172.18.0.0/16 — and on a machine
+  # announcing an egress route on Tailscale, container traffic in that range is
+  # swallowed: the name resolves, the ping never comes back and the connection
+  # expires without an error. Directus then dies at boot with "Knex: Timeout
+  # acquiring a connection", and the whole suite falls for a reason that has
+  # nothing to do with what it measures. On a 10.x range the same test passes.
   mapgrid-directus-test-network:
     driver: bridge
     name: directus-mapgrid-test-${TEST_SUITE_ID:-main}-${DIRECTUS_VERSION:-latest}

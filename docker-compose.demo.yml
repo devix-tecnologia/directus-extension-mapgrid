@@ -1,0 +1,74 @@
+# A read-only demo of the MapGrid, to publish.
+#
+#   DEMO_ADMIN_PASSWORD=... pnpm demo        # up + seed
+#   pnpm demo down                           # stop (data kept in the volumes)
+#
+# The visitors sign in as the demo user, whose role only reads; `pnpm demo`
+# refuses to start without DEMO_ADMIN_PASSWORD, so a published stack cannot
+# ship with a known admin password.
+name: mapgrid-demo
+
+services:
+  database:
+    image: postgis/postgis:15-3.3-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: directus
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD:-mapgrid-demo-db}
+    volumes:
+      - demo-db:/var/lib/postgresql/data
+    healthcheck:
+      # over TCP: while the image initialises, a temporary server answers on the
+      # socket only, and a socket check calls the database ready too early
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U directus -d directus']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  directus:
+    image: directus/directus:${DIRECTUS_VERSION:-10.13.1}
+    restart: unless-stopped
+    ports:
+      - '${DEMO_PORT:-8070}:8055'
+    environment:
+      KEY: ${DEMO_KEY:-mapgrid-demo-key-change-me-0123456789}
+      SECRET: ${DEMO_SECRET:-mapgrid-demo-secret-change-me-0123456789}
+      DB_CLIENT: pg
+      DB_HOST: database
+      DB_PORT: '5432'
+      DB_DATABASE: directus
+      DB_USER: directus
+      DB_PASSWORD: ${DEMO_DB_PASSWORD:-mapgrid-demo-db}
+      ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-admin@example.com}
+      # required by `pnpm demo`, not here: a `:?` would also block `down`
+      ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
+      PUBLIC_URL: ${DEMO_PUBLIC_URL:-http://localhost:8070}
+      STORAGE_LOCAL_ROOT: /directus/uploads
+      EXTENSIONS_PATH: /directus/extensions
+      CACHE_ENABLED: 'false'
+      # a public stack: throttle what an anonymous visitor can ask for
+      RATE_LIMITER_ENABLED: 'true'
+      RATE_LIMITER_POINTS: '100'
+      RATE_LIMITER_DURATION: '1'
+      ACCEPT_TERMS: 'true'
+      LOG_LEVEL: warn
+    volumes:
+      - demo-uploads:/directus/uploads
+      # the folder, not the file: a rebuild replaces dist/index.js, and a
+      # single-file mount keeps serving the old one
+      - ./dist:/directus/extensions/directus-extension-mapgrid/dist:ro
+      - ./package.json:/directus/extensions/directus-extension-mapgrid/package.json:ro
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'sh', '-c', 'wget --no-verbose --tries=1 --spider http://0.0.0.0:8055/server/health']
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
+
+volumes:
+  demo-db:
+  demo-uploads:

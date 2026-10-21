@@ -5,6 +5,7 @@ dist
 storybook-static
 test-results/
 playwright-report/
+.env
 
 .sandcastle/worktrees/
 .sandcastle/logs/

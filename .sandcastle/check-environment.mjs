@@ -69,7 +69,7 @@ try {
     `on-mirror.sh failed (${String(error.stderr ?? error.message)
       .trim()
       .split('\n')
-      .pop()}) — ` + 'Docker would see empty paths, and the suite would run on nothing'
+      .pop()}) — Docker would see empty paths, and the suite would run on nothing`
   );
 }
 

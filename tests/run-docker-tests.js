@@ -4,6 +4,8 @@ import { exec, spawn } from 'node:child_process';
 import { statSync } from 'node:fs';
 import { promisify } from 'node:util';
 
+import { credentialsLine } from './test-env.ts';
+
 const execAsync = promisify(exec);
 
 const SUITES = {
@@ -140,6 +142,7 @@ async function waitForHealthyContainer(maxWaitSeconds = HEALTH_CHECK_TIMEOUT_SEC
       }
       if (status === 'healthy') {
         log('Container is healthy!');
+        await announceDirectus();
         return true;
       }
     } catch {
@@ -180,6 +183,21 @@ async function startContainers(composeCommand) {
   } catch (error) {
     logError(`Failed to start containers: ${error.message}`);
     throw error;
+  }
+}
+
+/*
+ * Says where the stack is and how to sign in, as soon as it answers.
+ *
+ * Printed while the suite still runs, and not at the end, because that is when
+ * it is useful: the port is drawn by Docker, and the teardown takes the stack
+ * with it. Never fatal — failing to name a port cannot fail a test run.
+ */
+async function announceDirectus() {
+  try {
+    log(`Directus: ${credentialsLine(`http://localhost:${await getExposedDirectusPort()}`)}`);
+  } catch {
+    log('Directus is up, but its published port could not be resolved.');
   }
 }
 

@@ -17,6 +17,7 @@ import {
   GRID_OPTIONS,
   login,
   MAP_OPTIONS,
+  menuItem,
   openCollection,
   openLayoutOptions,
   openOptionsSection,
@@ -122,7 +123,7 @@ async function pickFieldInTemplate(page: Page, field: RegExp): Promise<void> {
   await expect(openFields).toBeVisible({ timeout: 30_000 });
   await openFields.click();
 
-  const item = page.getByRole('listitem').filter({ hasText: field }).first();
+  const item = menuItem(page, field);
   await expect(item).toBeVisible({ timeout: 30_000 });
   await item.click();
 }

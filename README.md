@@ -30,11 +30,34 @@ A Layout-type extension for Directus that displays a collection in map and grid 
   leaves the visible area, *keep centred* keeps it in the middle at every step
 - **What the Directus layouts already do**: basemap, clustering and display template from the map
   layout; columns, sorting, pagination and spacing from the table layout
+- **Where it is heading**: an arrow on the current record, from a course field of the data
+  (degrees from north, signed values included) or from the record visited before
+- **The trail**: the records already visited, joined in order with arrows repeated along the line,
+  the older legs fading. It joins what was visited, not the road between: a jump to a distant row
+  draws a straight leg
+- **The data's clock**: playback can wait the real time between the records, sped up (1× to 600×),
+  instead of a fixed beat. The movement is still from record to record, not continuous
+- **Timeline**: the trip on a time axis between the map and the grid, with a tick per loaded
+  record. Dragging it jumps to that moment — on any page when the query is sorted by that date
+- **Capture card**: the focused record over the map, with its photo — which enlarges on click — its
+  fields and its coordinates
+- **Measuring**: click the map to mark points and read the distance of the last leg and the total;
+  a click near a record snaps to it
 - **Reset view**: re-fit the map to the current result set at any time
-- **Bulk delete**: select rows and delete them from the layout header
+- **Bulk actions**: select rows and edit or delete them all at once from the header
+- **Guided tour**: a balloon per feature — map, grid, filters, navigation, playback, tracking,
+  direction, card, timeline, measuring and reset — from the **?** of the toolbar, or by itself on
+  the first visit of each browser
+- **Room for the map**: on Directus 10, the right sidebar starts collapsed the first time a browser
+  opens the collection; opened again, it stays as you left it. Directus 11 keeps its own choice
+- **Map and grid, resizable**: drag the handle between them to share the height (or use ↑ ↓ on
+  it); the share is kept in your preset, and a double click puts the default back
+- **Dates to the second**: the card and the timeline write moments as `27/03/2026 10:30:47`
 - **Bilingual interface**: follows the Directus app locale (en-US, pt-BR)
 
 ### Installation
+
+Tested with Directus 11.17 and 10.13.
 
 ```bash
 npm install @devix-tecnologia/directus-extension-mapgrid
@@ -44,14 +67,22 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Make sure your collection has a field of type **Map** (geolocation).
 2. In the layout dropdown on the right, select **MapGrid**.
-3. The layout options have four sections:
+3. The layout options have these sections:
    - **Map**: the Directus map layout's own options — basemap, geospatial field, display template
      and clustering
    - **Grid**: the Directus table layout's own options
    - **Zoom on focus**: zoom in on the focused record instead of keeping the current zoom. It says
      nothing about *whether* the camera moves — that is the camera tracking's call
    - **Playback**: how many seconds to wait between records while playing back. One second is the
-     floor, because each step asks the map for a camera animation
+     floor, because each step asks the map for a camera animation. The pace can instead follow
+     **the data clock**, at a chosen speed, reading a date/time field — the first date of the
+     sort is used when none is chosen, and only shown, never stored
+   - **Direction**: where the current record's arrow points — nowhere, a numeric course field, or
+     the bearing from the record visited before
+   - **Trail**: how many visited records the trail joins; `0` turns it off
+   - **Capture card**: show the focused record in a card, with a photo field and the fields to list
+     (the grid's columns when none are chosen)
+   - **Tour**: open the guided tour by itself on the first visit of each browser
 
 The geospatial field is detected from the collection, so the layout works before anything is set.
 
@@ -65,6 +96,9 @@ The controls sit on the map, in the MapGrid's own toolbar:
 | ◀ Previous / ▶ Next | One record. At the edge of a page, the page turns and the record is the one at the other end of it |
 | ▶ Play / ⏹ Stop | Walks forward on its own, and stops by itself at the last record |
 | GPS | Cycles the camera tracking: free → follow → keep centred |
+| 📏 Measure | Turns the ruler on: clicks on the map mark points, and **Esc** turns it off |
+| ⛶ Reset | Fits the map to the whole query again |
+| ? Tour | Opens the guided tour; **←** and **→** walk it, **Esc** closes it |
 
 The same steps answer to the keyboard while the layout has the focus: **Home** and **End** for the
 ends of the query, **←** and **→** for one record, and **Space** for play/stop. Every Directus
@@ -99,9 +133,18 @@ on the next visit.
 
 There is no limit on how many columns the grid can show.
 
-> **Upgrading from 1.x.** Columns used to live in five numbered keys (`coluna1` … `coluna5`). The
-> layout no longer reads them: after upgrading, the grid shows the Directus default columns until
-> they are chosen again in its header.
+#### Upgrading from 1.x to 2.0
+
+2.0 composes the Directus map and table layouts instead of drawing its own, and three of the four
+options a 1.x preset stored are no longer read. Nothing is lost from the data; after upgrading, set
+these again once per collection:
+
+| 1.x option | In 2.0 |
+| --- | --- |
+| `coluna1` … `coluna5` | The grid shows the Directus default columns until they are chosen again in its header (the **+**) |
+| `geolocation` | Detected from the collection; to pick another field, use **Map → Geospatial field** in the options |
+| `title` (popup template) | **Map → Display template** in the options |
+| `zoomOnClick` | Still read, as **Zoom on focus** |
 
 ### Running Directus with Docker Compose
 
@@ -110,6 +153,43 @@ Download this project, or copy its `docker-compose.yaml`, and start a clean inst
 ```bash
 docker compose up
 ```
+
+### Read-only demo
+
+A stack to publish, where visitors try the MapGrid without changing anything. It brings the
+licence plate readings of the tests — fixed cameras, patrol cars and buses across Grande Vitória,
+with a photo each — in Portuguese, with every feature on and the tour opening on the first visit.
+
+![Demo sign-in](TASKS/assets/task-026-demo-login-depois.jpg)
+
+```bash
+pnpm build
+DEMO_ADMIN_PASSWORD='a strong one' pnpm demo
+```
+
+It comes up on <http://localhost:8070>; visitors sign in as `publico@example.com` /
+`senha-publica` — public on purpose, so nobody takes them for a leak — which the login page shows. The seed ends by checking, as the visitor, that reading
+works and writing is refused, and that anonymous requests are refused — a demo that turned writable
+fails there.
+
+| Variable | Default | |
+| --- | --- | --- |
+| `DEMO_ADMIN_PASSWORD` | — | Required: the demo never starts with a known admin password |
+| `DEMO_ADMIN_EMAIL` | `admin@example.com` | |
+| `DEMO_PORT` / `DEMO_PUBLIC_URL` | `8070` / `http://localhost:8070` | Set the URL to the published address |
+| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | `publico@example.com` / `senha-publica` | The visitor |
+| `DEMO_KEY` / `DEMO_SECRET` / `DEMO_DB_PASSWORD` | demo values | Replace them before publishing |
+
+Publishing it:
+
+- put it behind HTTPS (a reverse proxy) and set `DEMO_PUBLIC_URL` to that address;
+- the visitors share one login, and Directus lets a signed-in user edit their own profile — the
+  password included. `pnpm demo seed` puts everything back (the visitor's password, the role, the
+  layout), so schedule it, hourly for instance;
+- the rate limiter is on, and the role reads only the readings and their photos.
+
+`pnpm demo down` stops it and keeps the data; `docker compose -f docker-compose.demo.yml down -v`
+wipes it.
 
 ### Development
 
@@ -147,6 +227,10 @@ pnpm screenshot       # Regenerate docs/tela.jpg from a running Directus
 pnpm test:integration # Integration tests (requires Docker)
 pnpm test:e2e         # End-to-end tests (requires Docker)
 pnpm test:all         # Everything above that needs Docker
+
+# Stacks to try by hand (Docker)
+pnpm test:collection  # The e2e Directus with the test collections, left running (pt-BR)
+pnpm demo             # The read-only demo (needs DEMO_ADMIN_PASSWORD)
 ```
 
 #### Project structure
@@ -156,11 +240,18 @@ src/
 ├── contract/            # Shapes crossing the Directus boundary
 ├── components/
 │   ├── atoms/           # DeleteAction
-│   ├── molecules/       # MapToolbar
+│   ├── molecules/       # MapToolbar, CurrentMark, MapTrail, TripTimelineBar, CaptureCard,
+│   │                    # MeasureOverlay, TourBalloon, PaneSplitter
 │   └── templates/       # MapgridLayout, MapgridOptions
-├── services/
-│   ├── centralizador-de-mapa/ # Moves the embedded Directus map (works around its limitation)
+├── services/            # One class per folder, behind an I<Name> interface
+│   ├── map-centerer/    # Moves the embedded Directus map (works around its limitation)
+│   ├── current-point/   # Projects records and coordinates onto the map pane, and back
 │   ├── embedded-layout/ # Runs a Directus layout's setup() inside the MapGrid
+│   ├── record-heading/, trail-path/, visited-path/      # direction and trail
+│   ├── playback-clock/, playback-tempo/, trip-timeline/ # playback and timeline
+│   ├── record-card/, distance-measure/, instant-format/ # card, measuring, dates
+│   ├── pane-split/      # The height shared between map and grid
+│   ├── onboarding-tour/, balloon-placement/, browser-memory/ # the tour, first visits
 │   └── optimistic-sync/ # Two writes to the preset in the same tick no longer erase each other
 ├── shared/              # Extension strings (en-US, pt-BR)
 ├── mocks/               # Directus environment and the mappable-collection catalogue
@@ -248,11 +339,35 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
   registro sai da área visível, *centralizar* mantém o registro sempre no meio
 - **O que os layouts do Directus já fazem**: mapa base, agrupamento e template de exibição vêm do
   layout de mapa; colunas, ordenação, paginação e espaçamento vêm do layout de tabela
+- **Para onde vai**: uma seta no registro atual, a partir de um campo de rumo do dado (graus a
+  partir do norte, valores negativos inclusive) ou do registro visitado antes
+- **O rastro**: os registros já visitados, ligados em ordem, com setas repetidas ao longo da linha e
+  os trechos mais antigos esmaecendo. Liga o que foi visitado, não a rua entre eles: um salto para
+  uma linha distante desenha um trecho reto
+- **O relógio dos dados**: a reprodução pode esperar o tempo real entre os registros, acelerado (1×
+  a 600×), em vez de um intervalo fixo. O movimento continua de registro em registro, não contínuo
+- **Linha do tempo**: a viagem num eixo de tempo entre o mapa e a grade, com uma marca por registro
+  carregado. Arrastar leva àquele momento — em qualquer página quando a consulta está ordenada por
+  aquela data
+- **Card da captura**: o registro em foco sobre o mapa, com a foto — que amplia ao clicar —, os
+  campos e as coordenadas
+- **Medição**: clique no mapa para marcar pontos e ler a distância do último trecho e a total; um
+  clique perto de um registro vai até ele
 - **Reenquadrar**: reajustar o mapa ao resultado atual a qualquer momento
-- **Exclusão em lote**: selecionar linhas e excluí-las pelo cabeçalho do layout
+- **Ações em lote**: selecionar linhas e editá-las ou excluí-las de uma vez pelo cabeçalho
+- **Apresentação guiada**: um balão por recurso — mapa, grade, filtros, navegação, reprodução,
+  acompanhamento, sentido, card, linha do tempo, medição e reenquadrar — pelo **?** da barra, ou
+  sozinha na primeira visita de cada navegador
+- **Espaço para o mapa**: no Directus 10, a barra lateral direita começa recolhida na primeira vez
+  que o navegador abre a coleção; reaberta, fica como você deixou. O Directus 11 mantém a escolha dele
+- **Mapa e grade redimensionáveis**: arraste a divisória entre eles para dividir a altura (ou use
+  ↑ ↓ nela); a divisão fica no seu preset, e um duplo clique volta ao padrão
+- **Datas até o segundo**: o card e a linha do tempo escrevem os momentos como `27/03/2026 10:30:47`
 - **Interface bilíngue**: acompanha o idioma do app do Directus (en-US, pt-BR)
 
 ### Instalação
+
+Testado com o Directus 11.17 e o 10.13.
 
 ```bash
 npm install @devix-tecnologia/directus-extension-mapgrid
@@ -262,14 +377,22 @@ npm install @devix-tecnologia/directus-extension-mapgrid
 
 1. Garanta que a coleção possua um campo do tipo **Map** (geolocalização).
 2. No menu de layouts à direita, selecione **MapGrid**.
-3. As opções do layout têm quatro seções:
+3. As opções do layout têm estas seções:
    - **Mapa**: as opções do próprio layout de mapa do Directus — mapa base, campo geoespacial,
      template de exibição e agrupamento
    - **Grade**: as opções do próprio layout de tabela do Directus
    - **Zoom ao focar**: aproximar do registro focado em vez de manter o zoom de agora. Não diz nada
      sobre *se* a câmera se move — isso é do acompanhamento da câmera
    - **Reprodução**: quantos segundos esperar entre um registro e o próximo durante a reprodução. O
-     piso é um segundo, porque cada passo pede uma animação de câmera ao mapa
+     piso é um segundo, porque cada passo pede uma animação de câmera ao mapa. O ritmo pode, em vez
+     disso, seguir **o relógio dos dados**, numa velocidade escolhida, lendo um campo de data/hora —
+     sem escolha, vale a primeira data da ordenação, que só é mostrada, nunca gravada
+   - **Sentido**: para onde a seta do registro atual aponta — para lugar nenhum, um campo numérico
+     de rumo, ou o rumo a partir do registro visitado antes
+   - **Rastro**: quantos registros visitados o rastro liga; `0` desliga
+   - **Card da captura**: mostrar o registro em foco num card, com um campo de foto e os campos a
+     listar (as colunas da grade quando nenhum é escolhido)
+   - **Apresentação**: abrir a apresentação guiada sozinha na primeira visita de cada navegador
 
 O campo geoespacial é detectado a partir da coleção, então o layout funciona antes de qualquer
 opção ser preenchida.
@@ -284,6 +407,9 @@ Os controles ficam sobre o mapa, na barra do próprio MapGrid:
 | ◀ Anterior / ▶ Próximo | Um registro. Na borda da página, a página vira e o registro é o da outra ponta dela |
 | ▶ Play / ⏹ Stop | Avança sozinho, e para no último registro por conta própria |
 | GPS | Cicla o acompanhamento da câmera: livre → seguir → centralizar |
+| 📏 Medir | Liga a régua: cliques no mapa marcam pontos, e **Esc** desliga |
+| ⛶ Reenquadrar | Ajusta o mapa de novo à consulta inteira |
+| ? Apresentação | Abre a apresentação guiada; **←** e **→** percorrem, **Esc** fecha |
 
 Os mesmos passos atendem ao teclado enquanto o layout está em foco: **Home** e **End** para as
 pontas da consulta, **←** e **→** para um registro, e **Espaço** para play/stop. Todo atalho do
@@ -318,9 +444,18 @@ próxima visita.
 
 Não há limite de quantas colunas a grade exibe.
 
-> **Vindo da 1.x.** As colunas ficavam em cinco chaves numeradas (`coluna1` … `coluna5`). O layout
-> não as lê mais: depois de atualizar, a grade mostra as colunas padrão do Directus até que sejam
-> escolhidas de novo no cabeçalho dela.
+#### Atualizando da 1.x para a 2.0
+
+A 2.0 compõe os layouts de mapa e de tabela do Directus em vez de desenhar os seus, e três das
+quatro opções que um preset da 1.x guardava não são mais lidas. Nada se perde dos dados; depois de
+atualizar, configure-as de novo, uma vez por coleção:
+
+| Opção da 1.x | Na 2.0 |
+| --- | --- |
+| `coluna1` … `coluna5` | A grade mostra as colunas padrão do Directus até que sejam escolhidas de novo no cabeçalho dela (o **+**) |
+| `geolocation` | Detectada a partir da coleção; para escolher outro campo, use **Mapa → Campo geoespacial** nas opções |
+| `title` (modelo do popup) | **Mapa → Template de exibição** nas opções |
+| `zoomOnClick` | Continua sendo lida, como **Zoom ao focar** |
 
 ### Rodando o Directus com Docker Compose
 
@@ -329,6 +464,43 @@ Baixe este projeto, ou copie o `docker-compose.yaml` dele, e inicie uma instala�
 ```bash
 docker compose up
 ```
+
+### Demonstração somente leitura
+
+Um stack para publicar, onde visitantes experimentam o MapGrid sem mudar nada. Traz as leituras de
+placas dos testes — câmeras fixas, viaturas e ônibus na Grande Vitória, cada uma com foto — em
+português, com todos os recursos ligados e a apresentação abrindo na primeira visita.
+
+![Tela de entrada](TASKS/assets/task-026-demo-login-depois.jpg)
+
+```bash
+pnpm build
+DEMO_ADMIN_PASSWORD='uma senha forte' pnpm demo
+```
+
+Sobe em <http://localhost:8070>; visitantes entram com `publico@example.com` / `senha-publica` — públicas de propósito, para
+ninguém tomá-las por vazamento —,
+que a tela de entrada mostra. A semente termina conferindo, como visitante, que ler funciona e
+escrever é recusado, e que requisições anônimas são recusadas — uma demonstração que virou
+gravável falha ali.
+
+| Variável | Padrão | |
+| --- | --- | --- |
+| `DEMO_ADMIN_PASSWORD` | — | Obrigatória: a demonstração nunca sobe com senha de admin conhecida |
+| `DEMO_ADMIN_EMAIL` | `admin@example.com` | |
+| `DEMO_PORT` / `DEMO_PUBLIC_URL` | `8070` / `http://localhost:8070` | Aponte a URL para o endereço publicado |
+| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | `publico@example.com` / `senha-publica` | O visitante |
+| `DEMO_KEY` / `DEMO_SECRET` / `DEMO_DB_PASSWORD` | valores de demonstração | Troque antes de publicar |
+
+Para publicar:
+
+- coloque atrás de HTTPS (um proxy reverso) e aponte `DEMO_PUBLIC_URL` para esse endereço;
+- os visitantes dividem um login, e o Directus deixa quem está logado editar o próprio perfil —
+  senha inclusive. `pnpm demo seed` põe tudo de volta (a senha do visitante, o papel, o layout),
+  então agende-o, de hora em hora por exemplo;
+- o limitador de requisições está ligado, e o papel só lê as leituras e as fotos delas.
+
+`pnpm demo down` para e mantém os dados; `docker compose -f docker-compose.demo.yml down -v` apaga.
 
 ### Desenvolvimento
 
@@ -366,6 +538,10 @@ pnpm screenshot       # Refaz docs/tela.jpg a partir de um Directus em execuçã
 pnpm test:integration # Testes de integração (requer Docker)
 pnpm test:e2e         # Testes ponta a ponta (requer Docker)
 pnpm test:all         # Tudo acima que precisa de Docker
+
+# Stacks para experimentar à mão (Docker)
+pnpm test:collection  # O Directus do e2e com as coleções de teste, deixado de pé (pt-BR)
+pnpm demo             # A demonstração somente leitura (pede DEMO_ADMIN_PASSWORD)
 ```
 
 #### Estrutura do projeto
@@ -375,11 +551,18 @@ src/
 ├── contract/            # Formas que cruzam a fronteira com o Directus
 ├── components/
 │   ├── atoms/           # DeleteAction
-│   ├── molecules/       # MapToolbar
+│   ├── molecules/       # MapToolbar, CurrentMark, MapTrail, TripTimelineBar, CaptureCard,
+│   │                    # MeasureOverlay, TourBalloon, PaneSplitter
 │   └── templates/       # MapgridLayout, MapgridOptions
-├── services/
-│   ├── centralizador-de-mapa/ # Move o mapa embutido do Directus (contorna a limitação dele)
+├── services/            # Uma classe por pasta, atrás de uma interface I<Nome>
+│   ├── map-centerer/    # Move o mapa embutido do Directus (contorna a limitação dele)
+│   ├── current-point/   # Projeta registros e coordenadas no painel do mapa, e de volta
 │   ├── embedded-layout/ # Roda o setup() de um layout do Directus dentro do MapGrid
+│   ├── record-heading/, trail-path/, visited-path/      # sentido e rastro
+│   ├── playback-clock/, playback-tempo/, trip-timeline/ # reprodução e linha do tempo
+│   ├── record-card/, distance-measure/, instant-format/ # card, medição, datas
+│   ├── pane-split/      # A altura dividida entre mapa e grade
+│   ├── onboarding-tour/, balloon-placement/, browser-memory/ # apresentação, primeiras visitas
 │   └── optimistic-sync/ # Duas escritas no preset no mesmo tick deixam de se apagar
 ├── shared/              # Textos da extensão (en-US, pt-BR)
 ├── mocks/               # Ambiente do Directus e catálogo de coleções mapeáveis

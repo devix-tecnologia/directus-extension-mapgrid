@@ -1,6 +1,6 @@
 # 🧩 Task 019 — O registro atual mostra para onde vai
 
-- Status: pending
+- Status: done
 - Type: feat
 - Assignee: A definir
 - Priority: 830
@@ -31,28 +31,31 @@ Duas origens de rumo, as duas nesta task (decisão do Sidarta):
 
 ## Tasks
 <!-- [x] feito · [ ] em aberto · [ ] ... — adiado: <razão> para o que se decidiu não fazer -->
-- [ ] `headingSource: 'off' | 'field' | 'computed'` e `headingField` em
+- [x] `headingSource: 'off' | 'field' | 'computed'` e `headingField` em
       `src/contract/layout-options.contract.ts`, com policy
       `from(value: unknown)` no molde de `src/services/camera-tracking/`
-- [ ] `src/services/record-heading/` — azimute geodésico (aritmética pura) e
+- [x] `src/services/record-heading/` — azimute geodésico (aritmética pura) e
       `fromField`, **normalizando negativos** com `((a % 360) + 360) % 360`
-- [ ] `src/services/field-values/` — carrega o campo de rumo por
+- [x] `src/services/field-values/` — carrega o campo de rumo por
       `fetchItems(ids, [pk, field])`, com cache por página; **sem** tocar em
       `layoutQuery.fields`
-- [ ] Rotação da seta pelo **ângulo de tela** entre os dois pontos projetados —
+- [x] Rotação da seta pelo **ângulo de tela** entre os dois pontos projetados —
       ver "O ângulo certo é o de tela"
-- [ ] `src/components/molecules/current-mark/` — círculo de hoje + cone em SVG
+- [x] `src/components/molecules/current-mark/` — círculo de hoje + cone em SVG
       rotacionado, preservando `data-current-point` e expondo
       `data-heading-degrees`
-- [ ] Seção no painel de opções (`MapgridOptions.vue`) com o seletor de origem e,
+- [x] Seção no painel de opções (`MapgridOptions.vue`) com o seletor de origem e,
       só em `field`, o seletor de campo numérico; rótulos en-US/pt-BR em
       `src/shared/messages.ts`
-- [ ] Semente do e2e ganha campo numérico de curso, **com pelo menos um valor
-      negativo** (`tests/helper-collection.ts`)
-- [ ] e2e `tests/e2e/mapgrid-heading.spec.ts`: `field` com o grau semeado,
+- [x] Semente do e2e ganha campo numérico de curso, **com pelo menos um valor
+      negativo** — na coleção LPR (`course`), e não em `tests/helper-collection.ts`:
+      é onde o rumo tem significado
+- [x] e2e `tests/e2e/mapgrid-heading.spec.ts`: `field` com o grau semeado,
       `computed` entre duas cidades (±1°), e o negativo normalizado
-- [ ] Evidência de tela, antes e depois (`EVIDENCE_TASK=019 pnpm screenshot`)
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
+- [x] Evidência de tela, antes e depois, em português:
+      `TASKS/assets/task-019-sentido-{antes,depois}.jpg`
+      (`EVIDENCE_TASK=019`, `tests/screenshot/evidence-lpr.spec.ts`)
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 
 ## Notes
 
