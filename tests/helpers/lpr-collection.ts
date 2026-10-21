@@ -358,35 +358,93 @@ export const lprReadings = (): LprReading[] => LPR_TRIPS.flatMap(tripReadings);
 export const readingsWith = (alertStatus: AlertStatus): number =>
   lprReadings().filter((reading) => reading.alert_status === alertStatus).length;
 
-const ALERT_CHOICES: {
-  text: string;
-  value: AlertStatus;
-  foreground: string;
-  background: string;
-}[] = [
-  { text: 'Theft', value: 'theft', foreground: '#FFFFFF', background: '#E35169' },
-  { text: 'Robbery', value: 'robbery', foreground: '#FFFFFF', background: '#F2802C' },
-  { text: 'Fraud', value: 'fraud', foreground: '#FFFFFF', background: '#A855F7' },
+/** A text in both languages the extension speaks. */
+interface Bilingual {
+  en: string;
+  pt: string;
+}
+
+/**
+ * The choices' labels live in `directus_translations`, under these keys, so
+ * the badge reads "Furto" for someone using the app in Portuguese and "Theft"
+ * otherwise — the stored value stays `theft` either way.
+ */
+const CHOICE_LABELS: Record<string, Bilingual> = {
+  mapgrid_lpr_theft: { en: 'Theft', pt: 'Furto' },
+  mapgrid_lpr_robbery: { en: 'Robbery', pt: 'Roubo' },
+  mapgrid_lpr_fraud: { en: 'Fraud', pt: 'Estelionato' },
+  mapgrid_lpr_misappropriation: { en: 'Misappropriation', pt: 'Apropriação indébita' },
+  mapgrid_lpr_restriction: { en: 'Restriction', pt: 'Restrição' },
+  mapgrid_lpr_monitoring: { en: 'Monitoring', pt: 'Monitoramento' },
+  mapgrid_lpr_car: { en: 'Car', pt: 'Carro' },
+  mapgrid_lpr_bus: { en: 'Bus', pt: 'Ônibus' },
+  mapgrid_lpr_truck: { en: 'Truck', pt: 'Caminhão' },
+  mapgrid_lpr_fixed: { en: 'Fixed camera', pt: 'Câmera fixa' },
+  mapgrid_lpr_patrol: { en: 'Patrol car', pt: 'Viatura' },
+  mapgrid_lpr_bus_reader: { en: 'Bus', pt: 'Ônibus' },
+};
+
+const FIELD_LABELS: Record<string, Bilingual> = {
+  photo: { en: 'Photo', pt: 'Foto' },
+  plate: { en: 'Plate', pt: 'Placa' },
+  captured_at: { en: 'Captured At', pt: 'Data/Hora' },
+  alert_status: { en: 'Alert Status', pt: 'Status do alerta' },
+  vehicle_type: { en: 'Vehicle Type', pt: 'Tipo de veículo' },
+  equipment_label: { en: 'Equipment Label', pt: 'Equip. rótulo' },
+  reader_kind: { en: 'Reader Kind', pt: 'Tipo de leitor' },
+  address: { en: 'Address', pt: 'Endereço' },
+  neighbourhood: { en: 'Neighbourhood', pt: 'Bairro' },
+  municipality: { en: 'Municipality', pt: 'Município' },
+  course: { en: 'Course', pt: 'Rumo' },
+  location: { en: 'Location', pt: 'Localização' },
+};
+
+const translationsOf = (field: string) => {
+  const label = FIELD_LABELS[field];
+  return label
+    ? [
+        { language: 'en-US', translation: label.en },
+        { language: 'pt-BR', translation: label.pt },
+      ]
+    : null;
+};
+
+const choice = <Value extends string>(key: string, value: Value) => ({
+  text: `$t:${key}`,
+  value,
+});
+
+const ALERT_CHOICES = [
+  { ...choice('mapgrid_lpr_theft', 'theft'), foreground: '#FFFFFF', background: '#E35169' },
+  { ...choice('mapgrid_lpr_robbery', 'robbery'), foreground: '#FFFFFF', background: '#F2802C' },
+  { ...choice('mapgrid_lpr_fraud', 'fraud'), foreground: '#FFFFFF', background: '#A855F7' },
   {
-    text: 'Misappropriation',
-    value: 'misappropriation',
+    ...choice('mapgrid_lpr_misappropriation', 'misappropriation'),
     foreground: '#FFFFFF',
     background: '#6366F1',
   },
-  { text: 'Restriction', value: 'restriction', foreground: '#1F2937', background: '#FACC15' },
-  { text: 'Monitoring', value: 'monitoring', foreground: '#FFFFFF', background: '#2ECDA7' },
+  {
+    ...choice('mapgrid_lpr_restriction', 'restriction'),
+    foreground: '#1F2937',
+    background: '#FACC15',
+  },
+  {
+    ...choice('mapgrid_lpr_monitoring', 'monitoring'),
+    foreground: '#FFFFFF',
+    background: '#2ECDA7',
+  },
 ];
 
-const VEHICLE_CHOICES: { text: string; value: VehicleType }[] = [
-  { text: 'Car', value: 'car' },
-  { text: 'Bus', value: 'bus' },
-  { text: 'Truck', value: 'truck' },
+const VEHICLE_CHOICES = [
+  choice('mapgrid_lpr_car', 'car'),
+  choice('mapgrid_lpr_bus', 'bus'),
+  choice('mapgrid_lpr_truck', 'truck'),
 ];
 
-const READER_CHOICES: { text: string; value: ReaderKind }[] = [
-  { text: 'Fixed camera', value: 'fixed' },
-  { text: 'Patrol car', value: 'patrol' },
-  { text: 'Bus', value: 'bus' },
+const READER_CHOICES = [
+  choice('mapgrid_lpr_fixed', 'fixed'),
+  choice('mapgrid_lpr_patrol', 'patrol'),
+  choice('mapgrid_lpr_bus_reader', 'bus'),
 ];
 
 const countReadings = async (): Promise<number> => {
@@ -399,7 +457,7 @@ const countReadings = async (): Promise<number> => {
 
 const textField = (field: string) => ({
   field,
-  meta: { interface: 'input' },
+  meta: { interface: 'input', translations: translationsOf(field) },
   schema: {},
   type: 'string',
 });
@@ -414,7 +472,11 @@ const LPR_SCHEMA_FIELDS = [
   { ...textField('plate'), schema: { is_nullable: false } },
   {
     field: 'captured_at',
-    meta: { interface: 'datetime', display: 'datetime' },
+    meta: {
+      interface: 'datetime',
+      display: 'datetime',
+      translations: translationsOf('captured_at'),
+    },
     schema: {},
     type: 'timestamp',
   },
@@ -425,20 +487,29 @@ const LPR_SCHEMA_FIELDS = [
       options: { choices: ALERT_CHOICES },
       display: 'labels',
       display_options: { choices: ALERT_CHOICES },
+      translations: translationsOf('alert_status'),
     },
     schema: {},
     type: 'string',
   },
   {
     field: 'vehicle_type',
-    meta: { interface: 'select-dropdown', options: { choices: VEHICLE_CHOICES } },
+    meta: {
+      interface: 'select-dropdown',
+      options: { choices: VEHICLE_CHOICES },
+      translations: translationsOf('vehicle_type'),
+    },
     schema: {},
     type: 'string',
   },
   textField('equipment_label'),
   {
     field: 'reader_kind',
-    meta: { interface: 'select-dropdown', options: { choices: READER_CHOICES } },
+    meta: {
+      interface: 'select-dropdown',
+      options: { choices: READER_CHOICES },
+      translations: translationsOf('reader_kind'),
+    },
     schema: {},
     type: 'string',
   },
@@ -447,23 +518,65 @@ const LPR_SCHEMA_FIELDS = [
   textField('municipality'),
   {
     field: 'course',
-    meta: { interface: 'input', note: 'Degrees from north' },
+    meta: {
+      interface: 'input',
+      note: 'Degrees from north',
+      translations: translationsOf('course'),
+    },
     schema: {},
     type: 'integer',
   },
-  { field: 'location', meta: { interface: 'map' }, schema: {}, type: 'json' },
+  {
+    field: 'location',
+    meta: { interface: 'map', translations: translationsOf('location') },
+    schema: {},
+    type: 'json',
+  },
 ];
 
 /** The photo is a file field, so the grid draws a thumbnail and the card can enlarge it. */
 const PHOTO_FIELD = {
   field: 'photo',
-  meta: { interface: 'file-image', display: 'image', special: ['file'] },
+  meta: {
+    interface: 'file-image',
+    display: 'image',
+    special: ['file'],
+    translations: translationsOf('photo'),
+  },
   schema: {},
   type: 'uuid',
 };
 
-/** A collection seeded before the photos existed is dropped, not patched: the stack is a test one. */
-const isCurrentSchema = (): Promise<boolean> => resourceExists(`/fields/${LPR_COLLECTION}/photo`);
+/**
+ * A collection seeded before the photos and the translations existed is
+ * dropped, not patched: the stack is a test one.
+ */
+const isCurrentSchema = async (): Promise<boolean> => {
+  if (!(await resourceExists(`/fields/${LPR_COLLECTION}/photo`))) return false;
+  const plate = await apiRequest<DirectusSingleResponse<{ meta?: { translations?: unknown } }>>(
+    'GET',
+    `/fields/${LPR_COLLECTION}/plate`
+  );
+  return Array.isArray(plate.data.meta?.translations);
+};
+
+/** Adds the choice labels that are missing; the ones already there are left as they are. */
+const ensureChoiceLabels = async (): Promise<void> => {
+  const existing = unwrapItems(
+    await apiRequest<DirectusCollectionResponse<{ key: string; language: string }>>(
+      'GET',
+      '/translations?filter[key][_starts_with]=mapgrid_lpr_&fields=key,language&limit=-1'
+    )
+  );
+  const known = new Set(existing.map((row) => `${row.language}:${row.key}`));
+  const missing = Object.entries(CHOICE_LABELS).flatMap(([key, label]) =>
+    [
+      { language: 'en-US', key, value: label.en },
+      { language: 'pt-BR', key, value: label.pt },
+    ].filter((row) => !known.has(`${row.language}:${row.key}`))
+  );
+  if (missing.length > 0) await apiRequest('POST', '/translations', missing);
+};
 
 const createCollection = async (): Promise<void> => {
   await apiRequest('POST', '/collections', {
@@ -472,6 +585,15 @@ const createCollection = async (): Promise<void> => {
     meta: {
       icon: 'photo_camera',
       note: 'Test LPR — plates read by fixed cameras, patrol cars and buses across Grande Vitória',
+      translations: [
+        { language: 'en-US', translation: 'Test LPR', singular: 'Reading', plural: 'Readings' },
+        {
+          language: 'pt-BR',
+          translation: 'Leituras de placas (LPR)',
+          singular: 'Leitura',
+          plural: 'Leituras',
+        },
+      ],
     },
     schema: {},
   });
@@ -525,6 +647,7 @@ export async function ensureLprCollection(): Promise<void> {
     await apiRequest('DELETE', `/collections/${LPR_COLLECTION}`);
   }
   if (!(await resourceExists(`/collections/${LPR_COLLECTION}`))) await createCollection();
+  await ensureChoiceLabels();
 
   const readings = lprReadings();
   if ((await countReadings()) >= readings.length) return;
@@ -534,6 +657,11 @@ export async function ensureLprCollection(): Promise<void> {
     withPhotos.push({ ...reading, photo: await uploadPhoto(reading) });
   }
   await apiRequest('POST', `/items/${LPR_COLLECTION}`, withPhotos);
+}
+
+/** The language the admin uses the app in; the evidence and the hand-run stack are in Portuguese. */
+export async function setAdminLanguage(language: 'en-US' | 'pt-BR'): Promise<void> {
+  await apiRequest('PATCH', '/users/me', { language });
 }
 
 export const LPR_FIELDS = [

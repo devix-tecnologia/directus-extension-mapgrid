@@ -38,6 +38,12 @@ implementadas junto.
 - [x] e2e `tests/e2e/mapgrid-lpr.spec.ts`: colunas, foto na grade, filtros,
       ordenação, edição em lote, navegação, reprodução, clique no ponto, card
       com foto ampliada e medição
+- [x] Rótulos em português na coleção LPR (campos, coleção e escolhas, estas por
+      `directus_translations`), e o admin em pt-BR no `test:collection` e nas
+      evidências
+- [x] Evidência de tela, antes e depois, em português (`EVIDENCE_TASK=025`):
+      `grade-com-foto`, `card-da-captura`, `foto-ampliada`, `medicao`,
+      `edicao-em-lote` em `TASKS/assets/task-025-*`
 - [ ] ... — adiado: exportação em PDF/XLSX, link temporário, painel resumo,
       mapa de calor, filtro por polígono/raio, camada de trânsito — fora do que
       o MapGrid cobre hoje
@@ -62,3 +68,12 @@ implementadas junto.
 A medição escuta o clique na fase de captura do painel do mapa e o interrompe:
 enquanto ela está ligada, o mapa do Directus nunca vê o clique, e nenhum
 registro é escolhido por acidente.
+
+### Evidência
+O "antes" é o mesmo spec rodado contra o `dist/index.js` construído a partir
+de `d509074`, o commit anterior às tasks 018 a 025: lá os controles novos não
+existem, e cada interação que precisa de um deles é pulada.
+
+![Card da captura](assets/task-025-card-da-captura-depois.jpg)
+![Foto ampliada](assets/task-025-foto-ampliada-depois.jpg)
+![Medição](assets/task-025-medicao-depois.jpg)

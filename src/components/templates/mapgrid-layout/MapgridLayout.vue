@@ -125,7 +125,17 @@ import type { MapgridLayoutProps } from './MapgridLayout.types';
 
 const props = defineProps<MapgridLayoutProps>();
 
-const { t, locale } = useI18n({ useScope: 'local', messages: MESSAGES });
+/*
+ * The warnings are off because the card resolves the collection's own `$t:`
+ * labels here too: those live in the app's translations, not in ours, and the
+ * lookup falling back to them is the point, not a slip.
+ */
+const { t, locale } = useI18n({
+  useScope: 'local',
+  messages: MESSAGES,
+  missingWarn: false,
+  fallbackWarn: false,
+});
 
 const missingLayout = computed(() => !props.grid?.component || !props.map?.component);
 
@@ -647,7 +657,7 @@ const seek = async (position: number): Promise<void> => {
   if (nearest !== null) focus(nearest);
 };
 
-const recordCard = new RecordCard();
+const recordCard = new RecordCard((key) => t(key));
 const cardItem = ref<Record<string, unknown> | null>(null);
 /** Closing the card hides it for that record only; the next one opens it again. */
 const cardDismissedFor = ref<RecordId | null>(null);

@@ -69,3 +69,20 @@ describe('RecordCard — the coordinates', () => {
     expect(card.coordinates([-40.3121, -20.3152], 'pt-BR')).toBe('-20,31520, -40,31210');
   });
 });
+
+describe('RecordCard — a choice label to be translated', () => {
+  it('resolves it through the app translations', () => {
+    const translated = new RecordCard((key) => (key === 'lpr_theft' ? 'Furto' : key));
+    const schema: CardField[] = [
+      {
+        field: 'alert_status',
+        type: 'string',
+        meta: { options: { choices: [{ text: '$t:lpr_theft', value: 'theft' }] } },
+      },
+    ];
+
+    const [row] = translated.rows({ alert_status: 'theft' }, ['alert_status'], schema, 'pt-BR');
+
+    expect(row?.value).toBe('Furto');
+  });
+});

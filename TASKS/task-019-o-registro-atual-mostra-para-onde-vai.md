@@ -52,8 +52,9 @@ Duas origens de rumo, as duas nesta task (decisão do Sidarta):
       é onde o rumo tem significado
 - [x] e2e `tests/e2e/mapgrid-heading.spec.ts`: `field` com o grau semeado,
       `computed` entre duas cidades (±1°), e o negativo normalizado
-- [ ] ... — adiado: evidência de tela antes/depois; o e2e e o Storybook
-      (`CurrentMark`) mostram a seta
+- [x] Evidência de tela, antes e depois, em português:
+      `TASKS/assets/task-019-sentido-{antes,depois}.jpg`
+      (`EVIDENCE_TASK=019`, `tests/screenshot/evidence-lpr.spec.ts`)
 - [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 
 ## Notes

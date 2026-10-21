@@ -36,8 +36,8 @@ painel do mapa, projetando os pontos com a mesma matemática do registro atual
       virada de página** com `limit: 3` e três trechos desenhados (quatro pontos
       fazem três trechos); clique no
       marcador continua selecionando; reordenar pelo cabeçalho zera o rastro
-- [ ] ... — adiado: evidência de tela antes/depois; o Storybook (`MapTrail`)
-      mostra o rastro
+- [x] Evidência de tela, antes e depois, em português:
+      `TASKS/assets/task-020-rastro-{antes,depois}.jpg`
 - [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 - [ ] ... — adiado, se não couber: setas marchando (ver "Setas marchando")
 

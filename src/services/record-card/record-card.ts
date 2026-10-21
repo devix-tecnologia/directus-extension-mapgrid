@@ -8,7 +8,13 @@ const labelOf = (field: CardField): string =>
   field.name?.trim() ||
   field.field.replace(/_/g, ' ').replace(/^\w/, (first) => first.toUpperCase());
 
+/** Directus marks a label to be translated with this prefix, as in `$t:key`. */
+const TRANSLATION_PREFIX = '$t:';
+
 export class RecordCard implements IRecordCard {
+  /** @param translate resolves a `$t:` key through the app's own translations */
+  constructor(private readonly translate: (key: string) => string = (key) => key) {}
+
   rows(
     item: Record<string, unknown>,
     fields: readonly string[],
@@ -64,6 +70,9 @@ export class RecordCard implements IRecordCard {
     const match = choices.find(
       (choice) => (choice as { value?: unknown } | null)?.value === value
     ) as { text?: unknown } | undefined;
-    return typeof match?.text === 'string' ? match.text : null;
+    if (typeof match?.text !== 'string') return null;
+    return match.text.startsWith(TRANSLATION_PREFIX)
+      ? this.translate(match.text.slice(TRANSLATION_PREFIX.length))
+      : match.text;
   }
 }

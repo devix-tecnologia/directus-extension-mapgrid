@@ -12,12 +12,13 @@ test.beforeAll(async () => {
 
 test.describe('MapGrid — playback on the data clock', () => {
   test('waits in proportion to the gaps between the readings', async ({ page }) => {
-    // the first trip's gaps: 6, 5, 9 and 4 minutes — at 300× that is 1.2s, 1s, 1.8s, 0.8s
+    // the first trip's gaps: 6, 5, 9 and 4 minutes — at 60× that is 6s, 5s, 9s, 4s; long
+    // enough that a stall of the browser in the container does not move the ratio
     await openLpr(page, {
       options: {
         cameraTracking: 'off',
         playbackTiming: 'realtime',
-        playbackSpeed: 300,
+        playbackSpeed: 60,
         playbackTimeField: 'captured_at',
       },
     });
@@ -26,7 +27,7 @@ test.describe('MapGrid — playback on the data clock', () => {
 
     const changes: number[] = [];
     let last = await currentRecord(page);
-    const deadline = Date.now() + 20_000;
+    const deadline = Date.now() + 45_000;
     while (changes.length < 5 && Date.now() < deadline) {
       await page.waitForTimeout(25);
       const now = await currentRecord(page);

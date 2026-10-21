@@ -33,8 +33,8 @@ dele é **tempo**, não distância — e é o que faz sentido aqui também.
 - [x] Rótulos en-US/pt-BR em `src/shared/messages.ts`; nada de literal
 - [x] Unitários do serviço e do componente; e2e arrastando e conferindo o
       registro atual
-- [ ] ... — adiado: evidência de tela; o Storybook (`TripTimelineBar`) mostra
-      a barra
+- [x] Evidência de tela, antes e depois, em português:
+      `TASKS/assets/task-022-linha-do-tempo-{antes,depois}.jpg`
 - [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test:e2e`
 
 ## Notes
