@@ -23,8 +23,8 @@ const required = (name: string): string => {
 };
 
 const visitor: DemoVisitor = {
-  email: process.env.DEMO_USER_EMAIL || 'visitante@demo.devix.co',
-  password: process.env.DEMO_USER_PASSWORD || 'mapgrid-demo',
+  email: process.env.DEMO_USER_EMAIL || 'visitante@mapgrid.devix.co',
+  password: process.env.DEMO_USER_PASSWORD || 'mapgrid-visitante',
 };
 
 /** Grande Vitória, where the readings are. */
@@ -43,7 +43,7 @@ it('seeds the demo and leaves it read-only', async () => {
   await waitForCondition(isDirectusHealthy, { intervalMs: 2_000, timeoutMs: 180_000 });
   setAccessToken(
     await signIn(
-      process.env.DEMO_ADMIN_EMAIL || 'admin@demo.devix.co',
+      process.env.DEMO_ADMIN_EMAIL || 'admin@mapgrid.devix.co',
       required('DEMO_ADMIN_PASSWORD')
     )
   );

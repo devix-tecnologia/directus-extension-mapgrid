@@ -50,6 +50,12 @@ importa — o que pular, onde pôr — ficou em duas classes puras e testadas.
   servidor temporário responde só no socket;
 - um `:?` no compose impede até o `down`.
 
+### Sem a palavra "demo" no que o visitante vê
+Pedido do Sidarta: o visitante entra como `visitante@mapgrid.devix.co` /
+`mapgrid-visitante`, o projeto se chama "MapGrid" e o papel "Visitante
+(somente leitura)". Os nomes de uso interno — `pnpm demo`,
+`docker-compose.demo.yml`, as variáveis `DEMO_*` — ficaram como estão.
+
 ### O visitante pode trocar a própria senha
 O Directus dá a todo usuário com acesso ao app a edição do próprio perfil.
 Como os visitantes dividem o login, `pnpm demo seed` repõe a senha, o papel e o
@@ -58,4 +64,4 @@ layout a cada execução — o README recomenda agendá-lo.
 ### Evidência
 ![Início da apresentação](assets/task-026-apresentacao-depois.jpg)
 ![Balão do sentido](assets/task-026-apresentacao-sentido-depois.jpg)
-![Entrada da demonstração](assets/task-026-demo-login-depois.jpg)
+![Tela de entrada](assets/task-026-demo-login-depois.jpg)

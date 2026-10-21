@@ -5,7 +5,7 @@ import {
 } from '../../tests/helpers/directus-api';
 import type { DemoPermission, DemoVisitor, IDemoAccess } from './demo-access.types';
 
-export const DEMO_ROLE_NAME = 'Demonstração (somente leitura)';
+export const DEMO_ROLE_NAME = 'Visitante (somente leitura)';
 
 export class DemoAccess implements IDemoAccess {
   permissionsFor(collections: readonly string[]): DemoPermission[] {
@@ -48,7 +48,7 @@ export class DemoAccess implements IDemoAccess {
           icon: 'visibility',
           app_access: true,
           admin_access: false,
-          description: 'Sees the demo collections; changes nothing.',
+          description: 'Sees the collections on show; changes nothing.',
         })
       ).data.id;
 
@@ -92,10 +92,10 @@ export class DemoAccess implements IDemoAccess {
 
   async presentProject(visitor: DemoVisitor): Promise<void> {
     await apiRequest('PATCH', '/settings', {
-      project_name: 'MapGrid — demonstração',
+      project_name: 'MapGrid',
       project_descriptor: 'Devix Tecnologia',
       default_language: 'pt-BR',
-      public_note: `Ambiente de demonstração somente leitura. Entre com **${visitor.email}** e a senha **${visitor.password}**.`,
+      public_note: `Ambiente somente leitura para conhecer o MapGrid. Entre com **${visitor.email}** e a senha **${visitor.password}**.`,
     });
   }
 }

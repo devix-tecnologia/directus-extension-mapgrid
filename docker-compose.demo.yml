@@ -40,7 +40,7 @@ services:
       DB_DATABASE: directus
       DB_USER: directus
       DB_PASSWORD: ${DEMO_DB_PASSWORD:-mapgrid-demo-db}
-      ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-admin@demo.devix.co}
+      ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-admin@mapgrid.devix.co}
       # required by `pnpm demo`, not here: a `:?` would also block `down`
       ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
       PUBLIC_URL: ${DEMO_PUBLIC_URL:-http://localhost:8070}
