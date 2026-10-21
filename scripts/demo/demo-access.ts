@@ -128,6 +128,28 @@ export class DemoAccess implements IDemoAccess {
     else await apiRequest('POST', '/users', profile);
   }
 
+  async clearVisitorTraces(visitor: DemoVisitor): Promise<void> {
+    const [user] = unwrapItems(
+      await apiRequest<DirectusCollectionResponse<{ id: string }>>(
+        'GET',
+        `/users?filter[email][_eq]=${encodeURIComponent(visitor.email)}&fields=id`
+      )
+    );
+    if (!user) return;
+    const traces: [path: string, owner: string][] = [['/presets', 'user']];
+    // Directus 11 lets whoever reads an item comment on it; 10 keeps comments in the activity
+    if ('policy' in (await publicScope()).owner) traces.push(['/comments', 'user_created']);
+    for (const [path, owner] of traces) {
+      const rows = unwrapItems(
+        await apiRequest<DirectusCollectionResponse<{ id: string | number }>>(
+          'GET',
+          `${path}?filter[${owner}][_eq]=${user.id}&fields=id&limit=-1`
+        )
+      );
+      for (const row of rows) await apiRequest('DELETE', `${path}/${row.id}`);
+    }
+  }
+
   async presentProject(visitor: DemoVisitor): Promise<void> {
     await apiRequest('PATCH', '/settings', {
       project_name: 'MapGrid',

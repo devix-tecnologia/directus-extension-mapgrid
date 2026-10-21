@@ -16,12 +16,14 @@ docker compose up -d
 ```
 
 using the [`docker-compose.yml`](docker-compose.yml) beside this file. It
-needs PostgreSQL with PostGIS.
+needs PostgreSQL with PostGIS. Give neither container a volume.
 
 Visitors sign in as `publico@example.com` / `senha-publica`. The login page
-shows these credentials. Visitors can read but not change anything, and
-anonymous access is closed. Each start seeds the demo again, which undoes
-whatever visitors changed.
+shows these credentials. Visitors can read but not change, add or upload
+anything, and anonymous access is closed. Nothing is kept on disk: each
+restart starts from an empty database, and the seed loads the demo again.
+The seed also deletes the comments and bookmarks the visitor left. Directus
+grants those to every app user, and no permission takes them away.
 
 | Variable | |
 |---|---|

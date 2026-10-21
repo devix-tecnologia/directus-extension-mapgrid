@@ -67,6 +67,7 @@ export class DemoSeed implements IDemoSeed {
     await access.closePublicAccess([LPR_COLLECTION]);
     const role = await access.ensureRole([LPR_COLLECTION]);
     await access.ensureVisitor(role, this.options.visitor);
+    await access.clearVisitorTraces(this.options.visitor);
     await access.presentProject(this.options.visitor);
   }
 

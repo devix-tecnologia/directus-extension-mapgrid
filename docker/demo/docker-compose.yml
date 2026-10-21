@@ -3,7 +3,8 @@
 #   KEY=... SECRET=... ADMIN_PASSWORD=... PUBLIC_URL=https://your.domain docker compose up -d
 #
 # Visitors sign in as publico@example.com / senha-publica (shown on the login
-# page); only the admin can change anything.
+# page); only the admin can change anything. Nothing is kept on disk: every
+# restart starts from a fresh database and the seed loads the demo again.
 name: mapgrid-demo
 
 services:
@@ -14,8 +15,6 @@ services:
       POSTGRES_DB: directus
       POSTGRES_USER: directus
       POSTGRES_PASSWORD: ${DB_PASSWORD:-mapgrid-demo-db}
-    volumes:
-      - db:/var/lib/postgresql/data
     healthcheck:
       # over TCP: while the image initialises, the socket answers too early
       test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U directus -d directus']
@@ -40,12 +39,6 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8055}
-    volumes:
-      - uploads:/directus/uploads
     depends_on:
       database:
         condition: service_healthy
-
-volumes:
-  db:
-  uploads:

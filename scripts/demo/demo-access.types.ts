@@ -28,6 +28,11 @@ export interface IDemoAccess {
   ensureRole(collections: readonly string[]): Promise<string>;
   /** The visitor, in Portuguese, with the known password restored. */
   ensureVisitor(role: string, visitor: DemoVisitor): Promise<void>;
+  /**
+   * Removes what the visitor could still leave behind: comments and saved
+   * bookmarks, which Directus grants every app user and no permission takes away.
+   */
+  clearVisitorTraces(visitor: DemoVisitor): Promise<void>;
   /** The project's name and the login note telling visitors how to sign in. */
   presentProject(visitor: DemoVisitor): Promise<void>;
 }
