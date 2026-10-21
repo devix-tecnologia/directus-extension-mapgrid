@@ -91,7 +91,7 @@
     "test:collection": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/test-collection.ts",
     "demo": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/demo.ts",
     "demo:seed-bundle": "esbuild scripts/demo/seed-entry.ts --bundle --platform=node --format=esm --target=node22 --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --outfile=docker/demo/build/mapgrid-demo-seed.mjs",
-    "demo:image": "pnpm demo:seed-bundle && docker build -f docker/demo/Dockerfile -t directus-mapgrid .",
+    "demo:bake": "sh docker/demo/bake.sh",
     "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
     "sandcastle": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/main.ts",
     "sandcastle:round": "node --disable-warning=ExperimentalWarning --experimental-strip-types .sandcastle/round.ts",

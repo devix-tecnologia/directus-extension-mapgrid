@@ -9,6 +9,8 @@ if [ -z "$ADMIN_PASSWORD" ]; then
 fi
 
 node cli.js bootstrap
+# the database may come loaded, with an admin whose password is the build's
+node cli.js users passwd --email "${ADMIN_EMAIL:-admin@example.com}" --password "$ADMIN_PASSWORD"
 
 DIRECTUS_URL="http://127.0.0.1:${PORT:-8055}" node /directus/mapgrid-demo-seed.mjs \
   || echo '[mapgrid] the demo seed failed; Directus keeps running.' >&2 &
