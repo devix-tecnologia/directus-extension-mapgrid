@@ -1,0 +1,4 @@
+# the demo image only takes these; everything else stays out of the build context
+*
+!docker/demo/entrypoint.sh
+!docker/demo/build/mapgrid-demo-seed.mjs
