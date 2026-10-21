@@ -1,3 +1,4 @@
+import { ItemGeometry } from '../item-geometry/index';
 import type {
   BoundingBox,
   CentererSchedule,
@@ -46,6 +47,7 @@ export class DirectusMapCenterer implements IMapCenterer {
   private geometryRequest = 0;
   private mapReady = false;
   private retry: Retry | null = null;
+  private readonly geometry = new ItemGeometry();
 
   /**
    * @param state the embedded map layout's state (`EmbeddedLayout.state`)
@@ -67,7 +69,7 @@ export class DirectusMapCenterer implements IMapCenterer {
 
   center(geometry: unknown, options: CenteringOptions = {}): boolean {
     const onlyIfOutside = options.onlyIfOutside ?? true;
-    const points = this.pointsOf(geometry);
+    const points = this.geometry.pointsOf(geometry);
     if (points.length === 0) return false;
 
     const bounds = this.boundingBoxOf(points);
@@ -166,7 +168,7 @@ export class DirectusMapCenterer implements IMapCenterer {
     }
 
     const frame = (items: readonly Record<string, unknown>[]) => {
-      const points = items.flatMap((item) => this.pointsOf(item[field]));
+      const points = items.flatMap((item) => this.geometry.pointsOf(item[field]));
       if (points.length > 0) {
         this.center({ coordinates: points, type: 'MultiPoint' }, { onlyIfOutside: false });
       } else {
@@ -237,29 +239,6 @@ export class DirectusMapCenterer implements IMapCenterer {
   private mercator(latitude: number): number {
     const clamped = Math.max(-MAX_MERCATOR_LATITUDE, Math.min(MAX_MERCATOR_LATITUDE, latitude));
     return Math.log(Math.tan(Math.PI / 4 + (clamped * Math.PI) / 360));
-  }
-
-  private pointsOf(geometry: unknown): [number, number][] {
-    const coordinates = (geometry as { coordinates?: unknown } | null | undefined)?.coordinates;
-    const points: [number, number][] = [];
-    const visit = (value: unknown): boolean => {
-      if (!Array.isArray(value)) return false;
-      if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
-        const [lng, lat] = value as [number, number];
-        if (
-          !Number.isFinite(lng) ||
-          !Number.isFinite(lat) ||
-          Math.abs(lat) > 90 ||
-          Math.abs(lng) > 180
-        ) {
-          return false;
-        }
-        points.push([lng, lat]);
-        return true;
-      }
-      return value.every(visit);
-    };
-    return visit(coordinates) ? points : [];
   }
 
   private boundingBoxOf(points: [number, number][]): BoundingBox {
