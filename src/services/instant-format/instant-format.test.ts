@@ -14,8 +14,8 @@ describe('InstantFormat', () => {
     expect(format.dateTime(new Date(2026, 0, 5, 7, 4, 9), 'pt-BR')).toBe('05/01/2026 07:04:09');
   });
 
-  it('keeps a 24-hour clock in a locale that would say PM', () => {
-    expect(format.dateTime(new Date(2026, 2, 27, 22, 0, 0), 'en-US')).toBe('03/27/2026 22:00:00');
+  it('keeps the same pattern and a 24-hour clock in a locale that would say 03/27 and PM', () => {
+    expect(format.dateTime(new Date(2026, 2, 27, 22, 0, 0), 'en-US')).toBe('27/03/2026 22:00:00');
   });
 
   it('writes the date alone', () => {

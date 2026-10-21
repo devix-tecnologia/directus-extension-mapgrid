@@ -1,5 +1,5 @@
 <template>
-  <div ref="layoutRoot" class="mapgrid-layout">
+  <div ref="layoutRoot" class="mapgrid-layout" :style="layoutHeight">
     <v-info v-if="missingLayout" icon="warning" :title="t('missingLayout')" center>
       {{ t('missingLayoutHint') }}
     </v-info>
@@ -1003,7 +1003,21 @@ onMounted(() => {
   sidebarMemory.remember(collection);
 });
 
+/**
+ * As tall as what is left of the window below where the layout starts. A fixed
+ * `100vh - 120px` was the Directus 10 header; the 11 one is shorter, and 88px
+ * were left blank under the grid.
+ */
+const layoutHeight = ref<{ height?: string }>({});
+const fitHeight = (): void => {
+  const top = layoutRoot.value?.getBoundingClientRect().top;
+  if (top === undefined || typeof window === 'undefined') return;
+  layoutHeight.value = { height: `${Math.max(320, Math.round(window.innerHeight - top))}px` };
+};
+onMounted(() => void nextTick(fitHeight));
+
 const onWindowResize = (): void => {
+  fitHeight();
   if (tourPosition.value) locateTour();
 };
 

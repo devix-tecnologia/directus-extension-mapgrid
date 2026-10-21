@@ -48,14 +48,16 @@ A Layout-type extension for Directus that displays a collection in map and grid 
 - **Guided tour**: a balloon per feature — map, grid, filters, navigation, playback, tracking,
   direction, card, timeline, measuring and reset — from the **?** of the toolbar, or by itself on
   the first visit of each browser
-- **Room for the map**: the Directus right sidebar starts collapsed the first time a browser opens
-  the collection; opened again, it stays as you left it
+- **Room for the map**: on Directus 10, the right sidebar starts collapsed the first time a browser
+  opens the collection; opened again, it stays as you left it. Directus 11 keeps its own choice
 - **Map and grid, resizable**: drag the handle between them to share the height (or use ↑ ↓ on
   it); the share is kept in your preset, and a double click puts the default back
 - **Dates to the second**: the card and the timeline write moments as `27/03/2026 10:30:47`
 - **Bilingual interface**: follows the Directus app locale (en-US, pt-BR)
 
 ### Installation
+
+Tested with Directus 11.17 and 10.13.
 
 ```bash
 npm install @devix-tecnologia/directus-extension-mapgrid
@@ -131,9 +133,18 @@ on the next visit.
 
 There is no limit on how many columns the grid can show.
 
-> **Upgrading from 1.x.** Columns used to live in five numbered keys (`coluna1` … `coluna5`). The
-> layout no longer reads them: after upgrading, the grid shows the Directus default columns until
-> they are chosen again in its header.
+#### Upgrading from 1.x to 2.0
+
+2.0 composes the Directus map and table layouts instead of drawing its own, and three of the four
+options a 1.x preset stored are no longer read. Nothing is lost from the data; after upgrading, set
+these again once per collection:
+
+| 1.x option | In 2.0 |
+| --- | --- |
+| `coluna1` … `coluna5` | The grid shows the Directus default columns until they are chosen again in its header (the **+**) |
+| `geolocation` | Detected from the collection; to pick another field, use **Map → Geospatial field** in the options |
+| `title` (popup template) | **Map → Display template** in the options |
+| `zoomOnClick` | Still read, as **Zoom on focus** |
 
 ### Running Directus with Docker Compose
 
@@ -347,14 +358,16 @@ Extensão de layout para o Directus que exibe uma coleção simultaneamente em *
 - **Apresentação guiada**: um balão por recurso — mapa, grade, filtros, navegação, reprodução,
   acompanhamento, sentido, card, linha do tempo, medição e reenquadrar — pelo **?** da barra, ou
   sozinha na primeira visita de cada navegador
-- **Espaço para o mapa**: a barra lateral direita do Directus começa recolhida na primeira vez que
-  o navegador abre a coleção; reaberta, fica como você deixou
+- **Espaço para o mapa**: no Directus 10, a barra lateral direita começa recolhida na primeira vez
+  que o navegador abre a coleção; reaberta, fica como você deixou. O Directus 11 mantém a escolha dele
 - **Mapa e grade redimensionáveis**: arraste a divisória entre eles para dividir a altura (ou use
   ↑ ↓ nela); a divisão fica no seu preset, e um duplo clique volta ao padrão
 - **Datas até o segundo**: o card e a linha do tempo escrevem os momentos como `27/03/2026 10:30:47`
 - **Interface bilíngue**: acompanha o idioma do app do Directus (en-US, pt-BR)
 
 ### Instalação
+
+Testado com o Directus 11.17 e o 10.13.
 
 ```bash
 npm install @devix-tecnologia/directus-extension-mapgrid
@@ -431,9 +444,18 @@ próxima visita.
 
 Não há limite de quantas colunas a grade exibe.
 
-> **Vindo da 1.x.** As colunas ficavam em cinco chaves numeradas (`coluna1` … `coluna5`). O layout
-> não as lê mais: depois de atualizar, a grade mostra as colunas padrão do Directus até que sejam
-> escolhidas de novo no cabeçalho dela.
+#### Atualizando da 1.x para a 2.0
+
+A 2.0 compõe os layouts de mapa e de tabela do Directus em vez de desenhar os seus, e três das
+quatro opções que um preset da 1.x guardava não são mais lidas. Nada se perde dos dados; depois de
+atualizar, configure-as de novo, uma vez por coleção:
+
+| Opção da 1.x | Na 2.0 |
+| --- | --- |
+| `coluna1` … `coluna5` | A grade mostra as colunas padrão do Directus até que sejam escolhidas de novo no cabeçalho dela (o **+**) |
+| `geolocation` | Detectada a partir da coleção; para escolher outro campo, use **Mapa → Campo geoespacial** nas opções |
+| `title` (modelo do popup) | **Mapa → Template de exibição** nas opções |
+| `zoomOnClick` | Continua sendo lida, como **Zoom ao focar** |
 
 ### Rodando o Directus com Docker Compose
 

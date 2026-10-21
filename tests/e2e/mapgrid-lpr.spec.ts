@@ -23,6 +23,7 @@ import {
   columnCell,
   control,
   currentRecord,
+  menuItem,
   ROWS,
   sortBy,
   visibleColumns,
@@ -133,11 +134,7 @@ test.describe('MapGrid on LPR — list panel', () => {
       const field = drawer.locator('.field', { hasText: /vehicle type/i });
       await field.locator('[role="checkbox"]').first().click();
       await field.locator('.v-select').click();
-      await page
-        .getByRole('listitem')
-        .filter({ hasText: /^Truck$/ })
-        .first()
-        .click();
+      await menuItem(page, /^Truck$/).click();
       await drawer
         .locator('.header-bar .v-button')
         .filter({ has: page.locator('[data-icon="check"]') })

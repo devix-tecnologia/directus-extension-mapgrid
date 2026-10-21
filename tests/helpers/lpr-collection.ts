@@ -8,6 +8,7 @@ import {
 } from './directus-api';
 import { lprPhotoSvg } from './lpr-photo';
 import { deleteAllPresetsFor } from './mapgrid-preset';
+import { publicScope } from './public-access';
 
 export const LPR_COLLECTION = 'test_mapgrid_lpr';
 
@@ -619,15 +620,15 @@ const createCollection = async (): Promise<void> => {
 
 /** Read only: the photos have to load for anyone who can see the readings, nothing more. */
 const grantPublicPhotoReading = async (): Promise<void> => {
-  const query =
-    'filter[collection][_eq]=directus_files&filter[role][_null]=true&filter[action][_eq]=read';
+  const { filter, owner } = await publicScope();
+  const query = `filter[collection][_eq]=directus_files&${filter}&filter[action][_eq]=read&fields=id,action`;
   const existing = unwrapItems(
     await apiRequest<DirectusCollectionResponse<{ id: number }>>('GET', `/permissions?${query}`)
   );
   if (existing.length > 0) return;
 
   await apiRequest('POST', '/permissions', {
-    role: null,
+    ...owner,
     collection: 'directus_files',
     action: 'read',
     permissions: {},

@@ -21,6 +21,7 @@ import {
   ADD_FIELD,
   columnCell,
   login,
+  menuItem,
   openCollection,
   sortBy,
   visibleColumns,
@@ -120,11 +121,7 @@ test.describe('MapGrid columns', () => {
 
     // the header's `+` and the field picker belong to their tabular layout
     await page.locator(ADD_FIELD).first().click();
-    await page
-      .getByRole('listitem')
-      .filter({ hasText: /^Status$/ })
-      .first()
-      .click();
+    await menuItem(page, /^Status$/).click();
 
     await expect.poll(async () => visibleColumns(page), { timeout: 20_000 }).toContain('status');
 
