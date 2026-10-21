@@ -692,12 +692,15 @@ export async function ensureLprMapGrid(
     filter: overrides.filter ?? null,
     layout_options: {
       mapgrid: {
+        zoomOnClick: false,
+        ...overrides.options,
+        // merged, not replaced: a preset that only sets the camera kept losing the
+        // popup's template, and the popup fell back to the record's id
         map: {
           geometryField: 'location',
           displayTemplate: '{{plate}} · {{equipment_label}} · {{alert_status}}',
+          ...(overrides.options?.map as Record<string, unknown> | undefined),
         },
-        zoomOnClick: false,
-        ...overrides.options,
       },
     },
     layout_query: {

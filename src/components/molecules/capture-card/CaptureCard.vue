@@ -6,11 +6,11 @@
         type="button"
         class="capture-card__close"
         data-capture-close
-        :aria-label="t('close')"
-        :title="t('close')"
+        :aria-label="t('cardHide')"
+        :title="t('cardHide')"
         @click="emit('close')"
       >
-        <v-icon name="close" small />
+        <v-icon name="close_fullscreen" small />
       </button>
     </header>
 
@@ -30,12 +30,14 @@
 
       <dl class="capture-card__fields">
         <template v-for="row in props.rows" :key="row.field">
-          <dt>{{ row.label }}</dt>
-          <dd :data-capture-field="row.field">{{ row.value }}</dd>
+          <dt :title="row.label">{{ row.label }}</dt>
+          <dd :data-capture-field="row.field" :title="row.value">{{ row.value }}</dd>
         </template>
         <template v-if="props.coordinates">
           <dt>{{ t('cardCoordinates') }}</dt>
-          <dd data-capture-field="coordinates">{{ props.coordinates }}</dd>
+          <dd data-capture-field="coordinates" :title="props.coordinates">
+            {{ props.coordinates }}
+          </dd>
         </template>
       </dl>
     </div>
@@ -95,28 +97,29 @@ export default {
 .capture-card {
   display: flex;
   flex-direction: column;
-  inline-size: 420px;
+  inline-size: 340px;
   max-inline-size: calc(100% - 16px);
-  max-block-size: calc(100% - 72px);
+  max-block-size: calc(100% - 64px);
   overflow: hidden;
   border-radius: var(--theme--border-radius);
   background: var(--theme--background);
   box-shadow: var(--theme--elevation-2xl);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .capture-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 8px 8px 12px;
+  gap: 6px;
+  padding: 4px 4px 4px 10px;
   border-block-end: 1px solid var(--theme--border-color-subdued);
 }
 
 .capture-card__title {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 13px;
   letter-spacing: 0.04em;
   color: var(--theme--foreground);
 }
@@ -134,17 +137,18 @@ export default {
 
 .capture-card__body {
   display: flex;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 8px;
   min-block-size: 0;
-  padding: 10px 12px 12px;
+  padding: 8px 10px;
   overflow-y: auto;
 }
 
 .capture-card__photo {
   position: relative;
   flex: none;
-  inline-size: 144px;
-  block-size: 96px;
+  inline-size: 96px;
+  block-size: 64px;
   overflow: hidden;
   border-radius: var(--theme--border-radius);
   cursor: zoom-in;
@@ -159,9 +163,9 @@ export default {
 
 .capture-card__zoom {
   position: absolute;
-  inset-block-end: 4px;
-  inset-inline-end: 4px;
-  padding: 2px;
+  inset-block-end: 2px;
+  inset-inline-end: 2px;
+  padding: 1px;
   border-radius: 50%;
   background: var(--theme--background);
   --v-icon-color: var(--theme--primary);
@@ -170,24 +174,26 @@ export default {
 .capture-card__fields {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 2px 8px;
+  gap: 1px 6px;
   margin: 0;
   min-inline-size: 0;
 }
 
 .capture-card__fields dt {
+  max-inline-size: 84px;
+  overflow: hidden;
   color: var(--theme--foreground-subdued);
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* the app styles `dd` to one ellipsised line; here the value is the point */
+/* one line per field, so the card stays short over the map; the full value is in the title */
 .capture-card__fields dd {
   margin: 0;
-  overflow: visible;
+  overflow: hidden;
   color: var(--theme--foreground);
-  white-space: normal;
-  text-overflow: clip;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .capture-card__enlarged {

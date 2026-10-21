@@ -38,8 +38,19 @@
           :rows="card.rows"
           :coordinates="card.coordinates"
           :image-url="card.imageUrl"
-          @close="dismissCard"
+          @close="cardCollapsed = true"
         />
+        <button
+          v-else-if="props.showCard === true && cardCollapsed && currentId !== null"
+          type="button"
+          class="mapgrid-card-reopen"
+          data-capture-card-reopen
+          :title="t('cardShow')"
+          @click="cardCollapsed = false"
+        >
+          <v-icon name="badge" small />
+          <span>{{ t('cardShow') }}</span>
+        </button>
         <MapToolbar
           class="mapgrid-toolbar"
           :at-start="atStart"
@@ -682,8 +693,12 @@ const seek = async (position: number): Promise<void> => {
 
 const recordCard = new RecordCard((key) => t(key));
 const cardItem = ref<Record<string, unknown> | null>(null);
-/** Closing the card hides it for that record only; the next one opens it again. */
-const cardDismissedFor = ref<RecordId | null>(null);
+/**
+ * Closing the card collapses it into a button, and it stays collapsed for the
+ * records that follow — playback included — until the button opens it again.
+ * Hiding it for one record only made playback reopen it at every step.
+ */
+const cardCollapsed = ref(false);
 let cardRequest = 0;
 
 const cardFieldList = computed<string[]>(() => {
@@ -693,11 +708,12 @@ const cardFieldList = computed<string[]>(() => {
 });
 
 watch(
-  [currentId, () => props.showCard, cardFieldList, () => props.cardImageField],
+  [currentId, () => props.showCard, cardFieldList, () => props.cardImageField, cardCollapsed],
   () => {
     const request = ++cardRequest;
     const id = currentId.value;
-    if (props.showCard !== true || id === null) {
+    // collapsed, the card is not drawn: fetching for it at every playback step would be waste
+    if (props.showCard !== true || id === null || cardCollapsed.value) {
       cardItem.value = null;
       return;
     }
@@ -727,7 +743,7 @@ const card = computed<{
 } | null>(() => {
   const item = cardItem.value;
   const id = currentId.value;
-  if (!item || id === null || cardDismissedFor.value === id) return null;
+  if (!item || id === null || cardCollapsed.value) return null;
 
   const [first, ...rows] = recordCard.rows(
     item,
@@ -743,14 +759,6 @@ const card = computed<{
     coordinates: coordinate ? recordCard.coordinates(coordinate, locale.value) : null,
     imageUrl: imageId && props.assetUrl ? props.assetUrl(imageId) : null,
   };
-});
-
-const dismissCard = (): void => {
-  cardDismissedFor.value = currentId.value;
-};
-
-watch(currentId, (id) => {
-  if (id !== cardDismissedFor.value) cardDismissedFor.value = null;
 });
 
 const distances = new DistanceMeasure();
@@ -907,6 +915,8 @@ const TOUR_READY_DEADLINE_MS = 2_000;
 const startTour = async (): Promise<void> => {
   stopPlayback();
   if (measuring.value) toggleMeasure();
+  // the tour presents the card, so it has to be open
+  cardCollapsed.value = false;
   if (currentId.value === null) {
     manualStep((position) => sequence.first(position));
     await nextTick();
@@ -1088,11 +1098,38 @@ const mapProps = computed(() => ({
   z-index: 2;
 }
 
-.mapgrid-card {
+.mapgrid-card,
+.mapgrid-card-reopen {
   position: absolute;
   inset-block-end: 28px;
   inset-inline-start: 8px;
   z-index: 2;
+}
+
+.mapgrid-card-reopen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: calc(var(--theme--border-radius) + 4px);
+  background: var(--theme--background);
+  color: var(--theme--foreground);
+  font-size: 13px;
+  box-shadow: var(--theme--elevation-2xl);
+  --v-icon-color: var(--theme--primary);
+}
+
+.mapgrid-card-reopen:hover {
+  background: var(--theme--background-accent);
+}
+
+/*
+ * The Directus map's hover popup is `position: fixed` at `z-index: 1`, the same
+ * as the trail and the mark drawn after it — so it came out under the trail.
+ * Above the toolbar and the card too: it is what the pointer is asking for.
+ */
+.mapgrid-pane--map :deep(.layout-map > .popup) {
+  z-index: 3;
 }
 
 /* MapLibre writes the cursor inline on the canvas, so only `!important` wins over it */

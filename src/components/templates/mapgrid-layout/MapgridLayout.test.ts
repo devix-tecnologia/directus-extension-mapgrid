@@ -1265,16 +1265,36 @@ describe('MapgridLayout — the capture card', () => {
     expect(walk.wrapper.get('[data-capture-photo] img').attributes('src')).toBe('/assets/file-1');
   });
 
-  it('stays closed for that record once dismissed', async () => {
-    const { walk } = cardWalk();
+  it('stays collapsed on the records that follow, playback included', async () => {
+    const { walk, fetchItems } = cardWalk();
     await walk.ready();
     await walk.press('next');
     await flush();
 
     walk.wrapper.findComponent({ name: 'CaptureCard' }).vm.$emit('close');
     await flush();
+    const asked = fetchItems.mock.calls.length;
+    await walk.press('next');
+    await flush();
 
     expect(walk.wrapper.find('[data-capture-card]').exists()).toBe(false);
+    expect(walk.wrapper.find('[data-capture-card-reopen]').exists()).toBe(true);
+    // collapsed, nothing is fetched for it
+    expect(fetchItems.mock.calls.length).toBe(asked);
+  });
+
+  it('opens again from the button it collapsed into', async () => {
+    const { walk } = cardWalk();
+    await walk.ready();
+    await walk.press('next');
+    await flush();
+    walk.wrapper.findComponent({ name: 'CaptureCard' }).vm.$emit('close');
+    await flush();
+
+    await walk.wrapper.get('[data-capture-card-reopen]').trigger('click');
+    await flush();
+
+    expect(walk.wrapper.find('[data-capture-card]').exists()).toBe(true);
   });
 
   it('is not shown unless asked for', async () => {

@@ -64,6 +64,21 @@ implementadas junto.
 | Pré-visualização ao clicar no ponto | Card da captura com foto |
 | Medição da distância | Ferramenta de medição |
 
+### O card recolhe, e fica recolhido
+Primeira versão: fechar escondia o card só para aquele registro, e a
+reprodução o reabria a cada passo. Agora fechar o recolhe num botão "Card" no
+canto, e ele fica assim nos registros seguintes — reprodução inclusive, sem
+buscar nada para ele — até o botão abri-lo. A apresentação guiada o reabre
+para mostrá-lo. E ficou menor: 340 px, foto de 96×64 e um campo por linha, com
+o valor inteiro no `title`.
+
+### O balão do marcador ficava atrás do rastro
+O popup de passar o mouse do mapa do Directus é `position: fixed` com
+`z-index: 1`, o mesmo do rastro e da marca, que vêm depois no DOM. Subiu para
+3, acima também da barra e do card. E o template dele (`placa · leitor ·
+status`) se perdia quando um preset só definia a câmera: `ensureLprMapGrid`
+agora mescla as opções do mapa em vez de trocá-las.
+
 ### O clique durante a medição
 A medição escuta o clique na fase de captura do painel do mapa e o interrompe:
 enquanto ela está ligada, o mapa do Directus nunca vê o clique, e nenhum
