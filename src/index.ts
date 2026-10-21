@@ -13,6 +13,7 @@ import Layout from './components/templates/mapgrid-layout/MapgridLayout.vue';
 import Options from './components/templates/mapgrid-options/MapgridOptions.vue';
 import type { CameraTracking, GeoItem } from './contract/index';
 import { useWritableLayoutQuery } from './contract/index';
+import { CameraBounds } from './services/camera-bounds/index';
 import { CameraTrackingPolicy } from './services/camera-tracking/index';
 import {
   EMBEDDED_LAYOUTS,
@@ -45,6 +46,8 @@ const detectGeometry = (fields: Field[]): string | undefined => {
   );
   return jsonField?.field;
 };
+
+const cameraBounds = new CameraBounds();
 
 type EmbeddedOptions = { value: Record<string, unknown> };
 
@@ -102,10 +105,15 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
      * changing the collection's field would stop having any effect.
      */
     const mapOptions = computed<Record<string, unknown>>({
-      get: () => ({
-        geometryField: detectedGeometry.value,
-        ...((layoutOptions.value?.map ?? {}) as object),
-      }),
+      get: () => {
+        const options = (layoutOptions.value?.map ?? {}) as Record<string, unknown>;
+        const camera = cameraBounds.complete(options.cameraOptions);
+        return {
+          geometryField: detectedGeometry.value,
+          ...options,
+          ...(camera === undefined ? {} : { cameraOptions: camera }),
+        };
+      },
       set: (value) => {
         layoutOptions.value = { ...layoutOptions.value, map: value };
       },

@@ -1,0 +1,7 @@
+# the demo images only take these; everything else stays out of the build context
+*
+!docker/demo/entrypoint.sh
+!docker/demo/database-entrypoint.sh
+!docker/demo/build/mapgrid-demo-seed.mjs
+!docker/demo/build/uploads
+!docker/demo/build/pgdata
