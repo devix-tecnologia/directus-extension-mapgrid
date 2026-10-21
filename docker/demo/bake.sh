@@ -30,6 +30,9 @@ if ! docker logs "$PROJECT-directus-1" 2>&1 | grep -q '^\[mapgrid\] demo seeded'
   exit 1
 fi
 
+# no session leaves in the image: its token would sign anyone in as the admin
+$COMPOSE stop directus
+$COMPOSE exec -T database psql -U directus -d directus -c 'DELETE FROM directus_sessions;'
 # a clean shutdown, so the copied database needs no recovery on start
 $COMPOSE stop
 rm -rf "$OUT/pgdata" "$OUT/uploads"
