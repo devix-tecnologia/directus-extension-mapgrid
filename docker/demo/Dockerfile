@@ -21,7 +21,9 @@ COPY --chmod=755 docker/demo/entrypoint.sh /directus/mapgrid-demo-entrypoint.sh
 COPY docker/demo/build/mapgrid-demo-seed.mjs /directus/mapgrid-demo-seed.mjs
 USER node
 
+# ACCEPT_TERMS: the licence is accepted on bootstrap, so the app never shows the first-run setup form
 ENV EXTENSIONS_PATH=/directus/extensions \
+    ACCEPT_TERMS=true \
     RATE_LIMITER_ENABLED=true \
     RATE_LIMITER_POINTS=100 \
     RATE_LIMITER_DURATION=1 \
