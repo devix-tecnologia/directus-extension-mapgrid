@@ -210,7 +210,7 @@ const playbackSpeed = computed<number, unknown>({
   set: (value) => emit('update:playbackSpeed', tempo.speedFrom(Number(value))),
 });
 
-const fields = computed(() => props.fieldsInCollection ?? []);
+const fields = computed(() => props.fieldsWithRelated ?? props.fieldsInCollection ?? []);
 const itemsOf = (accept: (field: (typeof fields.value)[number]) => boolean) =>
   fields.value
     .filter(accept)

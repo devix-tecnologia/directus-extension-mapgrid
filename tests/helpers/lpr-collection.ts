@@ -629,7 +629,7 @@ const createCollection = async (): Promise<void> => {
 };
 
 /** Read only: the photos have to load for anyone who can see the readings, nothing more. */
-const grantPublicPhotoReading = async (): Promise<void> => {
+export const grantPublicPhotoReading = async (): Promise<void> => {
   const { filter, owner } = await publicScope();
   const query = `filter[collection][_eq]=directus_files&${filter}&filter[action][_eq]=read&fields=id,action`;
   const existing = unwrapItems(

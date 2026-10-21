@@ -69,6 +69,8 @@ export interface MapgridLayoutProps {
   sort?: string[];
   /** The collection's fields, for the card's labels and the time field's suggestion. */
   fieldsInCollection?: CollectionField[];
+  /** The collection's fields and, one many-to-one away, the related ones, by path (`smartphone.icon`). */
+  fieldsWithRelated?: CollectionField[];
   /** The primary key field, to read the records the card and the arrow fetch. */
   primaryKeyField?: { field: string } | null;
   /** The whole query's first and last values of a field, as the server returns them. */

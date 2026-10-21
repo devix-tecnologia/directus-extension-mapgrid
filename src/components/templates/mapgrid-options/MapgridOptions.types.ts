@@ -42,6 +42,8 @@ export interface MapgridOptionsProps {
   tourOnFirstVisit?: boolean;
   /** The collection's fields, which the field pickers offer. */
   fieldsInCollection?: OptionField[];
+  /** The collection's fields and, one many-to-one away, the related ones, by path (`smartphone.icon`). */
+  fieldsWithRelated?: OptionField[];
   /** The query's sort, from which the time field is suggested. */
   sort?: string[];
 }

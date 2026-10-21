@@ -64,4 +64,16 @@ describe('FieldValues', () => {
 
     expect(from.fetchItems).toHaveBeenCalledTimes(2);
   });
+  it('reads a field through a relation, from the grid and from the server', async () => {
+    const from = source(
+      [{ id: 1, smartphone: { heading: 90 } }],
+      [{ id: 2, smartphone: { heading: 45 } }]
+    );
+    const values = new FieldValues(from);
+
+    expect(values.peek(1, 'smartphone.heading')).toBe(90);
+    const loaded = await values.load([1, 2], 'smartphone.heading');
+    expect(from.fetchItems).toHaveBeenCalledWith([2], ['id', 'smartphone.heading']);
+    expect(loaded.get(2)).toBe(45);
+  });
 });

@@ -1,3 +1,4 @@
+import { FieldPath } from '../field-path/index';
 import { InstantFormat } from '../instant-format/index';
 import type { CardField, CardRow, IRecordCard } from './record-card.types';
 
@@ -14,6 +15,7 @@ const TRANSLATION_PREFIX = '$t:';
 
 export class RecordCard implements IRecordCard {
   private readonly instants = new InstantFormat();
+  private readonly paths = new FieldPath();
 
   /** @param translate resolves a `$t:` key through the app's own translations */
   constructor(private readonly translate: (key: string) => string = (key) => key) {}
@@ -27,7 +29,7 @@ export class RecordCard implements IRecordCard {
     const rows: CardRow[] = [];
     for (const name of fields) {
       const field = schema.find((candidate) => candidate.field === name);
-      const value = item[name];
+      const value = this.paths.valueAt(item, name);
       if (!field || (typeof value === 'object' && value !== null)) continue;
       rows.push({ field: name, label: labelOf(field), value: this.format(value, field, locale) });
     }

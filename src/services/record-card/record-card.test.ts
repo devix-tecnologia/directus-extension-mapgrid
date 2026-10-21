@@ -64,6 +64,21 @@ describe('RecordCard — the rows', () => {
   });
 });
 
+describe('RecordCard — fields of a related record', () => {
+  it('reads a field through a relation from the nested object Directus returns', () => {
+    const rows = card.rows(
+      { plate: 'X', smartphone: { brand: 'Motorola' } },
+      ['smartphone.brand'],
+      [{ field: 'smartphone.brand', name: 'Smartphone → Brand', type: 'string' }],
+      'en-US'
+    );
+
+    expect(rows).toEqual([
+      { field: 'smartphone.brand', label: 'Smartphone → Brand', value: 'Motorola' },
+    ]);
+  });
+});
+
 describe('RecordCard — the coordinates', () => {
   it('reads latitude first, with five decimals', () => {
     expect(card.coordinates([-40.3121, -20.3152], 'en-US')).toBe('-20.31520, -40.31210');

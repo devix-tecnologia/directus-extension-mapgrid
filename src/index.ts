@@ -20,6 +20,8 @@ import {
   type EmbeddedLayout,
   embedLayout,
 } from './services/embedded-layout/index';
+import { type CatalogField, FieldCatalog } from './services/field-catalog/index';
+import { FieldPath } from './services/field-path/index';
 import { useOptimisticWrite } from './services/optimistic-sync/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
@@ -48,6 +50,7 @@ const detectGeometry = (fields: Field[]): string | undefined => {
 };
 
 const cameraBounds = new CameraBounds();
+const fieldPath = new FieldPath();
 
 type EmbeddedOptions = { value: Record<string, unknown> };
 
@@ -76,6 +79,29 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { collection, filter, search } = toRefs(props);
     const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
     const { layouts } = useExtensions();
+
+    type RelationRow = { collection?: string; field?: string; related_collection?: string | null };
+    const stores = useStores();
+    const fieldsStore = stores.useFieldsStore?.() as
+      | { getFieldsForCollection: (collection: string) => CatalogField[] }
+      | undefined;
+    const relationsStore = stores.useRelationsStore?.() as
+      | { getRelationsForField: (collection: string, field: string) => RelationRow[] }
+      | undefined;
+    const catalog = new FieldCatalog({
+      fieldsOf: (name) => fieldsStore?.getFieldsForCollection(name) ?? [],
+      relatedCollectionOf: (name, field) =>
+        relationsStore
+          ?.getRelationsForField(name, field)
+          .find((relation) => relation.collection === name && relation.field === field)
+          ?.related_collection ?? null,
+    });
+    /** What the pickers and the card may use: the collection's fields and, one relation away, the related ones. */
+    const fieldsWithRelated = computed(() =>
+      fieldsStore && collection.value
+        ? catalog.fieldsOf(collection.value)
+        : (fieldsInCollection.value ?? [])
+    );
 
     /** The Directus app store: where the right sidebar's open state lives. */
     const appStore = (useStores().useAppStore?.() ?? null) as { sidebarOpen?: boolean } | null;
@@ -251,6 +277,20 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
 
     /** The first and last instants of the whole query, not only of the loaded page. */
     const fetchTimeRange = async (field: string): Promise<{ first: unknown; last: unknown }> => {
+      // Directus does not aggregate through a relation: the ends come from sorting by it
+      if (fieldPath.isRelated(field)) {
+        const end = async (sort: string): Promise<unknown> => {
+          const [row] = await queryRows({
+            fields: [field],
+            filter: queryFilter(fieldPath.filterAt(field, { _nnull: true })),
+            sort: [sort],
+            limit: 1,
+          });
+          return fieldPath.valueAt(row, field) ?? null;
+        };
+        const [first, last] = await Promise.all([end(field), end(`-${field}`)]);
+        return { first, last };
+      }
       const [row] = await queryRows({
         aggregate: { min: [field], max: [field] },
         filter: queryFilter(),
@@ -277,11 +317,11 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       const iso = new Date(instant).toISOString();
       const [counted] = await queryRows({
         aggregate: { count: ['*'] },
-        filter: queryFilter({ [field]: { [descending ? '_gt' : '_lt']: iso } }),
+        filter: queryFilter(fieldPath.filterAt(field, { [descending ? '_gt' : '_lt']: iso })),
       });
       const [target] = await queryRows({
         fields: [key],
-        filter: queryFilter({ [field]: { [descending ? '_lte' : '_gte']: iso } }),
+        filter: queryFilter(fieldPath.filterAt(field, { [descending ? '_lte' : '_gte']: iso })),
         sort: [first],
         limit: 1,
       });
@@ -329,6 +369,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       limit: writableQuery.limit,
       sort: writableQuery.sort,
       fieldsInCollection,
+      fieldsWithRelated,
       primaryKeyField,
       selectedItems,
       deleteSelectedItems,

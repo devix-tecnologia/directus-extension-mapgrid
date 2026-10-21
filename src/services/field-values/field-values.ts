@@ -1,8 +1,10 @@
+import { FieldPath } from '../field-path/index';
 import type { RecordId } from '../record-sequence/index';
 import type { FieldValuesSource, IFieldValues } from './field-values.types';
 
 export class FieldValues implements IFieldValues {
   private readonly cache = new Map<string, Map<RecordId, unknown>>();
+  private readonly paths = new FieldPath();
 
   constructor(private readonly source: FieldValuesSource) {}
 
@@ -13,7 +15,7 @@ export class FieldValues implements IFieldValues {
     const key = this.source.primaryKey();
     if (!key) return undefined;
     const item = this.source.gridItems().find((candidate) => candidate[key] === id);
-    return item && field in item ? item[field] : undefined;
+    return this.paths.valueAt(item, field);
   }
 
   async load(ids: readonly RecordId[], field: string): Promise<ReadonlyMap<RecordId, unknown>> {
@@ -33,8 +35,9 @@ export class FieldValues implements IFieldValues {
     this.cache.set(field, cached);
     for (const item of fetched) {
       const id = item[key] as RecordId;
-      cached.set(id, item[field] ?? null);
-      values.set(id, item[field] ?? null);
+      const value = this.paths.valueAt(item, field) ?? null;
+      cached.set(id, value);
+      values.set(id, value);
     }
     // asked and not returned: the record has no such value, and asking again will not change it
     for (const id of missing) {

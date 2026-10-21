@@ -133,6 +133,7 @@ import {
 } from '../../../services/current-point/index';
 import { DistanceMeasure } from '../../../services/distance-measure/index';
 import { EmbeddedStateReader } from '../../../services/embedded-state-reader/index';
+import { FieldPath } from '../../../services/field-path/index';
 import { FieldValues } from '../../../services/field-values/index';
 import { InstantFormat } from '../../../services/instant-format/index';
 import {
@@ -723,6 +724,7 @@ const seek = async (position: number): Promise<void> => {
 };
 
 const recordCard = new RecordCard((key) => t(key));
+const fieldPath = new FieldPath();
 const cardItem = ref<Record<string, unknown> | null>(null);
 /**
  * Closing the card collapses it into a button, and it stays collapsed for the
@@ -779,11 +781,13 @@ const card = computed<{
   const [first, ...rows] = recordCard.rows(
     item,
     cardFieldList.value,
-    props.fieldsInCollection ?? [],
+    props.fieldsWithRelated ?? props.fieldsInCollection ?? [],
     locale.value
   );
   const coordinate = currentPointer.value?.coordinateOf(itemFor(id)) ?? null;
-  const imageId = props.cardImageField ? imageIdOf(item[props.cardImageField]) : null;
+  const imageId = props.cardImageField
+    ? imageIdOf(fieldPath.valueAt(item, props.cardImageField))
+    : null;
   return {
     title: first?.value ?? String(id),
     rows,

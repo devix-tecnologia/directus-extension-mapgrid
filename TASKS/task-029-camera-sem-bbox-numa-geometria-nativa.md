@@ -23,4 +23,16 @@ geohub, copiado do `ensureLprMapGrid`, tem o mesmo problema.
 - [ ] Rodar os e2e com a geometria nativa — liga com a task-023 (o bbox zera a
       página compartilhada?) e com trilha e reprodução, que podem perder pontos
       fora da tela
-- [ ] Publicar a 2.0.1
+- [x] Publicar a 2.0.1
+- [ ] Sem câmera salva, uma coleção de geometria nativa abre no mapa-múndi: o
+      Directus só enquadra os dados sozinho quando a geometria é `json`. Visto na
+      coleção de smartphones (task-030); o geohub abre igual
+
+### Evidência
+`EVIDENCE_TASK=029`, `tests/screenshot/evidence-related.spec.ts`, no Directus
+11.17.4: as leituras em `geometry.Point` com um preset cuja câmera só tem
+centro e zoom. O "antes" é o mesmo spec contra o build da `v2.0.0`.
+
+| Antes (2.0.0) | Depois (2.0.1) |
+|---|---|
+| ![antes](assets/task-029-geometria-nativa-antes.jpg) | ![depois](assets/task-029-geometria-nativa-depois.jpg) |
