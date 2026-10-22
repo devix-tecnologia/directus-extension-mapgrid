@@ -20,16 +20,14 @@ const panel = (props: Partial<MapgridOptionsProps> = {}) =>
     global: { components: directusComponentStubs },
   });
 
-/** The collection's fields a picker accepts, from the filter it gives the field tree. */
+/** The fields a picker's tree offers at the top, from the tree it is given. */
 const optionsOf = (wrapper: ReturnType<typeof panel>, selector: string): string[] => {
   const picker = wrapper
     .findAllComponents(FieldPathSelect)
     .find((candidate) => candidate.classes().includes(selector.replace(/^\./, '')));
   if (!picker) throw new Error(`no picker ${selector}`);
-  const accept = picker.props('accept') as
-    | ((field: (typeof FIELDS)[number]) => boolean)
-    | undefined;
-  return FIELDS.filter((field) => (accept ? accept(field) : true)).map((field) => field.field);
+  const nodesOf = picker.props('nodesOf') as (collection: string) => { path: string }[];
+  return nodesOf('lpr').map((node) => node.path);
 };
 
 describe('MapgridOptions — the direction', () => {

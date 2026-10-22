@@ -71,7 +71,7 @@
         class="mapgrid-option__time-field"
         :collection="props.collection"
         :fields="fields"
-        :accept="isTemporal"
+        :nodes-of="nodesFor(isTemporal)"
         :placeholder="t('optionNone')"
         clearable
       />
@@ -101,7 +101,7 @@
         class="mapgrid-option__heading-field"
         :collection="props.collection"
         :fields="fields"
-        :accept="isNumeric"
+        :nodes-of="nodesFor(isNumeric)"
         :placeholder="t('optionNone')"
       />
     </div>
@@ -132,21 +132,18 @@
           class="mapgrid-option__card-image"
           :collection="props.collection"
           :fields="fields"
-          :accept="isFile"
-          relational-selectable
+          :nodes-of="nodesFor(isFile)"
           :placeholder="t('optionNone')"
           clearable
         />
       </div>
       <div class="field">
         <p class="field-label">{{ t('optionCardFields') }}</p>
-        <field-path-select
-          v-model="cardFields"
-          class="mapgrid-option__card-fields"
+        <card-rows-editor
+          v-model="cardRows"
+          class="mapgrid-option__card-rows"
           :collection="props.collection"
-          :fields="fields"
-          :accept="isTextual"
-          multiple
+          :label-for="labelFor"
         />
       </div>
     </template>
@@ -163,6 +160,9 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { HeadingSource, PlaybackTiming } from '../../../contract/index';
+import { type CardRowOption, CardRows } from '../../../services/card-rows/index';
+import type { CatalogField } from '../../../services/field-catalog/index';
+import { FieldTree, type FieldTreeNode } from '../../../services/field-tree/index';
 import {
   PLAYBACK_SPEEDS,
   PLAYBACK_TIMINGS,
@@ -172,6 +172,7 @@ import { HEADING_SOURCES, RecordHeading } from '../../../services/record-heading
 import { RecordInstants, TEMPORAL_FIELD_TYPES } from '../../../services/record-instants/index';
 import { MAX_TRAIL_LENGTH, TrailPath } from '../../../services/trail-path/index';
 import { MESSAGES } from '../../../shared/messages';
+import { CardRowsEditor } from '../../molecules/card-rows-editor/index';
 import { type FieldPathOption, FieldPathSelect } from '../../molecules/field-path-select/index';
 import type { MapgridOptionsEmits, MapgridOptionsProps } from './MapgridOptions.types';
 
@@ -221,16 +222,27 @@ const playbackSpeed = computed<number, unknown>({
 
 const fields = computed(() => props.fieldsWithRelated ?? props.fieldsInCollection ?? []);
 
+/** Without the app's schema (a story, a test), the collection's own fields and no relations. */
+const tree = computed(
+  () =>
+    new FieldTree(
+      props.fieldTreeSource ?? {
+        fieldsOf: () => (props.fieldsInCollection ?? []) as CatalogField[],
+        relatedCollectionOf: () => null,
+      }
+    )
+);
+const nodesFor =
+  (accept: (field: FieldPathOption) => boolean) =>
+  (collection: string, parent?: FieldTreeNode): FieldTreeNode[] =>
+    tree.value.children(collection, { accept: accept as (field: CatalogField) => boolean }, parent);
+
 const isTemporal = (field: FieldPathOption): boolean => TEMPORAL_FIELD_TYPES.includes(field.type);
 const NUMERIC_TYPES = ['integer', 'bigInteger', 'float', 'decimal'];
 const isNumeric = (field: FieldPathOption): boolean => NUMERIC_TYPES.includes(field.type);
 const isFile = (field: FieldPathOption): boolean =>
   field.type === 'uuid' &&
   (field.meta?.special?.includes('file') === true || field.meta?.interface === 'file-image');
-/** Fields with a value of their own: the card is text, so lists, groups and geometries stay out. */
-const isTextual = (field: FieldPathOption): boolean =>
-  field.type !== 'alias' && field.type !== 'json' && !field.type.startsWith('geometry');
-
 /** Shown, never written: the clock only reads the sort when nothing was chosen. */
 const suggestedTimeField = computed(() =>
   new RecordInstants({
@@ -280,16 +292,17 @@ const tourOnFirstVisit = computed<boolean, unknown>({
   set: (value) => emit('update:tourOnFirstVisit', Boolean(value)),
 });
 
-const cardFields = computed<string[], unknown>({
-  get: () => props.cardFields ?? [],
-  set: (value) =>
-    emit(
-      'update:cardFields',
-      Array.isArray(value)
-        ? value.filter((field): field is string => typeof field === 'string')
-        : []
-    ),
+const cardLines = new CardRows();
+/** A preset from before the lines shows its fields as lines; editing writes the lines. */
+const cardRows = computed<CardRowOption[], CardRowOption[]>({
+  get: () => cardLines.optionsFrom({ cardRows: props.cardRows, cardFields: props.cardFields }),
+  set: (value) => emit('update:cardRows', value),
 });
+const labelFor = (template: string): string => {
+  const [first] = cardLines.fieldsOf([template]);
+  if (!first) return '';
+  return fields.value.find((field) => field.field === first)?.name?.trim() || first;
+};
 </script>
 
 <style scoped>

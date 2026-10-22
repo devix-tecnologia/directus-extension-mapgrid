@@ -1,3 +1,4 @@
+import type { CardRowOption } from '../services/card-rows/index';
 import type { CameraTracking } from './camera-tracking.contract';
 
 /**
@@ -45,8 +46,10 @@ export interface LayoutOptions {
   showCard?: boolean;
   /** The file field whose image the card shows and enlarges. */
   cardImageField?: string;
-  /** The fields the card lists; empty, it lists the grid's columns. */
+  /** The fields the card lists; empty, it lists the grid's columns. Read as one `{{field}}` line each when `cardRows` is empty. */
   cardFields?: string[];
+  /** The card's lines: a display template each, with its own label if wanted. */
+  cardRows?: CardRowOption[];
   /** Opens the tour of the features on the first visit of each browser. */
   tourOnFirstVisit?: boolean;
   /** The map's share of the height, against the grid's; the rest is the grid's. */

@@ -1,5 +1,7 @@
 import type { HeadingSource, PlaybackTiming } from '../../../contract/index';
+import type { CardRowOption } from '../../../services/card-rows/index';
 import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
+import type { FieldTreeSource } from '../../../services/field-tree/index';
 
 /** A collection field, as `useCollection` lists it — what the pickers filter by. */
 export interface OptionField {
@@ -39,11 +41,15 @@ export interface MapgridOptionsProps {
   showCard?: boolean;
   cardImageField?: string;
   cardFields?: string[];
+  /** The card's lines; when empty, `cardFields` is shown as lines. */
+  cardRows?: CardRowOption[];
   tourOnFirstVisit?: boolean;
   /** The collection's fields, which the field pickers offer. */
   fieldsInCollection?: OptionField[];
   /** The collection's fields and, one many-to-one away, the related ones, by path (`smartphone.icon`). */
   fieldsWithRelated?: OptionField[];
+  /** The app's schema, for the field pickers' trees; without it they offer the collection's own fields. */
+  fieldTreeSource?: FieldTreeSource | null;
   /** The query's sort, from which the time field is suggested. */
   sort?: string[];
 }
@@ -61,5 +67,6 @@ export interface MapgridOptionsEmits {
   'update:showCard': [value: boolean];
   'update:cardImageField': [value: string];
   'update:cardFields': [value: string[]];
+  'update:cardRows': [value: CardRowOption[]];
   'update:tourOnFirstVisit': [value: boolean];
 }

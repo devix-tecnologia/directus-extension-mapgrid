@@ -50,12 +50,23 @@ qualquer profundidade, com os componentes do próprio Directus:
 - relação de vários itens no meio do caminho: imagem usa o primeiro item
 
 Tasks da decisão:
-- [ ] Seletores de campo único com `system-field-tree`, validando o tipo
-      (hoje: `FieldPathSelect` sobre o `v-field-list` — clicar no nome de uma
-      relação a escolhe em vez de abri-la, e o e2e do seletor falha por isso)
-- [ ] Campos do card pelo modelo de exibição — em aberto: um template único ou
-      uma linha (rótulo + template) por campo
-- [ ] o2m/m2m no meio do caminho (primeiro item na imagem; valores juntos no texto)
+- [x] Campo único (data, rumo, imagem): árvore filtrada por tipo
+      (`src/services/field-tree/`, `FieldPathSelect` + `FieldTreeLevel`) — só os
+      campos do tipo e as relações que levam a um, até 3 níveis; na relação o
+      clique abre, só o campo final é escolhido; arquivo é escolhido sem abrir
+      `directus_files`. Ajustado com o Sidarta: em vez do `system-field-tree`,
+      que não filtra por tipo nem separa abrir de escolher. e2e passa.
+- [x] Linhas do card (`cardRows`): rótulo opcional + modelo de exibição
+      (`v-collection-field-template`); linha de um campo só mantém a formatação
+      do MapGrid, linha composta vai ao `render-template` do Directus; `cardFields`
+      antigo é lido como uma linha `{{campo}}` cada (`src/services/card-rows/`,
+      `CardRowsEditor`)
+- [x] Lista de registros no meio do caminho: a imagem usa o primeiro, o texto
+      junta com vírgula (`FieldPath.valueAt`/`firstAt`)
+- [ ] e2e: linha composta no card e foto por `smartphone.photos.photo` — escritos,
+      não rodaram (a máquina sobrecarregada não subiu o Directus)
+- [ ] Mover a árvore para o pacote `@devix-tecnologia/directus-field-tree` no
+      devix-stack (decisão do Sidarta), e o mapgrid importar de lá
 - [ ] Geometria por caminho relacionado
 
 ### Evidência

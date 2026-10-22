@@ -23,6 +23,30 @@ describe('FieldPath — reading', () => {
   });
 });
 
+describe('FieldPath — through a list of records', () => {
+  it('gives the value of each record of a list on the way', () => {
+    const person = { photos: [{ photo: 'file-1' }, { photo: 'file-2' }] };
+
+    expect(path.valueAt(person, 'photos.photo')).toEqual(['file-1', 'file-2']);
+  });
+
+  it('flattens lists within lists, leaving out the empty', () => {
+    const team = {
+      people: [{ photos: [{ photo: 'a' }] }, { photos: [] }, { photos: [{ photo: 'b' }] }],
+    };
+
+    expect(path.valueAt(team, 'people.photos.photo')).toEqual(['a', 'b']);
+  });
+
+  it('gives the first value, for what shows only one', () => {
+    expect(path.firstAt({ photos: [{ photo: null }, { photo: 'file-2' }] }, 'photos.photo')).toBe(
+      'file-2'
+    );
+    expect(path.firstAt({ photo: 'file-1' }, 'photo')).toBe('file-1');
+    expect(path.firstAt({ photos: [] }, 'photos.photo')).toBeNull();
+  });
+});
+
 describe('FieldPath — filtering', () => {
   it('filters a field of the record itself by its name', () => {
     expect(path.filterAt('captured_at', { _gte: '2026' })).toEqual({

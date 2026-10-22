@@ -30,8 +30,18 @@ export class RecordCard implements IRecordCard {
     for (const name of fields) {
       const field = schema.find((candidate) => candidate.field === name);
       const value = this.paths.valueAt(item, name);
-      if (!field || (typeof value === 'object' && value !== null)) continue;
-      rows.push({ field: name, label: labelOf(field), value: this.format(value, field, locale) });
+      if (!field) continue;
+      // through a list of records, each value formatted and joined
+      const text = Array.isArray(value)
+        ? value
+            .filter((entry) => typeof entry !== 'object' || entry === null)
+            .map((entry) => this.format(entry, field, locale))
+            .join(', ') || EMPTY_VALUE
+        : typeof value === 'object' && value !== null
+          ? null
+          : this.format(value, field, locale);
+      if (text === null) continue;
+      rows.push({ field: name, label: labelOf(field), value: text });
     }
     return rows;
   }

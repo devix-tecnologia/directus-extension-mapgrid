@@ -370,6 +370,41 @@ const vInputStub: Component = {
  * collection's field tree and emits the chosen keys. The real one reads the
  * fields store; here the caller passes what it wants offered.
  */
+/**
+ * Directus' display template renderer. The real one runs each field through
+ * its display; here the fields are put in as they come, which is what a test of
+ * the card's composed lines needs to read.
+ */
+const renderTemplateStub: Component = {
+  name: 'render-template',
+  props: {
+    collection: { type: String, default: '' },
+    item: { type: Object, default: () => ({}) },
+    template: { type: String, default: '' },
+  },
+  computed: {
+    text(): string {
+      const item = this.item as Record<string, unknown>;
+      return (this.template as string).replace(
+        /{{\s*([^{}\s]+?)\s*}}/g,
+        (_: string, path: string) => {
+          const value = path
+            .split('.')
+            .reduce<unknown>(
+              (current, part) =>
+                current && typeof current === 'object'
+                  ? (current as Record<string, unknown>)[part]
+                  : undefined,
+              item
+            );
+          return value === null || value === undefined ? '' : String(value);
+        }
+      );
+    },
+  },
+  template: `<span class="render-template-mock">{{ text }}</span>`,
+};
+
 const vFieldListStub: Component = {
   name: 'v-field-list',
   props: {
@@ -450,6 +485,7 @@ export const directusComponentStubs: Record<string, Component> = {
   'v-collection-field-template': vCollectionFieldTemplateStub,
   'v-progress-circular': vProgressCircularStub,
   'v-field-list': vFieldListStub,
+  'render-template': renderTemplateStub,
   'v-menu': vMenuStub,
 };
 

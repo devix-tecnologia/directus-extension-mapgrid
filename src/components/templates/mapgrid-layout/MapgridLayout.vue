@@ -38,6 +38,8 @@
           :rows="card.rows"
           :coordinates="card.coordinates"
           :image-url="card.imageUrl"
+          :collection="props.collection"
+          :item="cardItem"
           @close="cardCollapsed = true"
         />
         <button
@@ -126,6 +128,7 @@ import {
   TOUR_SEEN,
 } from '../../../services/browser-memory/index';
 import { CameraTrackingPolicy } from '../../../services/camera-tracking/index';
+import { CardRows } from '../../../services/card-rows/index';
 import {
   type Coordinate,
   DirectusCurrentPoint,
@@ -724,6 +727,18 @@ const seek = async (position: number): Promise<void> => {
 };
 
 const recordCard = new RecordCard((key) => t(key));
+const cardLines = new CardRows();
+
+/** A composed line as plain text, for the card's title, which is a heading and not a display. */
+const plainText = (template: string, item: Record<string, unknown>): string =>
+  template
+    .replace(/{{\s*([^{}\s]+?)\s*}}/g, (_, path: string) => {
+      const value = fieldPath.valueAt(item, path);
+      return value === null || value === undefined || typeof value === 'object'
+        ? ''
+        : String(value);
+    })
+    .trim();
 const fieldPath = new FieldPath();
 const cardItem = ref<Record<string, unknown> | null>(null);
 /**
@@ -734,11 +749,26 @@ const cardItem = ref<Record<string, unknown> | null>(null);
 const cardCollapsed = ref(false);
 let cardRequest = 0;
 
-const cardFieldList = computed<string[]>(() => {
-  const chosen = props.cardFields?.length ? props.cardFields : (props.gridFields ?? []);
+/** A line that is one field alone keeps the MapGrid's own formatting; a composed one goes to Directus. */
+const SINGLE_FIELD = /^\s*{{\s*([^{}\s]+?)\s*}}\s*$/;
+
+const cardLineOptions = computed(() => {
   const geometry = props.map?.state?.geometryField;
-  return chosen.filter((field) => field !== props.cardImageField && field !== geometry);
+  return cardLines
+    .optionsFrom({
+      cardRows: props.cardRows,
+      cardFields: props.cardFields,
+      gridFields: props.gridFields,
+    })
+    .filter((option) => {
+      const single = SINGLE_FIELD.exec(option.template)?.[1];
+      return single !== props.cardImageField && single !== geometry;
+    });
 });
+
+const cardFieldList = computed<string[]>(() =>
+  cardLines.fieldsOf(cardLineOptions.value.map((option) => option.template))
+);
 
 watch(
   [currentId, () => props.showCard, cardFieldList, () => props.cardImageField, cardCollapsed],
@@ -778,18 +808,22 @@ const card = computed<{
   const id = currentId.value;
   if (!item || id === null || cardCollapsed.value) return null;
 
-  const [first, ...rows] = recordCard.rows(
-    item,
-    cardFieldList.value,
-    props.fieldsWithRelated ?? props.fieldsInCollection ?? [],
-    locale.value
-  );
+  const schema = props.fieldsWithRelated ?? props.fieldsInCollection ?? [];
+  const nameOf = (path: string) => schema.find((field) => field.field === path)?.name ?? null;
+  const lines = cardLines.rows(cardLineOptions.value, nameOf).flatMap((line): CardRow[] => {
+    const single = SINGLE_FIELD.exec(line.template)?.[1];
+    if (!single)
+      return [{ field: line.key, label: line.label, value: '', template: line.template }];
+    const [row] = recordCard.rows(item, [single], schema, locale.value);
+    return row ? [{ ...row, label: line.label || row.label }] : [];
+  });
+  const [first, ...rows] = lines;
   const coordinate = currentPointer.value?.coordinateOf(itemFor(id)) ?? null;
   const imageId = props.cardImageField
-    ? imageIdOf(fieldPath.valueAt(item, props.cardImageField))
+    ? imageIdOf(fieldPath.firstAt(item, props.cardImageField))
     : null;
   return {
-    title: first?.value ?? String(id),
+    title: (first?.template ? plainText(first.template, item) : first?.value) || String(id),
     rows,
     coordinates: coordinate ? recordCard.coordinates(coordinate, locale.value) : null,
     imageUrl: imageId && props.assetUrl ? props.assetUrl(imageId) : null,

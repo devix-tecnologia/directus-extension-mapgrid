@@ -55,6 +55,49 @@ test.describe('MapGrid — fields of a related collection', () => {
       .toBeGreaterThan(1);
   });
 
+  test('a composed line of the card is rendered by Directus, with its own label', async ({
+    page,
+  }) => {
+    await ensureSmartphoneMapGrid({
+      options: {
+        cameraTracking: 'off',
+        cardRows: [
+          { template: '{{tracked_at}}' },
+          { label: 'Aparelho', template: '{{smartphone.brand}} {{smartphone.model}}' },
+        ],
+      },
+    });
+    await login(page);
+    await openCollection(page, TRACKING_COLLECTION);
+    await control(page, 'next').click();
+
+    const card = page.locator('[data-capture-card]');
+    await expect(card).toContainText('Aparelho', { timeout: 30_000 });
+    await expect(card).toContainText(`${FIRST.brand} ${FIRST.model}`);
+  });
+
+  test('the card photo can come two relations away, through a list: the first one', async ({
+    page,
+  }) => {
+    await ensureSmartphoneMapGrid({
+      options: { cameraTracking: 'off', cardImageField: 'smartphone.photos.photo' },
+    });
+    await login(page);
+    await openCollection(page, TRACKING_COLLECTION);
+    await control(page, 'next').click();
+
+    const photo = page.locator('[data-capture-card] [data-capture-photo] img');
+    await expect
+      .poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth), {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(1);
+    // the photos are wider than the square icon: it is a photo, not the icon
+    expect(
+      await photo.evaluate((image: HTMLImageElement) => image.naturalWidth / image.naturalHeight)
+    ).toBeGreaterThan(1.2);
+  });
+
   test('the card image is picked in the field tree, opening the relation', async ({ page }) => {
     await ensureSmartphoneMapGrid({ options: { cardImageField: '' } });
     await login(page);
@@ -64,9 +107,10 @@ test.describe('MapGrid — fields of a related collection', () => {
 
     const picker = page.locator('.mapgrid-option__card-image');
     await picker.locator('[data-field-path-activator]').click();
-    const tree = page.locator('.v-menu-content');
-    await tree.getByText('Smartphone', { exact: true }).click();
-    await tree.getByText('Icon', { exact: true }).click();
+    // the relation opens, and only the file field inside is chosen
+    await page.locator('[data-field-tree-node="smartphone"]').click();
+    await expect(page.locator('[data-field-tree-node="tracked_at"]')).toHaveCount(0);
+    await page.locator('[data-field-tree-node="smartphone.icon"]').click();
 
     await expect(picker.locator('[data-field-path-activator]')).toContainText(
       /Smartphone\s*→\s*Icon/,

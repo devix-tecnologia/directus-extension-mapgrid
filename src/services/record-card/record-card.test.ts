@@ -65,6 +65,17 @@ describe('RecordCard — the rows', () => {
 });
 
 describe('RecordCard — fields of a related record', () => {
+  it('joins the values of a list of related records with commas', () => {
+    const rows = card.rows(
+      { tags: [{ name: 'Theft' }, { name: 'Night' }] },
+      ['tags.name'],
+      [{ field: 'tags.name', name: 'Tags → Name', type: 'string' }],
+      'en-US'
+    );
+
+    expect(rows).toEqual([{ field: 'tags.name', label: 'Tags → Name', value: 'Theft, Night' }]);
+  });
+
   it('reads a field through a relation from the nested object Directus returns', () => {
     const rows = card.rows(
       { plate: 'X', smartphone: { brand: 'Motorola' } },

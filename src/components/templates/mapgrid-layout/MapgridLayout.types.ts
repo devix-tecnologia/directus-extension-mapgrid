@@ -1,5 +1,6 @@
 import type { HeadingSource, PlaybackTiming } from '../../../contract/index';
 import type { CameraTracking } from '../../../services/camera-tracking/index';
+import type { CardRowOption } from '../../../services/card-rows/index';
 import type { EmbeddedLayout } from '../../../services/embedded-layout/index';
 import type { CollectionSource } from '../../../services/map-centerer/index';
 import type { CardField } from '../../../services/record-card/index';
@@ -63,6 +64,8 @@ export interface MapgridLayoutProps {
   cardImageField?: string;
   /** The fields the card lists; empty, the grid's columns. */
   cardFields?: string[];
+  /** The card's lines, a display template each; `cardFields` is read as lines when this is empty. */
+  cardRows?: CardRowOption[];
   /** The grid's columns, `layoutQuery.fields`. */
   gridFields?: string[];
   /** The query's sort, which says which date the clock suggests. */

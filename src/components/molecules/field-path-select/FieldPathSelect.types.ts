@@ -1,3 +1,5 @@
+import type { FieldTreeNode } from '../../../services/field-tree/index';
+
 /** A field as the picker reads it: its path from the collection, and the name to show. */
 export interface FieldPathOption {
   field: string;
@@ -16,19 +18,19 @@ export interface FieldPathSelectType {
 export type FieldPathSelectModels = Record<string, never>;
 
 /**
- * Picks a field the way Directus does: its own field tree, where every
- * relation opens the related collection's fields, as deep as they go. The
- * value is the path, `smartphone.icon`.
+ * Picks a field in a tree of the collection's fields, where a relation opens
+ * into the related collection's and only a field of the kind asked for is
+ * chosen. The value is the path, `smartphone.icon`.
  */
 export interface FieldPathSelectProps {
   collection: string;
-  /** One path, or the paths in order when `multiple`. */
-  modelValue: string | string[] | null;
-  multiple?: boolean;
-  /** Which fields may be chosen; relations always show, to be opened. */
-  accept?: (field: FieldPathOption) => boolean;
-  /** Whether a relation itself may be chosen, as a file field is. */
-  relationalSelectable?: boolean;
+  /**
+   * The rows under `parent` (the collection's own when absent), already
+   * filtered to what this picker accepts: see `FieldTree`.
+   */
+  nodesOf: (collection: string, parent?: FieldTreeNode) => FieldTreeNode[];
+  /** The path chosen. */
+  modelValue: string | null;
   /** Where the chosen paths get their names (`Smartphone → Icon`); the path when absent. */
   fields?: FieldPathOption[];
   placeholder?: string;
@@ -37,5 +39,5 @@ export interface FieldPathSelectProps {
 }
 
 export interface FieldPathSelectEmits {
-  'update:modelValue': [value: string | string[] | null];
+  'update:modelValue': [value: string | null];
 }

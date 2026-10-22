@@ -31,7 +31,14 @@
       <dl class="capture-card__fields">
         <template v-for="row in props.rows" :key="row.field">
           <dt :title="row.label">{{ row.label }}</dt>
-          <dd :data-capture-field="row.field" :title="row.value">{{ row.value }}</dd>
+          <dd v-if="row.template" :data-capture-field="row.field">
+            <render-template
+              :collection="props.collection"
+              :item="props.item ?? {}"
+              :template="row.template"
+            />
+          </dd>
+          <dd v-else :data-capture-field="row.field" :title="row.value">{{ row.value }}</dd>
         </template>
         <template v-if="props.coordinates">
           <dt>{{ t('cardCoordinates') }}</dt>

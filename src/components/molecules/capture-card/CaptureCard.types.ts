@@ -18,6 +18,9 @@ export interface CaptureCardProps {
   /** The photo's address; no photo area when absent. */
   imageUrl?: string | null;
   loading?: boolean;
+  /** The record and its collection, for the composed lines Directus renders. */
+  collection?: string;
+  item?: Record<string, unknown> | null;
 }
 
 export interface CaptureCardEmits {

@@ -17,6 +17,8 @@ import { deleteAllPresetsFor } from './mapgrid-preset';
 
 export const SMARTPHONES_COLLECTION = 'test_mapgrid_smartphones';
 export const TRACKING_COLLECTION = 'test_mapgrid_smartphone_tracking';
+/** Photos of each device, a list on the device: the card reaches them as `smartphone.photos.photo`. */
+export const PHOTOS_COLLECTION = 'test_mapgrid_smartphone_photos';
 
 type LngLat = [number, number];
 
@@ -216,6 +218,74 @@ const idsOf = async (collection: string): Promise<number[]> =>
     )
   ).map((row) => row.id);
 
+/** A photo of the device, as SVG: told apart from the icon by its frame and caption. */
+export const smartphonePhotoSvg = ({ brand, model, colour }: Smartphone, shot: number): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320" viewBox="0 0 480 320">
+  <rect width="480" height="320" fill="#0F172A"/>
+  <rect x="190" y="40" width="100" height="200" rx="18" fill="${colour}" transform="rotate(${shot * 8 - 8} 240 140)"/>
+  <text x="240" y="290" font-family="Arial, sans-serif" font-size="22" fill="#F8FAFC" text-anchor="middle">${brand} ${model} — foto ${shot + 1}</text>
+</svg>`;
+
+const PHOTOS_PER_DEVICE = 2;
+
+/** The photos list, added to a stack seeded before it existed. */
+const ensurePhotos = async (phones: readonly number[]): Promise<void> => {
+  if (!(await resourceExists(`/collections/${PHOTOS_COLLECTION}`))) {
+    await apiRequest('POST', '/collections', {
+      collection: PHOTOS_COLLECTION,
+      fields: [ID_FIELD],
+      meta: { icon: 'photo_library', hidden: true },
+      schema: {},
+    });
+    await apiRequest('POST', `/fields/${PHOTOS_COLLECTION}`, {
+      field: 'smartphone',
+      meta: { interface: 'select-dropdown-m2o', special: ['m2o'] },
+      schema: {},
+      type: 'integer',
+    });
+    await apiRequest('POST', `/fields/${PHOTOS_COLLECTION}`, {
+      ...ICON_FIELD,
+      field: 'photo',
+    });
+    await apiRequest('POST', '/relations', {
+      collection: PHOTOS_COLLECTION,
+      field: 'photo',
+      related_collection: 'directus_files',
+      schema: { on_delete: 'SET NULL' },
+    });
+    await apiRequest('POST', `/fields/${SMARTPHONES_COLLECTION}`, {
+      field: 'photos',
+      meta: { interface: 'list-o2m', special: ['o2m'] },
+      type: 'alias',
+    });
+    await apiRequest('POST', '/relations', {
+      collection: PHOTOS_COLLECTION,
+      field: 'smartphone',
+      related_collection: SMARTPHONES_COLLECTION,
+      meta: { one_field: 'photos' },
+      schema: { on_delete: 'CASCADE' },
+    });
+    await grantMissingPublicPermissions(PHOTOS_COLLECTION);
+  }
+
+  if ((await idsOf(PHOTOS_COLLECTION)).length >= phones.length * PHOTOS_PER_DEVICE) return;
+  const rows = [];
+  for (const [device, phone] of SMARTPHONES.entries()) {
+    for (let shot = 0; shot < PHOTOS_PER_DEVICE; shot += 1) {
+      const form = new FormData();
+      form.append('title', `${phone.brand} ${phone.model} foto ${shot + 1}`);
+      form.append(
+        'file',
+        new Blob([smartphonePhotoSvg(phone, shot)], { type: 'image/svg+xml' }),
+        `${phone.brand}-foto-${shot + 1}.svg`
+      );
+      const file = await apiRequest<DirectusSingleResponse<{ id: string }>>('POST', '/files', form);
+      rows.push({ smartphone: phones[device], photo: file.data.id });
+    }
+  }
+  await apiRequest('POST', `/items/${PHOTOS_COLLECTION}`, rows);
+};
+
 export async function ensureSmartphoneCollections(): Promise<void> {
   if (!(await resourceExists(`/collections/${SMARTPHONES_COLLECTION}`))) await createCollections();
 
@@ -228,6 +298,8 @@ export async function ensureSmartphoneCollections(): Promise<void> {
     await apiRequest('POST', `/items/${SMARTPHONES_COLLECTION}`, rows);
     phones = await idsOf(SMARTPHONES_COLLECTION);
   }
+
+  await ensurePhotos(phones);
 
   const points = trackingPoints(phones);
   if ((await idsOf(TRACKING_COLLECTION)).length < points.length) {

@@ -15,6 +15,7 @@ import type { CameraTracking, GeoItem } from './contract/index';
 import { useWritableLayoutQuery } from './contract/index';
 import { CameraBounds } from './services/camera-bounds/index';
 import { CameraTrackingPolicy } from './services/camera-tracking/index';
+import { CardRows } from './services/card-rows/index';
 import {
   EMBEDDED_LAYOUTS,
   type EmbeddedLayout,
@@ -22,6 +23,7 @@ import {
 } from './services/embedded-layout/index';
 import { type CatalogField, FieldCatalog } from './services/field-catalog/index';
 import { FieldPath } from './services/field-path/index';
+import type { FieldTreeSource } from './services/field-tree/index';
 import { useOptimisticWrite } from './services/optimistic-sync/index';
 import type { LayoutOptions, LayoutQuery } from './types';
 
@@ -51,6 +53,7 @@ const detectGeometry = (fields: Field[]): string | undefined => {
 
 const cameraBounds = new CameraBounds();
 const fieldPath = new FieldPath();
+const cardLines = new CardRows();
 
 type EmbeddedOptions = { value: Record<string, unknown> };
 
@@ -80,7 +83,12 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const { fields: fieldsInCollection, primaryKeyField } = useCollection(collection);
     const { layouts } = useExtensions();
 
-    type RelationRow = { collection?: string; field?: string; related_collection?: string | null };
+    type RelationRow = {
+      collection?: string;
+      field?: string;
+      related_collection?: string | null;
+      meta?: { one_field?: string | null } | null;
+    };
     const stores = useStores();
     const fieldsStore = stores.useFieldsStore?.() as
       | { getFieldsForCollection: (collection: string) => CatalogField[] }
@@ -88,14 +96,22 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const relationsStore = stores.useRelationsStore?.() as
       | { getRelationsForField: (collection: string, field: string) => RelationRow[] }
       | undefined;
-    const catalog = new FieldCatalog({
+    /** The app's schema, as the field tree and the catalog read it: many-to-one and one-to-many relations. */
+    const fieldTreeSource: FieldTreeSource = {
       fieldsOf: (name) => fieldsStore?.getFieldsForCollection(name) ?? [],
-      relatedCollectionOf: (name, field) =>
-        relationsStore
-          ?.getRelationsForField(name, field)
-          .find((relation) => relation.collection === name && relation.field === field)
-          ?.related_collection ?? null,
-    });
+      relatedCollectionOf: (name, field) => {
+        const relations = relationsStore?.getRelationsForField(name, field) ?? [];
+        const manyToOne = relations.find(
+          (relation) => relation.collection === name && relation.field === field
+        );
+        if (manyToOne?.related_collection) return manyToOne.related_collection;
+        const oneToMany = relations.find(
+          (relation) => relation.related_collection === name && relation.meta?.one_field === field
+        );
+        return oneToMany?.collection ?? null;
+      },
+    };
+    const catalog = new FieldCatalog(fieldTreeSource);
 
     /** The Directus app store: where the right sidebar's open state lives. */
     const appStore = (useStores().useAppStore?.() ?? null) as { sidebarOpen?: boolean } | null;
@@ -207,6 +223,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
     const showCard = ownOption('showCard');
     const cardImageField = ownOption('cardImageField');
     const cardFields = ownOption('cardFields');
+    const cardRows = ownOption('cardRows');
 
     /**
      * The collection's fields and, by path, every field the options point to
@@ -222,6 +239,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
         headingField.value,
         cardImageField.value,
         ...((cardFields.value as string[] | undefined) ?? []),
+        ...cardLines.fieldsOf((cardRows.value ?? []).map((row) => row.template)),
         ...((writableQuery.fields.value as string[] | undefined) ?? []),
       ].filter((path): path is string => typeof path === 'string' && fieldPath.isRelated(path));
       const related = [...new Set(chosen)]
@@ -386,6 +404,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       sort: writableQuery.sort,
       fieldsInCollection,
       fieldsWithRelated,
+      fieldTreeSource: fieldsStore ? fieldTreeSource : null,
       primaryKeyField,
       selectedItems,
       deleteSelectedItems,
@@ -400,6 +419,7 @@ export default defineLayout<LayoutOptions, LayoutQuery | null>({
       showCard,
       cardImageField,
       cardFields,
+      cardRows,
       tourOnFirstVisit,
       mapShare,
       setMapShare,

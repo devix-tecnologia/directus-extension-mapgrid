@@ -4,14 +4,29 @@ export class FieldPath implements IFieldPath {
   valueAt(item: Record<string, unknown> | null | undefined, path: string): unknown {
     if (!item) return undefined;
     if (path in item) return item[path];
+    return this.follow(item, path.split('.'));
+  }
 
-    let current: unknown = item;
-    for (const part of path.split('.')) {
-      if (current === null) return null;
-      if (typeof current !== 'object' || !(part in (current as object))) return undefined;
-      current = (current as Record<string, unknown>)[part];
+  firstAt(item: Record<string, unknown> | null | undefined, path: string): unknown {
+    const value = this.valueAt(item, path);
+    if (!Array.isArray(value)) return value ?? null;
+    return value.find((entry) => entry !== null && entry !== undefined) ?? null;
+  }
+
+  private follow(current: unknown, parts: readonly string[]): unknown {
+    if (parts.length === 0) return current;
+    if (Array.isArray(current)) {
+      return current
+        .flatMap((entry) => {
+          const value = this.follow(entry, parts);
+          return Array.isArray(value) ? value : [value];
+        })
+        .filter((value) => value !== null && value !== undefined);
     }
-    return current;
+    if (current === null) return null;
+    const [part, ...rest] = parts as [string, ...string[]];
+    if (typeof current !== 'object' || !(part in current)) return undefined;
+    return this.follow((current as Record<string, unknown>)[part], rest);
   }
 
   filterAt(path: string, condition: Record<string, unknown>): Record<string, unknown> {

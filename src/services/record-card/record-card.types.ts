@@ -15,6 +15,8 @@ export interface CardRow {
   field: string;
   label: string;
   value: string;
+  /** A composed line: Directus renders it, and `value` is left empty. */
+  template?: string;
 }
 
 /** Turns a record into the lines its card shows, formatted the way the grid would show them. */
