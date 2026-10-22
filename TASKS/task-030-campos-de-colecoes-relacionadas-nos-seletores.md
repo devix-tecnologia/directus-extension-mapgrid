@@ -63,8 +63,9 @@ Tasks da decisão:
       `CardRowsEditor`)
 - [x] Lista de registros no meio do caminho: a imagem usa o primeiro, o texto
       junta com vírgula (`FieldPath.valueAt`/`firstAt`)
-- [ ] e2e: linha composta no card e foto por `smartphone.photos.photo` — escritos,
-      não rodaram (a máquina sobrecarregada não subiu o Directus)
+- [x] e2e no Directus 11: linha composta no card renderizada pelo Directus, com
+      rótulo próprio; foto por `smartphone.photos.photo` (dois níveis, através
+      de uma lista: a primeira)
 - [ ] Mover a árvore para o pacote `@devix-tecnologia/directus-field-tree` no
       devix-stack (decisão do Sidarta), e o mapgrid importar de lá
 - [ ] Geometria por caminho relacionado
